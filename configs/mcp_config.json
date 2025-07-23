@@ -1,0 +1,38 @@
+{
+  "location": {
+    "command": "python",
+    "args": ["D:/work/langchain_test/tools/location_server.py"]
+  },
+  "weather": {
+    "command": "python",
+    "args": ["D:/work/langchain_test/tools/weather_server.py"]
+  },
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:\\work\\file_test"]
+  },
+  "bilibili": {
+    "command": "npx",
+    "args": ["-y", "@wangshunnn/bilibili-mcp-server"]
+  },
+  "fetch": {
+    "command": "uvx",
+    "args": ["mcp-server-fetch"]
+  },
+  "git": {
+    "command": "uvx",
+    "args": ["mcp-server-git"]
+  },
+  "memory": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-memory"]
+  },
+  "sequential-thinking": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+  },
+  "time": {
+    "command": "uvx",
+    "args": ["mcp-server-time"]
+  }
+}
