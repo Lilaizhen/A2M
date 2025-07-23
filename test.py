@@ -5,6 +5,9 @@ from langchain_openai import ChatOpenAI
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
+from dotenv import load_dotenv
+
+load_dotenv()  # 加载 .env 文件中的环境变量（如果有）
 
 def load_and_merge_mcp_configs(config_paths):
     merged_config = {}
@@ -23,7 +26,6 @@ async def main():
     ]
     all_mcp_config = load_and_merge_mcp_configs(config_files)
 
-    # 补全本地路径并设置默认 transport
     for tool in all_mcp_config.values():
         tool.setdefault("transport", "stdio")
         if tool["command"] == "python" and tool.get("args"):
@@ -33,10 +35,16 @@ async def main():
     with open("./datasets/test_prompts.json", "r", encoding="utf-8") as f:
         dataset = json.load(f)
 
-    # === 3. 初始化 LLM 模型 ===
+    # === ✅ 3. 初始化 LLM 模型（使用环境变量） ===
+    api_key = os.getenv("OPENAI_API_KEY")
+    api_base = os.getenv("OPENAI_API_BASE", "https://api.siliconflow.cn/v1")
+
+    if not api_key:
+        raise RuntimeError("请设置 OPENAI_API_KEY 环境变量")
+
     llm = ChatOpenAI(
-        openai_api_key="sk-ulrlrftgwvyklbxqdvxgfkezoirtmiuegblozcsplognafaa",
-        openai_api_base="https://api.siliconflow.cn/v1",
+        openai_api_key=api_key,
+        openai_api_base=api_base,
         model="Qwen/Qwen3-32B",
         streaming=True,
         temperature=0.7
@@ -49,20 +57,14 @@ async def main():
         user_prompt = task["input"]
         expected_tools = task["expected_tools"]
 
-        # 过滤出当前任务所需的工具配置
-        # 当 expected_tools 为空时不过滤，使用所有工具
-        if expected_tools:
-            filtered_config = {
-                alias: cfg for alias, cfg in all_mcp_config.items()
-                if alias in expected_tools
-            }
-        else:
-            filtered_config = all_mcp_config
+        filtered_config = {
+            alias: cfg for alias, cfg in all_mcp_config.items()
+            if not expected_tools or alias in expected_tools
+        }
 
         print(f"\n================= 运行任务 {task_id}（{task_desc}）=================\n")
         print(f"🧪 工具加载: {list(filtered_config.keys())}")
 
-        # 构建 Agent 并执行对话
         client = MultiServerMCPClient(filtered_config)
         tools = await client.get_tools()
         agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
