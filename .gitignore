@@ -1,0 +1,39 @@
+# node modules
+node_modules/
+
+# build outputs
+dist/
+build/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# turborepo
+.turbo/
+
+# IDE
+.vscode/
+.idea/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache/
+*.egg-info/
+.pytest_cache/
+.env
+*.env
+
+# Claude Code
+.claude/
