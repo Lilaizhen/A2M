@@ -6,8 +6,7 @@ from mcp.server.fastmcp import FastMCP
 load_dotenv()
 
 API_URL = "https://api.siliconflow.cn/v1/chat/completions"
-API_KEY = os.getenv("OPENAI_API_KEY")  # ✅ 使用统一的环境变量名称
-
+API_KEY = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
 mcp = FastMCP("LLM-Powered Tool")
 
 @mcp.tool(

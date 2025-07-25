@@ -1,0 +1,15 @@
+{
+  "name": "mcp-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "start": "turbo run start"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.0"
+  },
+  "workspaces": [
+    "apps/*"
+  ]
+}

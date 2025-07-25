@@ -1,10 +1,10 @@
 [
-  
+
   {
     "id": 1,
     "category": "TASK-003",
     "description": "",
-    "input": "Search for videos about 'AI Agent' on Bilibili, pick a popular introductory video, use the summarize_web_content tool to summarize the video description, and help me generate a knowledge graph based on that summary",
-    "expected_tools": ["bilibili", "memory","LLM-Powered"]
+    "input": "Find Airbnb listings in Paris from August 15 to August 20 for 2 adults and 1 child. Show only listings between $100 and $250 per night.",
+    "expected_tools": ["airbnb","bilibili222"]
   }
 ]

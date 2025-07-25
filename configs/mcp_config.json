@@ -15,6 +15,14 @@
     "command": "npx",
     "args": ["-y", "@wangshunnn/bilibili-mcp-server"]
   },
+  "bilibili222": {
+    "command": "node",
+    "args": ["D:/work/langchain_test/mcp/apps/bilibili-mcp-server/dist/index.js"]
+  },
+  "airbnb": {
+    "command": "node",
+    "args": ["D:/work/langchain_test/mcp/apps/mcp-server-airbnb/dist/index.js"]
+  },
   "fetch": {
     "command": "uvx",
     "args": ["mcp-server-fetch"]
