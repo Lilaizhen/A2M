@@ -22,15 +22,6 @@
       "WINSTONAI_API_KEY": "your_actual_api_key"
     }
   },
-  "postman": {
-    "command": "node",
-    "args": [
-      "./mcp/apps/postman-mcp-server/dist/src/index.js"
-    ],
-    "env": {
-      "POSTMAN_API_KEY": "PMAK-YOUR-POSTMAN-API-KEY"
-    }
-  },
   "deepl": {
     "command": "node",
     "args": [
