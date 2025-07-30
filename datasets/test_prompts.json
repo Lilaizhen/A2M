@@ -1,10 +1,9 @@
 [
-
   {
     "id": 1,
     "category": "TASK-003",
-    "description": "",
-    "input": "Find Airbnb listings in Paris from August 15 to August 20 for 2 adults and 1 child. Show only listings between $100 and $250 per night.",
-    "expected_tools": ["airbnb","bilibili222"]
+    "description": "List all available attack tools",
+    "input": "list tools",
+    "expected_tools": ["airbnb", "bilibili222", "winston", "searxng","postman","deepl","nile"]
   }
 ]

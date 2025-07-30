@@ -28,7 +28,7 @@ async def main():
 
     for tool in all_mcp_config.values():
         tool.setdefault("transport", "stdio")
-        if tool["command"] == "python" and tool.get("args"):
+        if tool["command"] == "python" and tool.get("args") and tool["args"][0].endswith(".py"):
             tool["args"][0] = os.path.abspath(tool["args"][0])
 
     # === 2. 加载测试数据集 ===
