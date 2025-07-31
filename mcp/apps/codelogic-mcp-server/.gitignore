@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+/.idea/
+.aider*
+
+test/.env.test
+
+# Logs folder
+logs/
+.specstory/
+impact_analysis_result_*.md
