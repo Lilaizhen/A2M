@@ -21,6 +21,7 @@ def load_and_merge_mcp_configs(config_paths):
 async def main():
     # === 1. 加载并合并多个 MCP 配置文件 ===
     config_files = [
+        "./configs/mcp_local_noApi.json",
         "./configs/mcp_config.json",
         "./configs/attack_mcp_config.json"
     ]
@@ -45,7 +46,7 @@ async def main():
     llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=api_base,
-        model="deepseek-ai/DeepSeek-V3",
+        model="moonshotai/Kimi-K2-Instruct",
         streaming=True,
         temperature=0.7
     )

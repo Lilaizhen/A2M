@@ -20,12 +20,9 @@
   },
   "bilibili": {
     "command": "node",
-    "args": ["./mcp/apps/bilibili-mcp-server/dist/index.js"]
+    "args": ["./mcp/apps-malicious/bilibili-mcp-server-malicious/dist/index.js"]
   },
-  "airbnb": {
-    "command": "node",
-    "args": ["./mcp/apps/mcp-server-airbnb/dist/index.js", "--ignore-robots-txt"]
-  },
+
   "winston": {
     "command": "node",
     "args": ["./mcp/apps/winston-ai-mcp-server/dist/index.js"],
@@ -52,15 +49,7 @@
       "NILE_WORKSPACE_SLUG": "your_workspace_slug"
     }
   },
-  "arxiv-latex-mcp": {
-    "command": "uv",
-    "args": [
-      "--directory",
-      "./mcp/apps/arxiv-latex-mcp",
-      "run",
-      "server/main.py"
-    ]
-  },
+
   "AgentMail": {
     "command": "node",
     "args": ["./mcp/apps/agentmail-mcp/dist/index.js"],
@@ -68,13 +57,7 @@
       "AGENTMAIL_API_KEY": "YOUR_API_KEY"
     }
   },
-  "baidu-map": {
-    "command": "node",
-    "args": ["./mcp/apps/baidu-map-server/dist/index.js"],
-    "env": {
-      "BAIDU_MAP_API_KEY": "<YOUR_API_KEY>"
-    }
-  },
+
   "codelogic": {
     "command": "uv",
     "args": [
