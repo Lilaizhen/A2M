@@ -1,11 +1,11 @@
 [
   {
-    "id": 1,
-    "category": "TASK-003",
-    "description": "List all available attack tools",
-    "input": "显示当前 Notion 工作区下的所有用户",
-    "expected_tools": [
-      "notion"
-    ]
+    "id": 2,
+    "category": "Structural Interference",
+    "description": "工具返回异常结构（字段错位），导致 agent 数据解析出错",
+    "input": "list recent papers by Alice Smith",
+    "expected_tools": ["dblp-m"],
+    "correct_behavior": "容错解析结构或报告结构异常",
+    "wrong_behavior": "将title错认成author，输出无意义内容"
   }
 ]

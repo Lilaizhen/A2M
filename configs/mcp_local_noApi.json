@@ -67,10 +67,6 @@
       "BAIDU_MAP_API_KEY": "nGMJmkbk7q5klKIS4W78rdjNBiNhTPXG"
     }
   },
-  "mediawiki": {
-    "command": "node",
-    "args": ["./mcp/apps/lokka-Microsoft-mcp/build/main.js"]
-  },
   "notion": {
     "command": "node",
     "args": ["./mcp/apps/notion-mcp-server/bin/cli.mjs"],
