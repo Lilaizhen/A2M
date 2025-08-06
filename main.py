@@ -160,7 +160,7 @@ async def main(dataset):
     llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=api_base,
-        model="Qwen/Qwen3-235B-A22B-Instruct-2507",
+        model="deepseek-ai/DeepSeek-V3",
         streaming=True,
         temperature=0.7
     )
