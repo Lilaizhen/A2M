@@ -272,7 +272,7 @@ async def main(dataset):
 if __name__ == "__main__":
     # 加载数据集
     try:
-        with open("./datasets/data.json", "r", encoding="utf-8") as f:
+        with open("./datasets/test_prompts.json", "r", encoding="utf-8") as f:
             dataset = json.load(f)
     except FileNotFoundError:
         print("错误: 未找到数据集文件 ./datasets/data.json")
