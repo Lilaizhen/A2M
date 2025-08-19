@@ -125,50 +125,69 @@ def setup_task_logger(task_id: int):
     )
     
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+import json
+
+def _pretty_json(x):
+    if isinstance(x, str):
+        try:
+            return json.dumps(json.loads(x), ensure_ascii=False, indent=2)
+        except Exception:
+            return x
+    return json.dumps(x, ensure_ascii=False, indent=2)
 
 def format_agent_step(step_message):
-    """格式化 Agent 的单步输出以便记录，能健壮地处理不同类型的消息"""
-    
-    # 根据消息类型定义不同的日志头
+    """格式化 Agent 的单步输出，AIMessage 不带 tool_calls，tool_calls 单独输出"""
     if isinstance(step_message, HumanMessage):
         role_header = "================================== Human Input =================================="
-        content = step_message.content
+        return f"\n{role_header}\n{step_message.content}\n"
+
     elif isinstance(step_message, AIMessage):
         role_header = "================================== AI Message ==================================="
         content = step_message.content
+        if isinstance(content, str):
+            text = content
+        elif isinstance(content, list):
+            text = "\n".join(
+                b.get("text", "") if isinstance(b, dict) else str(b)
+                for b in content
+            )
+        else:
+            text = str(content)
+        return f"\n{role_header}\n{text}\n"
+
     elif isinstance(step_message, ToolMessage):
         role_header = f"================================== Tool Output ({step_message.name}) =================================="
         content = step_message.content
+        return f"\n{role_header}\n{content if isinstance(content, str) else _pretty_json(content)}\n"
+
+    elif isinstance(step_message, dict) and step_message.get("type") == "tool_call":
+        # 单独的 tool_call 消息
+        role_header = "================================== Tool Call ===================================="
+        name = step_message.get("tool_name", "unknown_tool")
+        args = step_message.get("tool_input", {})
+        return f"\n{role_header}\n工具名: {name}\n参数: {_pretty_json(args)}\n"
+
     else:
         role_header = "================================== Unknown Message ================================"
-        content = getattr(step_message, 'content', '')
+        return f"\n{role_header}\n{getattr(step_message, 'content', '')}\n"
 
-    # 格式化内容
-    if isinstance(content, str):
-        formatted_content = content
-    elif isinstance(content, list):
-        content_parts = []
-        for block in content:
-            if isinstance(block, dict):
-                if block.get('type') == 'tool_call':
-                    tool_name = block.get('tool_name', 'unknown_tool')
-                    tool_input = block.get('tool_input', {})
-                    content_parts.append(f"  - Tool Call: {tool_name}({json.dumps(tool_input, ensure_ascii=False)})")
-                else:
-                    content_parts.append(block.get('text', ''))
-            else:
-                content_parts.append(str(block))
-        formatted_content = "\n".join(content_parts)
-    else:
-        formatted_content = str(content)
-        
-    return f"\n{role_header}\n{formatted_content}\n"
 
-def translate_path(path):
-    """将/root路径转换为实际路径"""
-    if path.startswith("/root/"):
-        return path.replace("/root/", "/Users/lilaizhen/MCP-Bench/annotated_data/", 1)
-    return path
+# def translate_path(path):
+#     """将/root路径转换为实际路径，限制只能访问annotated_data目录"""
+#     if path and isinstance(path, str):
+#         if path.startswith("/root/"):
+#             path = path.replace("/root/", "./annotated_data/", 1)
+#         if path.startswith("./annotated_data/"):
+#             return path
+#         elif path.startswith("./"):
+#             filename = os.path.basename(path)
+#             if filename:
+#                 return f"./annotated_data/{filename}"
+#             else:
+#                 return "./annotated_data/"
+#         elif not path.startswith("/") and path != "":
+#             return f"./annotated_data/{path}"
+#     return "./annotated_data/"
 
 
 async def main(dataset):
@@ -208,11 +227,6 @@ async def main(dataset):
         user_prompt = task["input"]
         expected_tools = task["expected_tools"]
         
-        # 如果没有预期工具，则跳过该任务
-        # if not expected_tools:
-        #     print(f"跳过任务 {task_id}，因为没有指定预期工具")
-        #     continue
-
         setup_task_logger(task_id)
         
         # 根据预期工具过滤配置
@@ -229,7 +243,6 @@ async def main(dataset):
             for server_name in required_mcp_servers:
                 if server_name in mcp_configs:
                     filtered_config[server_name] = mcp_configs[server_name].copy()  # 创建副本
-                    # 确保有transport键
                     filtered_config[server_name].setdefault("transport", "stdio")
                     if filtered_config[server_name]["command"] == "python" and filtered_config[server_name].get("args") and filtered_config[server_name]["args"][0].endswith(".py"):
                         filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
@@ -242,7 +255,7 @@ async def main(dataset):
         print(f"🧪 工具加载: {list(filtered_config.keys())}")
         logging.info(f"工具加载: {list(filtered_config.keys())}")
 
-        # 抑制FastMCP启动信息输出
+        # 抑制FastMCP启动信息输出（不影响 tool_calls 获取）
         import sys
         original_stderr = sys.stderr
         original_stdout = sys.stdout
@@ -259,53 +272,52 @@ async def main(dataset):
         sys.stderr = original_stderr
         sys.stdout = original_stdout
 
-        config = {"configurable": {"thread_id": f"test-{task_id}"}}
+        config = {
+            "recursion_limit": 100,  
+            "configurable": {
+                "thread_id": f"test-{task_id}"
+            }
+        }
+
         user_input = {"role": "user", "content": user_prompt}
 
         final_response = ""
         async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
             last_message = step["messages"][-1]
-            formatted_step = format_agent_step(last_message)
-            print(formatted_step) # 实时打印到控制台
-            logging.info(formatted_step) # 写入日志文件
-            
-            # 提取最终的 Agent 回复 (只在 Assistant 回复时更新)
+
+            # 如果是 AIMessage，先打印 AIMessage，再单独打印 tool_calls
             if isinstance(last_message, AIMessage):
-                content = last_message.content
-                if isinstance(content, str):
-                    final_response = content
-                elif isinstance(content, list):
-                    # 从内容块列表中提取文本和工具调用
-                    response_parts = []
-                    for block in content:
-                        if isinstance(block, dict):
-                            if block.get('type') == 'tool_call':
-                                tool_name = block.get('tool_name', 'unknown_tool')
-                                tool_input = block.get('tool_input', {})
-                                response_parts.append(f"Tool Call: {tool_name}({json.dumps(tool_input)})")
-                            else:
-                                response_parts.append(block.get('text', ''))
-                        else:
-                            response_parts.append(str(block))
-                    final_response = "\n".join(response_parts)
+                print(format_agent_step(last_message))
+                logging.info(format_agent_step(last_message))
+
+                tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
+                for tc in tool_calls or []:
+                    fn = (tc.get("function") or {})
+                    name = fn.get("name") or tc.get("name", "unknown_tool")
+                    args = fn.get("arguments") or tc.get("args") or {}
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except Exception:
+                            pass
+                    tool_call_msg = {
+                        "type": "tool_call",
+                        "tool_name": name,
+                        "tool_input": args
+                    }
+                    print(format_agent_step(tool_call_msg))
+                    logging.info(format_agent_step(tool_call_msg))
+
+            else:
+                # 普通消息直接打印
+                print(format_agent_step(last_message))
+                logging.info(format_agent_step(last_message))
+
 
         # === 4. 判断攻击是否成功 ===
         # 由于新数据格式中没有correct_behavior和wrong_behavior字段，我们暂时跳过攻击成功率判断
         is_success = False
         print("\n⚠️  跳过攻击成功率判断（缺少correct_behavior和wrong_behavior字段）")
-        
-        # 如果需要判断攻击成功率，可以取消下面的注释并提供适当的参数
-        # is_success = await judge_attack_success(
-        #     agent_behavior=final_response,
-        #     correct_behavior=task["correct_behavior"],
-        #     wrong_behavior=task["wrong_behavior"]
-        # )
-        #
-        # if is_success:
-        #     print("\n✅ 攻击成功")
-        #     successful_attacks += 1
-        # else:
-        #     print("\n❌ 攻击失败")
             
         # === 5. 记录单次任务结果 ===
         results_summary.append({
@@ -347,70 +359,23 @@ if __name__ == "__main__":
     dataset = []
     task_dict = {}  # 用于避免重复任务
     
-    # # 尝试加载 all_annotations.json
-    # try:
-    #     with open("./datasets/all_annotations.json", "r", encoding="utf-8") as f:
-    #         all_annotations_data = json.load(f)
-    #         # 转换 all_annotations 格式为标准格式
-    #         for item in all_annotations_data:
-    #             task_id = item.get("task_id", "")
-    #             # 提取工具列表
-    #             tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
-    #             expected_tools = []
-    #             if tools_str:
-    #                 # 解析工具列表，支持多种格式
-    #                 if "\n" in tools_str:
-    #                     tools_list = tools_str.split("\n")
-    #                 elif "2." in tools_str:  # 处理 "1. tool1\n2. tool2" 格式
-    #                     tools_list = [t.split(". ", 1)[1] if ". " in t else t for t in tools_str.split("\n") if t.strip()]
-    #                 else:
-    #                     tools_list = [t.strip() for t in tools_str.split("2.")[0].replace("1.", "").split("\n") if t.strip()]
-    #                 expected_tools = [t for t in tools_list if t]
-                
-    #             task_data = {
-    #                 "id": task_id,
-    #                 "description": item.get("Question", ""),
-    #                 "input": item.get("Question", ""),
-    #                 "expected_tools": expected_tools,
-    #                 "category": item.get("category", ""),
-    #                 "correct_behavior": "N/A",  # all_annotations.json 中没有此字段
-    #                 "wrong_behavior": "N/A"     # all_annotations.json 中没有此字段
-    #             }
-                
-    #             dataset.append(task_data)
-    #             if task_id:
-    #                 task_dict[task_id] = task_data
-    # except FileNotFoundError:
-    #     print("警告: 未找到数据集文件 ./datasets/all_annotations.json")
-    # except Exception as e:
-    #     print(f"加载 ./datasets/all_annotations.json 时出错: {e}")
-    
-    # 尝试加载 test_prompts.json
+    # 尝试加载 test_prompts（此处沿用你的 all_annotations.json）
     try:
-        with open("./datasets/test_prompts.json", "r", encoding="utf-8") as f:
+        with open("./datasets/all_annotations.json", "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
-            # 转换 test_prompts 格式为标准格式
             for item in test_prompts_data:
                 task_id = item.get("task_id", "")
-                # 提取工具列表
                 tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
                 expected_tools = []
                 if tools_str:
-                    # 解析工具列表
                     tools_list = [t.strip() for t in tools_str.replace("1.", "").replace("2.", "").replace("3.", "").replace("4.", "").replace("5.", "").replace("6.", "").split("\n") if t.strip()]
                     expected_tools = [t for t in tools_list if t]
-                
-                # 如果任务已存在，则只在test_prompts中的工具列表更合理时才更新
                 if task_id and task_id in task_dict:
-                    # 检查test_prompts中的工具是否更符合"Steps"字段描述的需求
-                    # 如果test_prompts包含明显错误的工具（如valorant工具用于地理任务），则不更新
                     steps_desc = item.get("Annotator Metadata", {}).get("Steps", "").lower()
                     if expected_tools:
-                        # 如果Steps描述涉及地理相关操作，且test_prompts工具也包含地理工具，则更新
                         if ("geocode" in steps_desc or "parking" in steps_desc or "nearby" in steps_desc) and \
                            (any(tool in expected_tools for tool in ["geocode_address", "find_parking_facilities", "find_nearby_places", "reverse_geocode"])):
                             task_dict[task_id]["expected_tools"] = expected_tools
-                        # 如果Steps描述涉及游戏相关操作，且test_prompts工具也包含游戏工具，则更新
                         elif "valorant" in steps_desc and "valorant" in tools_str:
                             task_dict[task_id]["expected_tools"] = expected_tools
                 else:
@@ -420,10 +385,9 @@ if __name__ == "__main__":
                         "input": item.get("Question", ""),
                         "expected_tools": expected_tools,
                         "category": item.get("category", ""),
-                        "correct_behavior": "N/A",  # test_prompts.json 中没有此字段
-                        "wrong_behavior": "N/A"     # test_prompts.json 中没有此字段
+                        "correct_behavior": "N/A",
+                        "wrong_behavior": "N/A"
                     }
-                    
                     dataset.append(task_data)
                     if task_id:
                         task_dict[task_id] = task_data

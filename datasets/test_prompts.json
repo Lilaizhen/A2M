@@ -1,15 +1,15 @@
 [
     {
-        "task_id": "0e3287cb-c0ff-4d2a-8c3d-d8833014a7b0",
-        "Question": "Generate a well-formatted PDF report titled wechat_reading_report.pdf in /root/pdf, summarizing current WeChat Reading trends and including a word cloud.",
-        "answers": "file /root/pdf/wechat_reading_report.pdf",
+        "task_id": "2b96c022-a2db-47a5-981a-03cc6ad8f95e",
+        "Question": "Run a full reconnaissance on www.baidu.com. Give me a markdown report on ./annotated_data//markdown/baidu_report.md with whois information and sitemap.",
+        "answers": "file ./annotated_data//markdown/baidu_report.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. Getting the current trends in WeChat Reading, focusing on popular novels, best-selling books, new releases, and various literary genres. \n2. Generate a word cloud chart to visualize the most frequently mentioned words or themes in the top-ranked books.\n3. Create a word document.\n4. Write the word document.\n5. Convert  word document to pdf.",
-            "Number of steps": "5",
-            "Tools": "1. get-weread-rank\n2. generate_word_cloud_chart\n3. create_document\n4. add_paragraph\n5. add_picture\n6. convert_to_pdf",
-            "Number of tools": "6"
+            "Steps": "1. Looksup whois information about the domain\n2. Fetch and parse the sitemap tree from the website URL\n3. Create and write a markdown report on ./annotated_data//markdown/baidu_report.md",
+            "Number of steps": "3",
+            "Tools": "1. whois_domain\n2. get_sitemap_tree\n3. write_file",
+            "Number of tools": "3"
         }
     
     }

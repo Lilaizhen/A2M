@@ -1,8 +1,8 @@
 [
     {
         "task_id": "0e3287cb-c0ff-4d2a-8c3d-d8833014a7b0",
-        "Question": "Generate a well-formatted PDF report titled wechat_reading_report.pdf in /root/pdf, summarizing current WeChat Reading trends and including a word cloud.",
-        "answers": "file /root/pdf/wechat_reading_report.pdf",
+        "Question": "Generate a well-formatted PDF report titled wechat_reading_report.pdf in ./annotated_data/pdf, summarizing current WeChat Reading trends and including a word cloud.",
+        "answers": "file ./annotated_data/pdf/wechat_reading_report.pdf",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -14,10 +14,10 @@
     },
     {
         "task_id": "99d7541a-73c0-4ea1-8002-a70a041f3ffc",
-        "Question": "Please perform a comprehensive analysis of the audio file located at /root/music/mixkit-retro-game-emergency-alarm-1000.wav. The analysis should include beat tracking, MFCC extraction, and chroma CQT calculation. Upon completion, please provide the resulting data along with a brief summary of the findings.",
+        "Question": "Please perform a comprehensive analysis of the audio file located at ./annotated_data/music/mixkit-retro-game-emergency-alarm-1000.wav. The analysis should include beat tracking, MFCC extraction, and chroma CQT calculation. Upon completion, please provide the resulting data along with a brief summary of the findings.",
         "answers": "",
         "category": "Leisure",
-        "file_name": "/root/music/mixkit-retro-game-emergency-alarm-1000.wav",
+        "file_name": "./annotated_data/music/mixkit-retro-game-emergency-alarm-1000.wav",
         "Annotator Metadata": {
             "Steps": "1. Load the audio file\n2. Compute the beat track of the audio to understand its rhythmic structure. \n3. Extract the Mel-Frequency Cepstral Coefficients (MFCCs) from the audio to analyze its spectral content.\n4. Compute the Chroma Constant-Q Transform (CQT) to analyze the chromatic content of the audio. \n5. Write a summary document outlining the key findings and insights from the analysis.\n",
             "Number of steps": "5",
@@ -92,12 +92,12 @@
     },
     {
         "task_id": "2b96c022-a2db-47a5-981a-03cc6ad8f95e",
-        "Question": "Run a full reconnaissance on www.baidu.com. Give me a markdown report on /root/markdown/baidu_report.md with whois information and sitemap.",
-        "answers": "file /root/markdown/baidu_report.md",
+        "Question": "Run a full reconnaissance on www.baidu.com. Give me a markdown report on ./annotated_data/markdown/baidu_report.md with whois information and sitemap.",
+        "answers": "file ./annotated_data/markdown/baidu_report.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. Looksup whois information about the domain\n2. Fetch and parse the sitemap tree from the website URL\n3. Create and write a markdown report on /root/markdown/baidu_report.md",
+            "Steps": "1. Looksup whois information about the domain\n2. Fetch and parse the sitemap tree from the website URL\n3. Create and write a markdown report on ./annotated_data/markdown/baidu_report.md",
             "Number of steps": "3",
             "Tools": "1. whois_domain\n2. get_sitemap_tree\n3. write_file",
             "Number of tools": "3"
@@ -118,8 +118,8 @@
     },
     {
         "task_id": "88ccea26-01f6-4db6-ba95-6b2a73c0488b",
-        "Question": "Analyze Apple's stock for the past year and summarize it in a PPT in /root/ppt/apple.pptx.",
-        "answers": "file /root/ppt/apple.pptx",
+        "Question": "Analyze Apple's stock for the past year and summarize it in a PPT in ./annotated_data/ppt/apple.pptx.",
+        "answers": "file ./annotated_data/ppt/apple.pptx",
         "category": "Finance",
         "file_name": "",
         "Annotator Metadata": {
@@ -131,8 +131,8 @@
     },
     {
         "task_id": "6b7fc66e-fe96-4403-9a52-df5afa53ab68",
-        "Question": "Generate a research summary for NCT04280705 and save it as Markdown to /root/markdown/NCT04280705.md.",
-        "answers": "file /root/markdown/NCT04280705.md",
+        "Question": "Generate a research summary for NCT04280705 and save it as Markdown to ./annotated_data/markdown/NCT04280705.md.",
+        "answers": "file ./annotated_data/markdown/NCT04280705.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -170,8 +170,8 @@
     },
     {
         "task_id": "230fb273-b316-4a8f-9297-89ce5558bc6c",
-        "Question": "Find today's LeetCode Daily Challenge and generate a detailed markdown document in /root/markdown/leetcode_daily.md that provides a comprehensive walkthrough of the problem. ",
-        "answers": "file /root/markdown/leetcode_daily.md",
+        "Question": "Find today's LeetCode Daily Challenge and generate a detailed markdown document in ./annotated_data/markdown/leetcode_daily.md that provides a comprehensive walkthrough of the problem. ",
+        "answers": "file ./annotated_data/markdown/leetcode_daily.md",
         "category": "Lifestyle",
         "file_name": "",
         "Annotator Metadata": {
@@ -183,7 +183,7 @@
     },
     {
         "task_id": "567c79c3-3afb-4979-90cf-88ca49cb701d",
-        "Question": "Help me write a quick start tutorial for Ant Design in markdown at /root/markdown/antd_tutorial.md.",
+        "Question": "Help me write a quick start tutorial for Ant Design in markdown at ./annotated_data/markdown/antd_tutorial.md.",
         "answers": "",
         "category": "Office",
         "file_name": "",
@@ -196,10 +196,10 @@
     },
     {
         "task_id": "4de2e9f7-f3ea-4d02-8532-0a1b0b530609",
-        "Question": "Read the sales data under /root/excel/Local_Electronic_Sales.xlsx, plot it as a bar chart by month and save it in /root/figs/sale.png",
-        "answers": "file /root/figs/sale.png",
+        "Question": "Read the sales data under ./annotated_data/excel/Local_Electronic_Sales.xlsx, plot it as a bar chart by month and save it in ./annotated_data/figs/sale.png",
+        "answers": "file ./annotated_data/figs/sale.png",
         "category": "Office",
-        "file_name": "/root/excel/Local_Electronic_Sales.xlsx",
+        "file_name": "./annotated_data/excel/Local_Electronic_Sales.xlsx",
         "Annotator Metadata": {
             "Steps": "1. read the excel file to get the data\n2. draw the bar chart",
             "Number of steps": "2",
@@ -209,8 +209,8 @@
     },
     {
         "task_id": "56d7fbdb-ebd6-41fe-a5d6-cd21dbc59fd8",
-        "Question": "Find the trending GitHub repositories. For the top one, read its Deepwiki. Then, draft a Markdown intro document for it in /root/markdown/github_trends.md.",
-        "answers": "file /root/markdown/github_trends.md",
+        "Question": "Find the trending GitHub repositories. For the top one, read its Deepwiki. Then, draft a Markdown intro document for it in ./annotated_data/markdown/github_trends.md.",
+        "answers": "file ./annotated_data/markdown/github_trends.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -235,8 +235,8 @@
     },
     {
         "task_id": "f2a9eb67-efec-4c86-abad-efa55a72f86d",
-        "Question": "Generate a deep report of bitcoin and save it in /root/markdown/bitcoin.md",
-        "answers": "file /root/markdown/bitcoin.md",
+        "Question": "Generate a deep report of bitcoin and save it in ./annotated_data/markdown/bitcoin.md",
+        "answers": "file ./annotated_data/markdown/bitcoin.md",
         "category": "Finance",
         "file_name": "",
         "Annotator Metadata": {
@@ -248,12 +248,12 @@
     },
     {
         "task_id": "9fc8b7f3-776c-4756-bb84-a7ae667521a9",
-        "Question": "Help me find Mr. Lu Yaojie's resume in the Chinese Information Processing Laboratory of the Institute of Software and save it to /root/markdown/cv.md.",
-        "answers": "file /root/markdown/cv.md.",
+        "Question": "Help me find Mr. Lu Yaojie's resume in the Chinese Information Processing Laboratory of the Institute of Software and save it to ./annotated_data/markdown/cv.md.",
+        "answers": "file ./annotated_data/markdown/cv.md.",
         "category": "Lifestyle",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. fetch the https://www.icip.org.cn/zh/zh_team/ to get the member information\n2. fetch the resume of Lu Yaojie in https://luyaojie.github.io/\n3. save it to /root/markdown/cv.md",
+            "Steps": "1. fetch the https://www.icip.org.cn/zh/zh_team/ to get the member information\n2. fetch the resume of Lu Yaojie in https://luyaojie.github.io/\n3. save it to ./annotated_data/markdown/cv.md",
             "Number of steps": "3",
             "Tools": "1. fetch\n2. write_file",
             "Number of tools": "2"
@@ -274,12 +274,12 @@
     },
     {
         "task_id": "08644b1a-ac5e-45a9-8ad1-3a3942e8d366",
-        "Question": "Help me recommend any cheap goodies worth buying recently? Save this information to /root/excel/goods.xlsx.",
-        "answers": "edit /root/excel/goods.xlsx",
+        "Question": "Help me recommend any cheap goodies worth buying recently? Save this information to ./annotated_data/excel/goods.xlsx.",
+        "answers": "edit ./annotated_data/excel/goods.xlsx",
         "category": "Shopping",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. get the information for cheap goodies\n2. write these information to excel in /root/excel/goods.xlsx",
+            "Steps": "1. get the information for cheap goodies\n2. write these information to excel in ./annotated_data/excel/goods.xlsx",
             "Number of steps": "2",
             "Tools": "1. get-smzdm-rank\n2. excel_write_to_sheet",
             "Number of tools": "2"
@@ -313,7 +313,7 @@
     },
     {
         "task_id": "a984d31b-f3e9-47d4-8726-19a06e6babc5",
-        "Question": "Help me make a STEINS;GATE introduction PPT and help me save it to /root/ppt/STEINS_GATE.pptx.",
+        "Question": "Help me make a STEINS;GATE introduction PPT and help me save it to ./annotated_data/ppt/STEINS_GATE.pptx.",
         "answers": "",
         "category": "Office",
         "file_name": "",
@@ -326,7 +326,7 @@
     },
     {
         "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
-        "Question": "Read the data under /root/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+        "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
         "answers": "20.76",
         "category": "Lifestyle",
         "file_name": "",
@@ -352,8 +352,8 @@
     },
     {
         "task_id": "2bf318d4-754d-43f3-a1b5-cb2f50a7d144",
-        "Question": "What are the emerging treatment strategies for head and neck cancer, write the report to /root/markdown/cancer.md?",
-        "answers": "file /root/markdown/cancer.md",
+        "Question": "What are the emerging treatment strategies for head and neck cancer, write the report to ./annotated_data/markdown/cancer.md?",
+        "answers": "file ./annotated_data/markdown/cancer.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -378,8 +378,8 @@
     },
     {
         "task_id": "7180c69a-bbf2-4912-a0ca-a6345c5fe7f1",
-        "Question": "Make a web page about the history of AI based on Wikipedia saved at /root/html/ai.html.",
-        "answers": "file /root/html/ai.html",
+        "Question": "Make a web page about the history of AI based on Wikipedia saved at ./annotated_data/html/ai.html.",
+        "answers": "file ./annotated_data/html/ai.html",
         "category": "Lifestyle",
         "file_name": "",
         "Annotator Metadata": {
@@ -495,10 +495,10 @@
     },
     {
         "task_id": "fa451c3f-23c2-4b03-bcb6-60b49e3a142f",
-        "Question": "Read the paper in /root/pdf/WebArena.pdf, and find the latest papers in this area",
+        "Question": "Read the paper in ./annotated_data/pdf/WebArena.pdf, and find the latest papers in this area",
         "answers": "",
         "category": "Office",
-        "file_name": "/root/pdf/WebArena.pdf",
+        "file_name": "./annotated_data/pdf/WebArena.pdf",
         "Annotator Metadata": {
             "Steps": "1. read the paper in path and identify the field\n2. search the arxiv to find the latest papers",
             "Number of steps": "2",
@@ -508,8 +508,8 @@
     },
     {
         "task_id": "4aa079dd-9d2d-440d-a654-9ba9cb3868b0",
-        "Question": "Read the paper webarena, mind2web and mind2web2, then create a Comparison Report in /root/markdown/compare_webagent.md",
-        "answers": "file /root/markdown/compare_webagent.md",
+        "Question": "Read the paper webarena, mind2web and mind2web2, then create a Comparison Report in ./annotated_data/markdown/compare_webagent.md",
+        "answers": "file ./annotated_data/markdown/compare_webagent.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -521,8 +521,8 @@
     },
     {
         "task_id": "e023dd0e-1212-47e0-a73c-97739c78b849",
-        "Question": "Generate a presentation on the latest Apple product information. Save it to /root/ppt/apple_news.pptx.",
-        "answers": "file /root/ppt/apple_news.pptx",
+        "Question": "Generate a presentation on the latest Apple product information. Save it to ./annotated_data/ppt/apple_news.pptx.",
+        "answers": "file ./annotated_data/ppt/apple_news.pptx",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -534,12 +534,12 @@
     },
     {
         "task_id": "ef7126b3-45ad-41ab-a191-2272c644d057",
-        "Question": "I need a daily financial brief. Fetch today's economic news, cross-reference it with relevant stock movements, and then generate a report at /root/markdown/daily_fin.md.",
-        "answers": "file /root/markdown/daily_fin.md",
+        "Question": "I need a daily financial brief. Fetch today's economic news, cross-reference it with relevant stock movements, and then generate a report at ./annotated_data/markdown/daily_fin.md.",
+        "answers": "file ./annotated_data/markdown/daily_fin.md",
         "category": "Finance",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. get the financial news from multiple sources\n2. check stock prices\n3. generate a daily financial brief\n4. write it to /root/markdown/daily_fin.md",
+            "Steps": "1. get the financial news from multiple sources\n2. check stock prices\n3. generate a daily financial brief\n4. write it to ./annotated_data/markdown/daily_fin.md",
             "Number of steps": "4",
             "Tools": "1. get-36kr-trending\n2. get-netease-news-trending\n3. get-nytimes-news\n4. get_news\n5. get_current_stock_price\n6. write_file",
             "Number of tools": "6"
@@ -573,12 +573,12 @@
     },
     {
         "task_id": "ec6f4fe5-e650-48b1-8805-285d8f52eb10",
-        "Question": "Create a Next.js middleware that checks for a valid JWT in cookies and redirects unauthenticated users to `/login` in /root/code/middleware.ts. use context7",
-        "answers": "file /root/code/middleware.ts",
+        "Question": "Create a Next.js middleware that checks for a valid JWT in cookies and redirects unauthenticated users to `/login` in ./annotated_data/code/middleware.ts. use context7",
+        "answers": "file ./annotated_data/code/middleware.ts",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. Resolves the package name to a Context7-compatible library ID\n2. Fetches up-to-date documentation for a library using the library ID\n3. create the middleware \n4. write it to /root/code/middleware.ts",
+            "Steps": "1. Resolves the package name to a Context7-compatible library ID\n2. Fetches up-to-date documentation for a library using the library ID\n3. create the middleware \n4. write it to ./annotated_data/code/middleware.ts",
             "Number of steps": "4",
             "Tools": "1. resolve-library-id\n2. get-library-docs\n3. write_file",
             "Number of tools": "4"
@@ -586,8 +586,8 @@
     },
     {
         "task_id": "4d7582c4-5013-4275-9621-1e7fbb5fb0c1",
-        "Question": "Download New York's Air Quality report from Government Data, saved at /root/csv/NY_AIR_QUALITY.csv",
-        "answers": "file /root/csv/NY_AIR_QUALITY.csv",
+        "Question": "Download New York's Air Quality report from Government Data, saved at ./annotated_data/csv/NY_AIR_QUALITY.csv",
+        "answers": "file ./annotated_data/csv/NY_AIR_QUALITY.csv",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -599,8 +599,8 @@
     },
     {
         "task_id": "83da9f72-640f-439d-861e-97b449e02da7",
-        "Question": "Analyze the visual marketing strategy from the iPhone 16 page at https://www.apple.com/iphone-16/ and save the summary as a Markdown report to /root/markdown/iphone16_visual_strategy.md",
-        "answers": "file /root/markdown/iphone16_visual_strategy.md",
+        "Question": "Analyze the visual marketing strategy from the iPhone 16 page at https://www.apple.com/iphone-16/ and save the summary as a Markdown report to ./annotated_data/markdown/iphone16_visual_strategy.md",
+        "answers": "file ./annotated_data/markdown/iphone16_visual_strategy.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -612,7 +612,7 @@
     },
     {
         "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
-        "Question": "Get line 10 of /root/txt/Android.txt, please note that this file is very large",
+        "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
         "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
         "category": "Office",
         "file_name": "",
@@ -638,8 +638,8 @@
     },
     {
         "task_id": "cf1fca1e-8e56-4b26-ae34-dfdb1d982080",
-        "Question": "Analyze and compare echarts-for-react, react-chartjs-2, and Tremor. It's for a FinTech app, so my top priorities are a deep security scan of all dependencies and performance, especially bundle size. Give me a comparison table and a final recommendation in a markdown report in /root/markdown/package_compare.md.",
-        "answers": "file /root/markdown/package_compare.md",
+        "Question": "Analyze and compare echarts-for-react, react-chartjs-2, and Tremor. It's for a FinTech app, so my top priorities are a deep security scan of all dependencies and performance, especially bundle size. Give me a comparison table and a final recommendation in a markdown report in ./annotated_data/markdown/package_compare.md.",
+        "answers": "file ./annotated_data/markdown/package_compare.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -651,10 +651,10 @@
     },
     {
         "task_id": "1ef11556-37d6-4585-b4b2-cf2f782141e6",
-        "Question": "Read all the articles in the /root/pdf/embodied_ai_papers directory. Compare their similarities and differences, then write a report summarizing your analysis. Save the final report as a Markdown file at /root/markdown/embodied_ai_report.md.",
-        "answers": "file /root/markdown/embodied_ai_report.md",
+        "Question": "Read all the articles in the ./annotated_data/pdf/embodied_ai_papers directory. Compare their similarities and differences, then write a report summarizing your analysis. Save the final report as a Markdown file at ./annotated_data/markdown/embodied_ai_report.md.",
+        "answers": "file ./annotated_data/markdown/embodied_ai_report.md",
         "category": "Office",
-        "file_name": "/root/pdf/embodied_ai_papers",
+        "file_name": "./annotated_data/pdf/embodied_ai_papers",
         "Annotator Metadata": {
             "Steps": "1. list directory\n2. read all pdf\n3. write a summary report\n4. save it to the path",
             "Number of steps": "4",
@@ -664,8 +664,8 @@
     },
     {
         "task_id": "fbe982c3-4142-40ec-8541-e06d7ab2e399",
-        "Question": "I need a Word document summarizing NIO. Please title it 'NIO Company Overview' and include three headed sections: a brief introduction from Wikipedia, three major news updates from the last quarter as bullet points, and a list of their main vehicle models. Finally, save it in /root/word/nio.docx",
-        "answers": "file /root/word/nio.docx",
+        "Question": "I need a Word document summarizing NIO. Please title it 'NIO Company Overview' and include three headed sections: a brief introduction from Wikipedia, three major news updates from the last quarter as bullet points, and a list of their main vehicle models. Finally, save it in ./annotated_data/word/nio.docx",
+        "answers": "file ./annotated_data/word/nio.docx",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -690,7 +690,7 @@
     },
     {
         "task_id": "a93169d7-af1f-43f4-b595-1b5db07aa7d5",
-        "Question": "Tell me about the repository details in the /root/git directory",
+        "Question": "Tell me about the repository details in the ./annotated_data/git directory",
         "answers": "",
         "category": "Office",
         "file_name": "",
@@ -716,8 +716,8 @@
     },
     {
         "task_id": "90098a9c-2a37-4655-82b1-6b58c5154660",
-        "Question": "I'm using shadcn/ui to build a 'create post' page. I have two input fields, one for the title and one for the content. I want the 'Publish' button at the bottom to be disabled if either the title or content is empty. It should only become clickable when both fields are filled. How can I achieve this? Please provide a complete React/TypeScript example using the Input and Button components from shadcn/ui and save the code to /root/code/shadcn_ui.ts",
-        "answers": "file /root/code/shadcn_ui.ts",
+        "Question": "I'm using shadcn/ui to build a 'create post' page. I have two input fields, one for the title and one for the content. I want the 'Publish' button at the bottom to be disabled if either the title or content is empty. It should only become clickable when both fields are filled. How can I achieve this? Please provide a complete React/TypeScript example using the Input and Button components from shadcn/ui and save the code to ./annotated_data/code/shadcn_ui.ts",
+        "answers": "file ./annotated_data/code/shadcn_ui.ts",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
@@ -729,8 +729,8 @@
     },
     {
         "task_id": "17a4aef0-bb60-47b1-9b47-3686bca29db3",
-        "Question": "Generate a well-formatted PDF report  in /root/pdf/douban_report.pdf, summarizing current douban trends.",
-        "answers": "file /root/pdf/douban_report.pdf",
+        "Question": "Generate a well-formatted PDF report  in ./annotated_data/pdf/douban_report.pdf, summarizing current douban trends.",
+        "answers": "file ./annotated_data/pdf/douban_report.pdf",
         "category": "Leisure",
         "file_name": "",
         "Annotator Metadata": {
@@ -807,10 +807,10 @@
     },
     {
         "task_id": "086e2393-dc1a-4c55-bf54-1e9a94951db7",
-        "Question": "Read the file /root/word/exchange.docx, tell me who did not give a gift",
+        "Question": "Read the file ./annotated_data/word/exchange.docx, tell me who did not give a gift",
         "answers": "Fred",
         "category": "Leisure",
-        "file_name": "/root/word/exchange.docx",
+        "file_name": "./annotated_data/word/exchange.docx",
         "Annotator Metadata": {
             "Steps": "1. open the word document\n2. answer the question",
             "Number of steps": "2",
@@ -820,7 +820,7 @@
     },
     {
         "task_id": "507f592a-f21f-45f6-bbde-dadb86441791",
-        "Question": "Read the customer information in /root/csv/customers-100.csv and tell me Sheryl Meyers's email address",
+        "Question": "Read the customer information in ./annotated_data/csv/customers-100.csv and tell me Sheryl Meyers's email address",
         "answers": "mariokhan@ryan-pope.org",
         "category": "Office",
         "file_name": "",
@@ -859,12 +859,12 @@
     },
     {
         "task_id": "71a7a42a-54af-4552-ad9b-d36f4912cc1c",
-        "Question": "Convert the reference list in /root/txt/paper_list.bib into a Word document. Please use APA formatting and save the final file at /root/word/paper_list.docx.",
-        "answers": "file /root/word/paper_list.docx",
+        "Question": "Convert the reference list in ./annotated_data/txt/paper_list.bib into a Word document. Please use APA formatting and save the final file at ./annotated_data/word/paper_list.docx.",
+        "answers": "file ./annotated_data/word/paper_list.docx",
         "category": "Office",
-        "file_name": "/root/txt/paper_list.bib",
+        "file_name": "./annotated_data/txt/paper_list.bib",
         "Annotator Metadata": {
-            "Steps": "1. open the /root/txt/paper_list.bib\n2. convert them to APA format\n3. create a word document\n4. open and write to word document",
+            "Steps": "1. open the ./annotated_data/txt/paper_list.bib\n2. convert them to APA format\n3. create a word document\n4. open and write to word document",
             "Number of steps": "4",
             "Tools": "1. read_file\n2. create_document\n3. open_document\n4. add_paragraph",
             "Number of tools": "4"
@@ -872,8 +872,8 @@
     },
     {
         "task_id": "9bc7feb8-2db9-4c5b-8ad9-44ff15748bf6",
-        "Question": "Provide a foundational overview of Convolutional Neural Networks (CNNs), referencing Wikipedia. Generate a simple CNN example as a Python script and save it to /root/code/cnn_example.py.",
-        "answers": "file /root/code/cnn_example.py",
+        "Question": "Provide a foundational overview of Convolutional Neural Networks (CNNs), referencing Wikipedia. Generate a simple CNN example as a Python script and save it to ./annotated_data/code/cnn_example.py.",
+        "answers": "file ./annotated_data/code/cnn_example.py",
         "category": "Lifestyle",
         "file_name": "",
         "Annotator Metadata": {
@@ -989,10 +989,10 @@
     },
     {
         "task_id": "31086c2d-e183-42c3-9ee7-7c1278c4317f",
-        "Question": "What files are in my /root/music folder?",
+        "Question": "What files are in my ./annotated_data/music folder?",
         "answers": "mixkit-retro-game-emergency-alarm-1000.wav",
         "category": "Lifestyle",
-        "file_name": "/root/music",
+        "file_name": "./annotated_data/music",
         "Annotator Metadata": {
             "Steps": "1. list the dir",
             "Number of steps": "1",
@@ -1067,7 +1067,7 @@
     },
     {
         "task_id": "665e1166-1062-444f-81e3-df207d0f975b",
-        "Question": "Read the Wikipedia article on Llullaillaco, which briefly describes the content of this article, saved to /root/markdown/Llullaillaco.md",
+        "Question": "Read the Wikipedia article on Llullaillaco, which briefly describes the content of this article, saved to ./annotated_data/markdown/Llullaillaco.md",
         "answers": "",
         "category": "Lifestyle",
         "file_name": "",
@@ -1093,10 +1093,10 @@
     },
     {
         "task_id": "423f89ba-be77-4f93-99d7-936548513eef",
-        "Question": "Help me create an example word that needs to have headings, tables, body, footnotes and insert clock.png under /root/picture and save it in /root/word/example.docx",
-        "answers": "file /root/word/example.docx",
+        "Question": "Help me create an example word that needs to have headings, tables, body, footnotes and insert clock.png under ./annotated_data/picture and save it in ./annotated_data/word/example.docx",
+        "answers": "file ./annotated_data/word/example.docx",
         "category": "Office",
-        "file_name": "/root/picture/clock.png",
+        "file_name": "./annotated_data/picture/clock.png",
         "Annotator Metadata": {
             "Steps": "1. create the word document\n2. Add a heading, a table, a paragraph and a footnote \n3. Insert the image",
             "Number of steps": "3",
@@ -1119,10 +1119,10 @@
     },
     {
         "task_id": "2e190c2a-8aab-44e1-896d-671cb3fcc495",
-        "Question": "What are the changes in my log files /root/txt/log_today.txt and /root/txt/log_yesterday.txt, help me to find out all the different lines which contain 'ERROR' ?",
+        "Question": "What are the changes in my log files ./annotated_data/txt/log_today.txt and ./annotated_data/txt/log_yesterday.txt, help me to find out all the different lines which contain 'ERROR' ?",
         "answers": "[ERROR] Database connection failed.",
         "category": "Office",
-        "file_name": "/root/txt/log_today.txt, /root/txt/log_yesterday.txt",
+        "file_name": "./annotated_data/txt/log_today.txt, ./annotated_data/txt/log_yesterday.txt",
         "Annotator Metadata": {
             "Steps": "1. Compare two text files and show differences\n2. Find different lines which contain 'ERROR'",
             "Number of steps": "2",
@@ -1158,12 +1158,12 @@
     },
     {
         "task_id": "4cbd9682-cce7-444e-a878-36283a865b2a",
-        "Question": "I am writing a popular science article on ‘Causes of the Fall of the Roman Empire’. Please help me to list at least three main causes that are generally recognized by historians and find one authoritative reference for each. Finally, organize all this information into a structured document and save it to /root/markdown/Rome.md.",
-        "answers": "file /root/markdown/Rome.md",
+        "Question": "I am writing a popular science article on ‘Causes of the Fall of the Roman Empire’. Please help me to list at least three main causes that are generally recognized by historians and find one authoritative reference for each. Finally, organize all this information into a structured document and save it to ./annotated_data/markdown/Rome.md.",
+        "answers": "file ./annotated_data/markdown/Rome.md",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1.  List at least three main causes that are generally recognized by historians\n2. Search wiki to find references\n3. Write the article\n4. Save it to /root/markdown/Rome.md\n",
+            "Steps": "1.  List at least three main causes that are generally recognized by historians\n2. Search wiki to find references\n3. Write the article\n4. Save it to ./annotated_data/markdown/Rome.md\n",
             "Number of steps": "4",
             "Tools": "1.  duckduckgo_web_search\n2. search_wikipedia\n3. get_article",
             "Number of tools": "3"
@@ -1210,8 +1210,8 @@
     },
     {
         "task_id": "b050f277-0a92-4cfc-933b-5f01430e77dd",
-        "Question": "Convert /root/word/CV.docx and /root/word/Report_Card.docx to PDF, merge the two resulting files, and save the final combined document as /root/pdf/full_cv.pdf.",
-        "answers": "file /root/pdf/full_cv.pdf",
+        "Question": "Convert ./annotated_data/word/CV.docx and ./annotated_data/word/Report_Card.docx to PDF, merge the two resulting files, and save the final combined document as ./annotated_data/pdf/full_cv.pdf.",
+        "answers": "file ./annotated_data/pdf/full_cv.pdf",
         "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
