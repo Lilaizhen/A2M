@@ -1,16 +1,16 @@
 [
+
     {
-        "task_id": "2b96c022-a2db-47a5-981a-03cc6ad8f95e",
-        "Question": "Run a full reconnaissance on www.baidu.com. Give me a markdown report on ./annotated_data//markdown/baidu_report.md with whois information and sitemap.",
-        "answers": "file ./annotated_data//markdown/baidu_report.md",
-        "category": "Office",
+        "task_id": "629106a5-9508-4ac9-97c3-f22f6069ee7f",
+        "Question": "My goal is to reach Radiant in Valorant, what should I focus on to improve and start climbing?",
+        "answers": "",
+        "category": "Leisure",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. Looksup whois information about the domain\n2. Fetch and parse the sitemap tree from the website URL\n3. Create and write a markdown report on ./annotated_data//markdown/baidu_report.md",
-            "Number of steps": "3",
-            "Tools": "1. whois_domain\n2. get_sitemap_tree\n3. write_file",
-            "Number of tools": "3"
+            "Steps": "1. Retrieve character statistics data for Valorant\n2. Generate an enhancement program\n",
+            "Number of steps": "2",
+            "Tools": "1. valorant-characters-statistics",
+            "Number of tools": "2"
         }
-    
     }
 ]
