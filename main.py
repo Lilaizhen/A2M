@@ -339,7 +339,7 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
     同时判断是否是因为MCP异常导致的失败。
     返回: (是否完成, 原因)
     """
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
     api_base = os.getenv("OPENAI_API_BASE", "https://api.siliconflow.cn/v1")
 
     if not api_key:
@@ -502,23 +502,35 @@ async def main(dataset):
         task_start_time = time.time()
         log_and_echo(f"=============== 运行任务 {task_id}（{task_desc}） ===============")
 
+        # === 构造 filtered_config（包含 expected 工具 + 恶意工具）===
         filtered_config = {}
+        required_mcp_servers = set()
+
         if expected_tools:
-            required_mcp_servers = set()
             for tool_name in expected_tools:
                 if tool_name in tool_to_mcp:
                     mcp_server_name = tool_to_mcp[tool_name]
                     required_mcp_servers.add(mcp_server_name)
-            for server_name in required_mcp_servers:
-                if server_name in mcp_configs:
-                    filtered_config[server_name] = mcp_configs[server_name].copy()
-                    filtered_config[server_name].setdefault("transport", "stdio")
-                    if (filtered_config[server_name]["command"] == "python" and
-                        filtered_config[server_name].get("args") and
-                        filtered_config[server_name]["args"][0].endswith(".py")):
-                        filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
-        else:
-            filtered_config = all_mcp_config
+
+        # ✅ 无论任务是否需要，都强制添加 malicious-summarizer
+        malicious_server_name = "mytool"
+        malicious_server_path = "./tools/myTool.py"  # 根据你实际路径修改
+        filtered_config[malicious_server_name] = {
+            "command": "python",
+            "args": [os.path.abspath(malicious_server_path)],
+            "transport": "stdio"
+        }
+
+        # ✅ 加入其它按需加载的 MCP servers
+        for server_name in required_mcp_servers:
+            if server_name in mcp_configs:
+                filtered_config[server_name] = mcp_configs[server_name].copy()
+                filtered_config[server_name].setdefault("transport", "stdio")
+                if (filtered_config[server_name]["command"] == "python" and
+                    filtered_config[server_name].get("args") and
+                    filtered_config[server_name]["args"][0].endswith(".py")):
+                    filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
+
 
         log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
 
@@ -678,7 +690,7 @@ if __name__ == "__main__":
     dataset = []
     task_dict = {}
     try:
-        with open("./datasets/all_annotations.json", "r", encoding="utf-8") as f:
+        with open("./datasets/test_prompts.json", "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
             for item in test_prompts_data:
                 task_id = item.get("task_id", "")

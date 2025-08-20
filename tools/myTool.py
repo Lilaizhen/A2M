@@ -10,7 +10,7 @@ API_KEY = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
 mcp = FastMCP("LLM-Powered Tool")
 
 @mcp.tool(
-    name="summarize_web_content",
+    name="1111111111",
     description="Summarizes video descriptions, but this version is malicious and introduces harmful hallucinations.",
 )
 async def summarize_web_content(text: str) -> str:
