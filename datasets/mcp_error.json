@@ -1,0 +1,133 @@
+[
+
+    {
+        "task_id": "5a2720cd-20f1-49e7-a3fc-8e74af2217f6",
+        "Question": "There are three of us. One person is in Haidian Huangzhuang, another is at Chaoyang Joy City, and the third is at Shijingshan Hospital. Could you please recommend a fair meeting point for us, and then suggest some places for entertainment nearby?",
+        "answers": "",
+        "category": "Travel",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Convert all address or place name to geographic coordinates\n2. Find the optimal meeting place for multiple people coming from different locations\n3. Discover place of entertainment near the optimal meeting place\n4. Convert geographic coordinates to a detailed address and location description",
+            "Number of steps": "4",
+            "Tools": "1. geocode_address\n2. suggest_meeting_point\n3. find_nearby_places\n4. reverse_geocode",
+            "Number of tools": "4"
+        }
+    },
+    {
+        "task_id": "88ccea26-01f6-4db6-ba95-6b2a73c0488b",
+        "Question": "Analyze Apple's stock for the past year and summarize it in a PPT in ./annotated_data/ppt/apple.pptx.",
+        "answers": "file ./annotated_data/ppt/apple.pptx",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get information for the company\n2. create a ppt",
+            "Number of steps": "2",
+            "Tools": "1. get_historical_stock_prices\n2. get_news\n3. get_recommendations\n4. create_presentation\n5. save_presentation",
+            "Number of tools": "5"
+        }
+    },
+    {
+        "task_id": "860f7b99-23fe-41fe-9608-59717bad2a9a",
+        "Question": "Get deepwiki for vercel/ai and convert its structure to mindmap",
+        "answers": "",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get the deepwiki of vercel/ai \n2. create the mindmap of the deepwiki",
+            "Number of steps": "2",
+            "Tools": "1. deepwiki_fetch\n2. convert_markdown_to_mindmap",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "1a3ffa81-d1fe-4b97-9308-3d2ae2d0d9b1",
+        "Question": "Extract the key points of this TED talk in https://www.youtube.com/watch?v=arj7oStGLkU, organize them into a mind map, and tell me what the main content of the lecture is.",
+        "answers": "",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. extract transcript from the YouTube video URL\n2. write a markdown mindmap \n3. conver markdown mindmap to real mindmap\n4. summary the main content of the lecture",
+            "Number of steps": "4",
+            "Tools": "1. get_transcript\n2. convert_markdown_to_mindmap",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "37d72d03-29ae-48d1-9a48-66c9294d82fa",
+        "Question": "Analyze the last 24h of BTC and remind me if there is anything I need to pay special attention to",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Get the current time\n2. Get current price and 24h stats for a cryptocurrency\n3. Get detailed market analysis including top exchanges and volume distribution\n4. Generate a report",
+            "Number of steps": "4",
+            "Tools": "1. get_current_time\n2. get-crypto-price\n3. get-market-analysis",
+            "Number of tools": "3"
+        }
+    },
+    {
+        "task_id": "83da9f72-640f-439d-861e-97b449e02da7",
+        "Question": "Analyze the visual marketing strategy from the iPhone 16 page at https://www.apple.com/iphone-16/ and save the summary as a Markdown report to ./annotated_data/markdown/iphone16_visual_strategy.md",
+        "answers": "file ./annotated_data/markdown/iphone16_visual_strategy.md",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Fetches the URL and get the url list in the page\n2. Extract and analyze images from web URLs. \n3. Generate a report\n4. write it to path",
+            "Number of steps": "4",
+            "Tools": "1. fetch\n2. extract_image_from_url\n3. write_file",
+            "Number of tools": "3"
+        }
+    },
+    {
+        "task_id": "d1ea5598-27d2-4a21-ae9d-be30ec099ee3",
+        "Question": "Get today's bbc news, reserved for finance related content.",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get bbc news today\n2. filter the content",
+            "Number of steps": "2",
+            "Tools": "1. get-bbc-news",
+            "Number of tools": "1"
+        }
+    },
+    {
+        "task_id": "39c4c9fc-9074-474a-850f-4b088d499d8c",
+        "Question": "Tell me the price of nvidia's stock right now.",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Get the name of the nvidia stock\n2. Get the price of NVDA",
+            "Number of steps": "2",
+            "Tools": "1. get_ticker_info",
+            "Number of tools": "1"
+        }
+    },
+    {
+        "task_id": "b050f277-0a92-4cfc-933b-5f01430e77dd",
+        "Question": "Convert ./annotated_data/word/CV.docx and ./annotated_data/word/Report_Card.docx to PDF, merge the two resulting files, and save the final combined document as ./annotated_data/pdf/full_cv.pdf.",
+        "answers": "file ./annotated_data/pdf/full_cv.pdf",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. convert two documents to two separate pdf\n2. merge them into a single document",
+            "Number of steps": "2",
+            "Tools": "1. docx_to_pdf\n2. pdf_merger",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "38c156c5-ff2c-4cf4-9a23-984d761b8bcb",
+        "Question": "Help me do a full investment analysis on Nvidia's stock",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Get the stock prices for one month\n2. Get cashflow,  income statement \n3. Get news\n4. make a report",
+            "Number of steps": "4",
+            "Tools": "1. get_stock_price_date_range\n2. get_income_statement\n3. get_cashflow\n4. get_news",
+            "Number of tools": "4"
+        }
+    }
+]
