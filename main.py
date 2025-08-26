@@ -333,11 +333,11 @@ def format_agent_step(step_message):
         return f"\n{role_header}\n{getattr(step_message, 'content', '')}\n"
 
 
-async def judge_task_completion(agent_behavior: str, task_description: str, expected_tools: list) -> tuple[bool, str]:
+async def judge_task_completion(agent_behavior: str, task_description: str, expected_tools: list) -> tuple[bool, str, dict]:
     """
-    使用 LLM 判断 Agent 是否成功完成了任务，并返回判断原因。
+    使用 LLM 判断 Agent 是否成功完成了任务，并返回判断原因和完整的JSON响应。
     同时判断是否是因为MCP异常导致的失败。
-    返回: (是否完成, 原因)
+    返回: (是否完成, 原因, 完整的JSON响应)
     """
     api_key = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
     api_base = os.getenv("OPENAI_API_BASE", "https://api.siliconflow.cn/v1")
@@ -409,7 +409,15 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
         # 解析 JSON 响应
         import json
         try:
-            result = json.loads(response)
+            # 清理可能包含的额外格式（如 ```json...```）
+            cleaned_response = response.strip()
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]  # 移除开头的 ```json
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]  # 移除结尾的 ```
+            cleaned_response = cleaned_response.strip()
+            
+            result = json.loads(cleaned_response)
             is_completed = result.get("result", "") == "完成"
             reason = result.get("reason", "无具体原因")
             failure_type = result.get("failure_type", "unknown")
@@ -418,23 +426,30 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
             if failure_type != "success":
                 reason = f"[{failure_type}] {reason}"
             
-            return is_completed, reason
+            # 返回完整的JSON响应
+            return is_completed, reason, result
         except json.JSONDecodeError:
             # 如果不是 JSON 格式，使用原来的判断逻辑
             text = str(response).strip()
             norm = re.sub(r"\s+", "", text)
             if norm == "完成":
-                return True, "任务已完成"
+                json_result = {"result": "完成", "reason": "任务已完成", "failure_type": "success"}
+                return True, "任务已完成", json_result
             if norm == "未完成":
-                return False, "任务未完成"
+                json_result = {"result": "未完成", "reason": "任务未完成", "failure_type": "other"}
+                return False, "任务未完成", json_result
             if "未完成" in text:
-                return False, text
+                json_result = {"result": "未完成", "reason": text, "failure_type": "other"}
+                return False, text, json_result
             if "完成" in text:
-                return True, text
-            return False, f"裁判输出不规范：{text}"
+                json_result = {"result": "完成", "reason": text, "failure_type": "success"}
+                return True, text, json_result
+            json_result = {"result": "未完成", "reason": f"裁判输出不规范：{text}", "failure_type": "other"}
+            return False, f"裁判输出不规范：{text}", json_result
     except Exception as e:
         logging.exception("裁判模型调用失败: %s", e)
-        return False, f"裁判模型调用失败: {str(e)}"
+        json_result = {"result": "未完成", "reason": f"裁判模型调用失败: {str(e)}", "failure_type": "other"}
+        return False, f"裁判模型调用失败: {str(e)}", json_result
 
 
 def load_mcp_configs_from_live_config(live_config_path):
@@ -555,7 +570,11 @@ async def main(dataset):
                 "agent_final_response": "MCP 工具加载失败",
                 "tool_calls": [],
                 "task_completed": False,
-                "completion_reason": f"MCP 工具加载失败: {e.__class__.__name__}",
+                "completion_reason": {
+                    "result": "未完成",
+                    "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
+                    "failure_type": "mcp_error"
+                },
                 "failure_reason": f"MCP load error: {e.__class__.__name__}",
                 "execution_time": task_execution_time_formatted,
                 "execution_time_seconds": task_execution_time
@@ -620,7 +639,11 @@ async def main(dataset):
                 "agent_final_response": f"Agent 运行失败: {e}",
                 "tool_calls": [],
                 "task_completed": False,
-                "completion_reason": f"Agent 运行失败: {e.__class__.__name__}",
+                "completion_reason": {
+                    "result": "未完成",
+                    "reason": f"Agent 运行失败: {e.__class__.__name__}",
+                    "failure_type": "agent_error"
+                },
                 "failure_reason": f"Agent run error: {e.__class__.__name__}",
                 "execution_time": task_execution_time_formatted,
                 "execution_time_seconds": task_execution_time
@@ -630,10 +653,11 @@ async def main(dataset):
         # === 任务完成度判断 ===
         is_task_completed = False
         completion_reason = "缺少必要信息"
+        completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
         if final_response and task_desc:
             # 截断工具输出内容，只保留前几行避免撑爆上下文
             truncated_response = truncate_tool_outputs(final_response, max_lines_per_tool=10)
-            is_task_completed, completion_reason = await judge_task_completion(
+            is_task_completed, completion_reason, completion_json = await judge_task_completion(
                 agent_behavior=truncated_response,
                 task_description=task_desc,
                 expected_tools=expected_tools
@@ -656,7 +680,7 @@ async def main(dataset):
             "agent_final_response": final_response,
             "tool_calls": tool_calls_brief,
             "task_completed": is_task_completed,
-            "completion_reason": completion_reason,
+            "completion_reason": completion_json,  # 使用完整的JSON响应而不是字符串
             "execution_time": task_execution_time_formatted,
             "execution_time_seconds": task_execution_time
         })
