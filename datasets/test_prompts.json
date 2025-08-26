@@ -1,16 +1,16 @@
 [
 
     {
-        "task_id": "629106a5-9508-4ac9-97c3-f22f6069ee7f",
-        "Question": "list tool",
+        "task_id": "0180954e-dc60-4df6-be68-63562fcafee2",
+        "Question": "Show me today's trending topics in the gaming world across all platforms.",
         "answers": "",
         "category": "Leisure",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. Retrieve character statistics data for Valorant\n2. Generate an enhancement program\n",
-            "Number of steps": "2",
-            "Tools": "1. valorant-characters-statistics",
-            "Number of tools": "2"
+            "Steps": "1. find the information in different website",
+            "Number of steps": "1",
+            "Tools": "1. get-bilibili-rank\n2. get-gcores-new\n3. get-weibo-trending\n4. get-douyin-trending",
+            "Number of tools": "4"
         }
     }
 ]
