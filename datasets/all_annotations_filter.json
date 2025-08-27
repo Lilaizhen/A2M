@@ -12,19 +12,7 @@
             "Number of tools": "6"
         }
     },
-    {
-        "task_id": "99d7541a-73c0-4ea1-8002-a70a041f3ffc",
-        "Question": "Please perform a comprehensive analysis of the audio file located at ./annotated_data/music/mixkit-retro-game-emergency-alarm-1000.wav. The analysis should include beat tracking, MFCC extraction, and chroma CQT calculation. Upon completion, please provide the resulting data along with a brief summary of the findings.",
-        "answers": "",
-        "category": "Leisure",
-        "file_name": "./annotated_data/music/mixkit-retro-game-emergency-alarm-1000.wav",
-        "Annotator Metadata": {
-            "Steps": "1. Load the audio file\n2. Compute the beat track of the audio to understand its rhythmic structure. \n3. Extract the Mel-Frequency Cepstral Coefficients (MFCCs) from the audio to analyze its spectral content.\n4. Compute the Chroma Constant-Q Transform (CQT) to analyze the chromatic content of the audio. \n5. Write a summary document outlining the key findings and insights from the analysis.\n",
-            "Number of steps": "5",
-            "Tools": "1. load\n2. beat_track\n3. mfcc\n4. chroma_cqt",
-            "Number of tools": "4"
-        }
-    },
+
     {
         "task_id": "dda8ea55-629c-4ae8-ab87-0c81477ae615",
         "Question": "I'm planning a trip to the Forbidden City in Beijing, show me where to park and what's interesting to do within 1km distance?",
@@ -247,45 +235,6 @@
         }
     },
     {
-        "task_id": "08644b1a-ac5e-45a9-8ad1-3a3942e8d366",
-        "Question": "Help me recommend any cheap goodies worth buying recently? Save this information to ./annotated_data/excel/goods.xlsx.",
-        "answers": "edit ./annotated_data/excel/goods.xlsx",
-        "category": "Shopping",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the information for cheap goodies\n2. write these information to excel in ./annotated_data/excel/goods.xlsx",
-            "Number of steps": "2",
-            "Tools": "1. get-smzdm-rank\n2. excel_write_to_sheet",
-            "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "860f7b99-23fe-41fe-9608-59717bad2a9a",
-        "Question": "Get deepwiki for vercel/ai and convert its structure to mindmap",
-        "answers": "",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the deepwiki of vercel/ai \n2. create the mindmap of the deepwiki",
-            "Number of steps": "2",
-            "Tools": "1. deepwiki_fetch\n2. convert_markdown_to_mindmap",
-            "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "cda14e48-b067-48fc-94de-bb8ec090b952",
-        "Question": "draw cowboy using canvas ",
-        "answers": "",
-        "category": "Leisure",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. create the canvas\n2. drawing\n3. get picture",
-            "Number of steps": "3",
-            "Tools": "1. drawing_generateCanvas\n2. drawing_fillRectangle\n3. drawing_getCanvasPng",
-            "Number of tools": "3"
-        }
-    },
-    {
         "task_id": "a984d31b-f3e9-47d4-8726-19a06e6babc5",
         "Question": "Help me make a STEINS;GATE introduction PPT and help me save it to ./annotated_data/ppt/STEINS_GATE.pptx.",
         "answers": "",
@@ -325,19 +274,6 @@
         }
     },
     {
-        "task_id": "2bf318d4-754d-43f3-a1b5-cb2f50a7d144",
-        "Question": "What are the emerging treatment strategies for head and neck cancer, write the report to ./annotated_data/markdown/cancer.md?",
-        "answers": "file ./annotated_data/markdown/cancer.md",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. gather the information\n2. generate it a report\n3. write it to path",
-            "Number of steps": "3",
-            "Tools": "1. article_searcher\n2. trial_searcher\n3. variant_searcher\n4. write_file",
-            "Number of tools": "4"
-        }
-    },
-    {
         "task_id": "1a3ffa81-d1fe-4b97-9308-3d2ae2d0d9b1",
         "Question": "Extract the key points of this TED talk in https://www.youtube.com/watch?v=arj7oStGLkU, organize them into a mind map, and tell me what the main content of the lecture is.",
         "answers": "",
@@ -347,19 +283,6 @@
             "Steps": "1. extract transcript from the YouTube video URL\n2. write a markdown mindmap \n3. conver markdown mindmap to real mindmap\n4. summary the main content of the lecture",
             "Number of steps": "4",
             "Tools": "1. get_transcript\n2. convert_markdown_to_mindmap",
-            "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "7180c69a-bbf2-4912-a0ca-a6345c5fe7f1",
-        "Question": "Make a web page about the history of AI based on Wikipedia saved at ./annotated_data/html/ai.html.",
-        "answers": "file ./annotated_data/html/ai.html",
-        "category": "Lifestyle",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Summarize the history of artificial intelligence based on Wikipedia.\n2. Generate a web page about the history of artificial intelligence\n3. Save it to path",
-            "Number of steps": "3",
-            "Tools": "1. summarize_article_for_query\n2. write_file",
             "Number of tools": "2"
         }
     },
@@ -494,32 +417,6 @@
         }
     },
     {
-        "task_id": "e023dd0e-1212-47e0-a73c-97739c78b849",
-        "Question": "Generate a presentation on the latest Apple product information. Save it to ./annotated_data/ppt/apple_news.pptx.",
-        "answers": "file ./annotated_data/ppt/apple_news.pptx",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the latest Apple product information.\n2. create the ppt according to the informatin",
-            "Number of steps": "2",
-            "Tools": "1. get-9to5mac-news\n2. create_presentation\n3. add_slide\n4. save_presentation",
-            "Number of tools": "4"
-        }
-    },
-    {
-        "task_id": "ef7126b3-45ad-41ab-a191-2272c644d057",
-        "Question": "I need a daily financial brief. Fetch today's economic news, cross-reference it with relevant stock movements, and then generate a report at ./annotated_data/markdown/daily_fin.md.",
-        "answers": "file ./annotated_data/markdown/daily_fin.md",
-        "category": "Finance",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the financial news from multiple sources\n2. check stock prices\n3. generate a daily financial brief\n4. write it to ./annotated_data/markdown/daily_fin.md",
-            "Number of steps": "4",
-            "Tools": "1. get-36kr-trending\n2. get-netease-news-trending\n3. get-nytimes-news\n4. get_news\n5. get_current_stock_price\n6. write_file",
-            "Number of tools": "6"
-        }
-    },
-    {
         "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
         "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
         "answers": "",
@@ -556,19 +453,6 @@
             "Number of steps": "4",
             "Tools": "1. resolve-library-id\n2. get-library-docs\n3. write_file",
             "Number of tools": "4"
-        }
-    },
-    {
-        "task_id": "4d7582c4-5013-4275-9621-1e7fbb5fb0c1",
-        "Question": "Download New York's Air Quality report from Government Data, saved at ./annotated_data/csv/NY_AIR_QUALITY.csv",
-        "answers": "file ./annotated_data/csv/NY_AIR_QUALITY.csv",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Search for datasets on Data.gov\n2. Get details for the specific dataset\n3. Download the file use wget",
-            "Number of steps": "3",
-            "Tools": "1. package_search\n2. package_show\n3. execute_command",
-            "Number of tools": "3"
         }
     },
     {
@@ -611,19 +495,6 @@
         }
     },
     {
-        "task_id": "cf1fca1e-8e56-4b26-ae34-dfdb1d982080",
-        "Question": "Analyze and compare echarts-for-react, react-chartjs-2, and Tremor. It's for a FinTech app, so my top priorities are a deep security scan of all dependencies and performance, especially bundle size. Give me a comparison table and a final recommendation in a markdown report in ./annotated_data/markdown/package_compare.md.",
-        "answers": "file ./annotated_data/markdown/package_compare.md",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. prepare all information about these package\n2. write a markdown report to compare them\n3. save it to path",
-            "Number of steps": "3",
-            "Tools": "1. npmDeps\n2. npmSize\n3. npmCompare\n4. write_file",
-            "Number of tools": "4"
-        }
-    },
-    {
         "task_id": "1ef11556-37d6-4585-b4b2-cf2f782141e6",
         "Question": "Read all the articles in the ./annotated_data/pdf/embodied_ai_papers directory. Compare their similarities and differences, then write a report summarizing your analysis. Save the final report as a Markdown file at ./annotated_data/markdown/embodied_ai_report.md.",
         "answers": "file ./annotated_data/markdown/embodied_ai_report.md",
@@ -634,19 +505,6 @@
             "Number of steps": "4",
             "Tools": "1. list_directory\n2. read_pdf\n3. write_file",
             "Number of tools": "3"
-        }
-    },
-    {
-        "task_id": "fbe982c3-4142-40ec-8541-e06d7ab2e399",
-        "Question": "I need a Word document summarizing NIO. Please title it 'NIO Company Overview' and include three headed sections: a brief introduction from Wikipedia, three major news updates from the last quarter as bullet points, and a list of their main vehicle models. Finally, save it in ./annotated_data/word/nio.docx",
-        "answers": "file ./annotated_data/word/nio.docx",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the wikipedia about NIO\n2. get news about NIO\n3. create a word document\n4. write the content to the word document",
-            "Number of steps": "4",
-            "Tools": "1. search_wikipedia\n2. get-36kr-trending\n3. create_document\n4. add_paragraph",
-            "Number of tools": "4"
         }
     },
     {
@@ -702,19 +560,6 @@
         }
     },
     {
-        "task_id": "17a4aef0-bb60-47b1-9b47-3686bca29db3",
-        "Question": "Generate a well-formatted PDF report  in ./annotated_data/pdf/douban_report.pdf, summarizing current douban trends.",
-        "answers": "file ./annotated_data/pdf/douban_report.pdf",
-        "category": "Leisure",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Getting the current trends in douban\n2. Create a word document.\n3. Write the word document.\n4. Convert word document to pdf.",
-            "Number of steps": "4",
-            "Tools": "1. get-douban-rank\n2. create_document\n3. add_paragraph\n4. convert_to_pdf",
-            "Number of tools": "4"
-        }
-    },
-    {
         "task_id": "6265fd4a-a790-4be1-9806-d27b69bc6468",
         "Question": "Help me recommend some consumer electronics that are worth buying these days.",
         "answers": "",
@@ -725,19 +570,6 @@
             "Number of steps": "2",
             "Tools": "1. get-ifanr-news\n2. get-smzdm-rank",
             "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "5c19a347-7423-47e1-b8e1-dba01860bc1a",
-        "Question": "Find the latest research paper in the web agents. Identify the best one, read the full text, and then tell me its main motivation, the methodology it employs, and its key results.",
-        "answers": "",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Search for papers on arXiv\n2. Identify the best one\n3. Donwnload the best one\n4. Read the full content of the paper\n5. Generate a report",
-            "Number of steps": "5",
-            "Tools": "1. search_papers\n2. download_paper\n3. read_paper",
-            "Number of tools": "3"
         }
     },
     {
@@ -845,19 +677,6 @@
         }
     },
     {
-        "task_id": "9bc7feb8-2db9-4c5b-8ad9-44ff15748bf6",
-        "Question": "Provide a foundational overview of Convolutional Neural Networks (CNNs), referencing Wikipedia. Generate a simple CNN example as a Python script and save it to ./annotated_data/code/cnn_example.py.",
-        "answers": "file ./annotated_data/code/cnn_example.py",
-        "category": "Lifestyle",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the information from wiki about cnn\n2. write a code example of cnn\n3. write it to path",
-            "Number of steps": "3",
-            "Tools": "1. search_wikipedia\n2. write_file",
-            "Number of tools": "2"
-        }
-    },
-    {
         "task_id": "8f26fc1a-fdaa-4e7a-ae53-7b4cacb15334",
         "Question": "My office is located at Jin Mao Tower, 88 Century Avenue, Pudong New Area, Shanghai.\nI'm looking at a potential apartment in the Nanjing West Road area, specifically let's say near 'Nanjing West Road 2-68, Huangpu District, Shanghai'.\nCould you please run a detailed commute analysis for me? I need to compare three different transportation modes: driving, walking, and biking. It's crucial to get an idea of the morning rush hour, so let's set the departure time for 8:00 AM.",
         "answers": "",
@@ -867,19 +686,6 @@
             "Steps": "1. Convert an address or place name to geographic coordinates with detailed location information.\n2. Perform a detailed commute analysis between home and work locations.",
             "Number of steps": "2",
             "Tools": "1. geocode_address\n2. analyze_commute",
-            "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "b84fbf2e-2e19-4cc4-ab86-8a32bd0d33ed",
-        "Question": "I'm considering relocating to New York City and need a comprehensive understanding of a potential neighborhood's livability. Please generate a detailed analysis for the area surrounding 72nd Street and 5th Avenue, Manhattan. Focus on a 1000-meter radius to assess the quality of life. I'm particularly interested in the availability of amenities, public transportation accessibility, green spaces and recreational areas, and proximity to education and healthcare facilities. The output should provide counts and proximity scores for these categories to help me evaluate the overall convenience and quality of the residential area.\"",
-        "answers": "",
-        "category": "Travel",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Convert an address or place name to geographic coordinates with detailed location information.\n2. Generate a comprehensive neighborhood analysis focused on livability factors.",
-            "Number of steps": "2",
-            "Tools": "1. geocode_address\n2. analyze_neighborhood",
             "Number of tools": "2"
         }
     },
@@ -1014,19 +820,6 @@
         }
     },
     {
-        "task_id": "d1ea5598-27d2-4a21-ae9d-be30ec099ee3",
-        "Question": "Get today's bbc news, reserved for finance related content.",
-        "answers": "",
-        "category": "Finance",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get bbc news today\n2. filter the content",
-            "Number of steps": "2",
-            "Tools": "1. get-bbc-news",
-            "Number of tools": "1"
-        }
-    },
-    {
         "task_id": "15aa8d9b-330c-48eb-9b2a-e732f85021aa",
         "Question": "I want to buy a 34-inch curved monitor, please help me recommend some items with prices and links to buy.",
         "answers": "",
@@ -1131,19 +924,6 @@
         }
     },
     {
-        "task_id": "4cbd9682-cce7-444e-a878-36283a865b2a",
-        "Question": "I am writing a popular science article on ‘Causes of the Fall of the Roman Empire’. Please help me to list at least three main causes that are generally recognized by historians and find one authoritative reference for each. Finally, organize all this information into a structured document and save it to ./annotated_data/markdown/Rome.md.",
-        "answers": "file ./annotated_data/markdown/Rome.md",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1.  List at least three main causes that are generally recognized by historians\n2. Search wiki to find references\n3. Write the article\n4. Save it to ./annotated_data/markdown/Rome.md\n",
-            "Number of steps": "4",
-            "Tools": "1.  duckduckgo_web_search\n2. search_wikipedia\n3. get_article",
-            "Number of tools": "3"
-        }
-    },
-    {
         "task_id": "0dafdf66-af3a-4110-ab79-d9c037f7bc62",
         "Question": "Find the earliest available high-speed train from Beijing South to Shanghai South for tomorrow. What's the departure time and ticket price?",
         "answers": "",
@@ -1166,19 +946,6 @@
             "Steps": "1. get trendings for both sites\n2. filter the trendings",
             "Number of steps": "2",
             "Tools": "1. get-bilibili-rank\n2. get-zhihu-trending",
-            "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "ffd5f6fb-051c-4c0f-9b82-90038b4cdb84",
-        "Question": "I need you to pull up the Chinese almanac and find me the best dates to get married in the near future. Give me a list of the most auspicious Gregorian dates for a wedding in the next months.",
-        "answers": "",
-        "category": "Leisure",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get current time\n2. get almanac ",
-            "Number of steps": "2",
-            "Tools": "1. get_current_time\n2. getChineseCalendar",
             "Number of tools": "2"
         }
     },
