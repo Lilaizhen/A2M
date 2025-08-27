@@ -16,6 +16,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from dotenv import load_dotenv
 
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langchain_community.callbacks.manager import get_openai_callback
 
 load_dotenv()  # 加载 .env 文件中的环境变量
 
@@ -25,6 +26,9 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 RUN_LOG_FILE = os.path.join(RESULTS_DIR, "run.log")
 RESULT_JSON_FILE = os.path.join(RESULTS_DIR, "results.json")
+
+# 可选：限制单条工具输出写入轨迹的最大字符数，避免结果过大
+MAX_TOOL_OUTPUT_CHARS = 8000
 
 
 def setup_run_logger():
@@ -220,6 +224,61 @@ def _smart_truncate_list(lst, max_length):
     return truncated
 
 
+# === 新增：时间与内容帮助函数 ===
+def _now():
+    return datetime.now().isoformat(timespec="seconds")
+
+def _as_text(x):
+    if isinstance(x, str):
+        return x
+    if isinstance(x, list):
+        return "\n".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in x)
+    return _pretty_json(x)
+
+# === 新增：将轨迹渲染为裁判可读文本 ===
+def render_behavior_from_trace(action_trace, max_tool_out_chars=2000):
+    """
+    将 action_trace 渲染为更清晰的文本，便于裁判模型理解。
+    """
+    lines = []
+    for ev in action_trace:
+        t = ev.get("type")
+        ts = ev.get("ts", "")
+        if t == "user_input":
+            lines.append("="*20 + " USER INPUT " + "="*20)
+            lines.append(f"时间: {ts}")
+            lines.append(f"内容: {ev.get('content','')}")
+        elif t == "ai_message":
+            lines.append("="*20 + " AI MESSAGE " + "="*20)
+            lines.append(f"时间: {ts}")
+            lines.append(ev.get("content",""))
+        elif t == "tool_call":
+            lines.append("="*20 + " TOOL CALL " + "="*20)
+            lines.append(f"时间: {ts}")
+            lines.append(f"工具: {ev.get('tool','unknown')}")
+            try:
+                args_txt = json.dumps(ev.get("args", {}), ensure_ascii=False, indent=2)
+            except Exception:
+                args_txt = str(ev.get("args", {}))
+            if len(args_txt) > 800:
+                args_txt = args_txt[:800] + "...(截断)"
+            lines.append(f"参数:\n{args_txt}")
+        elif t == "tool_output":
+            lines.append("="*20 + " TOOL OUTPUT " + "="*20)
+            lines.append(f"时间: {ts}")
+            lines.append(f"工具: {ev.get('tool','unknown')}")
+            out = ev.get("output", "")
+            try:
+                out = out if isinstance(out, str) else json.dumps(out, ensure_ascii=False, indent=2)
+            except Exception:
+                out = str(out)
+            if isinstance(out, str) and len(out) > max_tool_out_chars:
+                out = out[:max_tool_out_chars] + "...(截断)"
+            lines.append(f"输出:\n{out}")
+    return "\n".join(lines)
+
+
+
 class LimitedMCPClient:
     def __init__(self, config, max_response_length=5000, max_list_length=100, max_category_items=20):
         self.client = MultiServerMCPClient(config)
@@ -277,6 +336,9 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
     """
     api_key = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
     api_base = os.getenv("OPENAI_API_BASE", "https://api.siliconflow.cn/v1")
+    log_and_echo("agent_behavior: " + agent_behavior)
+    log_and_echo("task_description: " + task_description)
+    log_and_echo("expected_tools: " + str(expected_tools))
 
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
@@ -483,208 +545,195 @@ async def main(dataset, use_mytool: bool = True):
             log_and_echo(f"❌ 加载 MCP 工具失败: {e}")
             task_end_time = time.time()
             task_execution_time = task_end_time - task_start_time
-            task_execution_time_formatted = f"{task_execution_time:.2f}秒"
-            
+
             results_summary.append({
                 "task_id": task_id,
-                "description": task_desc,
                 "input": user_prompt,
                 "expected_tools": expected_tools,
-                "correct_behavior": task.get("correct_behavior", "N/A"),
-                "wrong_behavior": task.get("wrong_behavior", "N/A"),
                 "agent_final_response": "MCP 工具加载失败",
-                "tool_calls": [],
                 "task_completed": False,
                 "completion_reason": {
                     "result": "未完成",
                     "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
                     "failure_type": "mcp_error"
                 },
-                "failure_reason": f"MCP load error: {e.__class__.__name__}",
-                "execution_time": task_execution_time_formatted,
                 "execution_time_seconds": task_execution_time,
                 "total_tool_calls": 0,
                 "mytool_calls": 0,
-                "mytool_enabled": bool(use_mytool),
-                "tool_name_duplicate_warning": False,
+                "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                "action_trace": [
+                    {"ts": _now(), "type": "user_input", "content": user_prompt}
+                ]
             })
             continue
 
         # --- 创建 Agent 并行（容错） ---
         final_response = ""
-        tool_calls_brief = []
-        tool_interactions = []
+        action_trace = []  # 行动轨迹
+        token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+
+        # 任务开始即记录用户输入
+        action_trace.append({
+            "ts": _now(),
+            "type": "user_input",
+            "content": user_prompt
+        })
+
         try:
             agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
             config = {"recursion_limit": 100, "configurable": {"thread_id": f"test-{task_id}"}}
             user_input = {"role": "user", "content": user_prompt}
 
-            async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
-                last_message = step["messages"][-1]
-                pretty = format_agent_step(last_message)
-                log_and_echo(pretty)
+            # 使用回调来统计token使用量
+            with get_openai_callback() as cb:
+                async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
+                    last_message = step["messages"][-1]
+                    pretty = format_agent_step(last_message)
+                    log_and_echo(pretty)
 
-                if isinstance(last_message, AIMessage):
-                    content = last_message.content
-                    if isinstance(content, str):
-                        final_response = content
-                    elif isinstance(content, list):
-                        final_response = "\n".join(
-                            b.get("text", "") if isinstance(b, dict) else str(b)
-                            for b in content
-                        )
-                    else:
-                        final_response = str(content)
-                    tool_interactions.append({
-                        "type": "ai_message",
-                        "content": final_response
-                    })
+                    # 1) 工具输出
+                    if isinstance(last_message, ToolMessage):
+                        tool_output_text = _as_text(last_message.content)
+                        if isinstance(tool_output_text, str) and len(tool_output_text) > MAX_TOOL_OUTPUT_CHARS:
+                            tool_output_text = tool_output_text[:MAX_TOOL_OUTPUT_CHARS] + "...(内容已截断)"
+                        action_trace.append({
+                            "ts": _now(),
+                            "type": "tool_output",
+                            "tool": last_message.name,
+                            "output": tool_output_text
+                        })
+                        continue
 
-                    tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
-                    for tc in tool_calls or []:
-                        fn = (tc.get("function") or {})
-                        name = fn.get("name") or tc.get("name", "unknown_tool")
-                        args = fn.get("arguments") or tc.get("args") or {}
+                    # 2) AI 消息 + 其中的工具调用
+                    if isinstance(last_message, AIMessage):
+                        content_text = _as_text(last_message.content).strip()
+                        if content_text:
+                            final_response = content_text
+                            action_trace.append({
+                                "ts": _now(),
+                                "type": "ai_message",
+                                "content": content_text
+                            })
+
+                        tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
+                        for tc in tool_calls or []:
+                            fn = (tc.get("function") or {})
+                            name = fn.get("name") or tc.get("name", "unknown_tool")
+                            args = fn.get("arguments") or tc.get("args") or {}
+                            try:
+                                if isinstance(args, str):
+                                    args = json.loads(args)
+                            except Exception:
+                                pass
+                            action_trace.append({
+                                "ts": _now(),
+                                "type": "tool_call",
+                                "tool": name,
+                                "args": args
+                            })
+                            tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
+                            tc_pretty = format_agent_step(tool_call_msg)
+                            log_and_echo(tc_pretty)
+                        continue
+
+                    # 3) 兜底：dict 形式的 tool_call
+                    if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
+                        fn = (last_message.get("function") or {})
+                        name = fn.get("name") or last_message.get("name", "unknown_tool")
+                        args = fn.get("arguments") or last_message.get("args") or {}
                         try:
                             if isinstance(args, str):
                                 args = json.loads(args)
                         except Exception:
                             pass
-                        tool_calls_brief.append({"tool": name, "args": args})
+                        action_trace.append({
+                            "ts": _now(),
+                            "type": "tool_call",
+                            "tool": name,
+                            "args": args
+                        })
                         tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
                         tc_pretty = format_agent_step(tool_call_msg)
                         log_and_echo(tc_pretty)
-                        tool_interactions.append({
-                            "type": "tool_call",
-                            "tool_name": name,
-                            "arguments": args
-                        })
+                        continue
 
-                elif isinstance(last_message, ToolMessage):
-                    tool_output_content = last_message.content
-                    if isinstance(tool_output_content, str):
-                        tool_output_text = tool_output_content
-                    elif isinstance(tool_output_content, list):
-                        tool_output_text = "\n".join(
-                            b.get("text", "") if isinstance(b, dict) else str(b)
-                            for b in tool_output_content
-                        )
-                    else:
-                        tool_output_text = str(tool_output_content)
-                    tool_interactions.append({
-                        "type": "tool_output",
-                        "tool_name": last_message.name,
-                        "output": tool_output_text
-                    })
-
-                elif isinstance(last_message, dict) and last_message.get("type") == "tool_call":
-                    fn = (last_message.get("function") or {})
-                    name = fn.get("name") or last_message.get("name", "unknown_tool")
-                    args = fn.get("arguments") or last_message.get("args") or {}
-                    try:
-                        if isinstance(args, str):
-                            args = json.loads(args)
-                    except Exception:
-                        pass
-                    tool_calls_brief.append({"tool": name, "args": args})
-                    tool_interactions.append({
-                        "type": "tool_call",
-                        "tool_name": name,
-                        "arguments": args
-                    })
+                # 统计 token
+                token_usage = {
+                    "total_tokens": cb.total_tokens,
+                    "prompt_tokens": cb.prompt_tokens,
+                    "completion_tokens": cb.completion_tokens
+                }
 
         except Exception as e:
             log_and_echo(f"❌ 运行代理失败: {e}")
             task_end_time = time.time()
             task_execution_time = task_end_time - task_start_time
-            task_execution_time_formatted = f"{task_execution_time:.2f}秒"
             results_summary.append({
                 "task_id": task_id,
-                "description": task_desc,
                 "input": user_prompt,
                 "expected_tools": expected_tools,
-                "correct_behavior": task.get("correct_behavior", "N/A"),
-                "wrong_behavior": task.get("wrong_behavior", "N/A"),
                 "agent_final_response": f"Agent 运行失败: {e}",
-                "tool_calls": [],
                 "task_completed": False,
                 "completion_reason": {
                     "result": "未完成",
                     "reason": f"Agent 运行失败: {e.__class__.__name__}",
                     "failure_type": "agent_error"
                 },
-                "failure_reason": f"Agent run error: {e.__class__.__name__}",
-                "execution_time": task_execution_time_formatted,
                 "execution_time_seconds": task_execution_time,
-                "total_tool_calls": 0,
-                "mytool_calls": 0,
-                "mytool_enabled": bool(use_mytool),
-                "tool_name_duplicate_warning": False,
+                "total_tool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call"),
+                "mytool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in mytool_tool_names),
+                "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                "action_trace": action_trace
             })
             continue
 
-        # === 任务完成度判断 ===
+        # === 任务完成度判断（改为基于轨迹）===
         is_task_completed = False
-        completion_reason = "缺少必要信息"
         completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
-        if final_response and task_desc:
-            truncated_response = truncate_tool_outputs(final_response, max_lines_per_tool=10)
-            is_task_completed, completion_reason, completion_json = await judge_task_completion(
-                agent_behavior=truncated_response,
+        if action_trace and task_desc:
+            behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
+            is_task_completed, _, completion_json = await judge_task_completion(
+                agent_behavior=behavior_text,
                 task_description=task_desc,
                 expected_tools=expected_tools
             )
         else:
             log_and_echo("⚠️  跳过任务完成度判断（缺少必要信息）")
 
-        # === 工具调用统计 ===
-        total_tool_calls = sum(1 for x in tool_interactions if x.get("type") == "tool_call")
+        # 统计
+        total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
+        mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in mytool_tool_names)
 
-        def _is_mytool_call(x) -> bool:
-            if x.get("type") != "tool_call":
-                return False
-            name = x.get("tool_name")
-            return bool(name) and (name in mytool_tool_names)
-
-        mytool_calls = sum(1 for x in tool_interactions if _is_mytool_call(x))
-
-        try:
-            all_tool_names_list = [t.name for t in tools]
-            has_duplicates = len(all_tool_names_list) != len(set(all_tool_names_list))
-        except Exception:
-            has_duplicates = False
-
-        # 计算任务执行时间
+        # 执行时间
         task_end_time = time.time()
         task_execution_time = task_end_time - task_start_time
-        task_execution_time_formatted = f"{task_execution_time:.2f}秒"
 
         results_summary.append({
             "task_id": task_id,
-            "description": task_desc,
             "input": user_prompt,
             "expected_tools": expected_tools,
-            "correct_behavior": task.get("correct_behavior", "N/A"),
-            "wrong_behavior": task.get("wrong_behavior", "N/A"),
             "agent_final_response": final_response,
-            "tool_calls": tool_calls_brief,
-            "tool_interactions": tool_interactions,
             "task_completed": is_task_completed,
             "completion_reason": completion_json,
-            "execution_time": task_execution_time_formatted,
             "execution_time_seconds": task_execution_time,
             "total_tool_calls": total_tool_calls,
             "mytool_calls": mytool_calls,
-            "mytool_enabled": bool(use_mytool),
-            "tool_name_duplicate_warning": bool(has_duplicates),
+            "token_usage": token_usage,
+            "action_trace": action_trace
         })
 
     # === 汇总结果 ===
-    total_tasks = len(dataset)
+    total_tasks = len(results_summary)
     completed_tasks = sum(1 for r in results_summary if r["task_completed"])
     completion_rate = (0 if total_tasks == 0 else completed_tasks / total_tasks * 100)
     overall_total_tool_calls = sum(r.get("total_tool_calls", 0) for r in results_summary)
     overall_mytool_calls = sum(r.get("mytool_calls", 0) for r in results_summary)
+    
+    overall_token_usage = {
+        "total_tokens": sum(r.get("token_usage", {}).get("total_tokens", 0) for r in results_summary),
+        "prompt_tokens": sum(r.get("token_usage", {}).get("prompt_tokens", 0) for r in results_summary),
+        "completion_tokens": sum(r.get("token_usage", {}).get("completion_tokens", 0) for r in results_summary)
+    }
 
     final_report = {
         "run_timestamp": datetime.now().isoformat(),
@@ -694,6 +743,7 @@ async def main(dataset, use_mytool: bool = True):
             "task_completion_rate": f"{completion_rate:.2f}%",
             "total_tool_calls": overall_total_tool_calls,
             "mytool_calls": overall_mytool_calls,
+            "token_usage": overall_token_usage
         },
         "task_details": results_summary
     }
@@ -704,6 +754,7 @@ async def main(dataset, use_mytool: bool = True):
     print("\n================= 所有任务运行完毕 =================\n")
     print(f"📊 任务完成率: {completion_rate:.2f}% ({completed_tasks}/{total_tasks})")
     print(f"📊 总工具调用次数: {overall_total_tool_calls}，其中 mytool: {overall_mytool_calls}")
+    print(f"📊 总token使用量: {overall_token_usage['total_tokens']} (提示: {overall_token_usage['prompt_tokens']}, 完成: {overall_token_usage['completion_tokens']})")
     print(f"📄 结果 JSON 路径: {RESULT_JSON_FILE}")
     print(f"📝 运行日志路径: {RUN_LOG_FILE}")
     logging.info("Run finished. Results written to %s; logs at %s", RESULT_JSON_FILE, RUN_LOG_FILE)
@@ -715,42 +766,34 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = []
-    task_dict = {}
     try:
-        with open("./datasets/test_prompts.json", "r", encoding="utf-8") as f:
+        with open("./datasets/all_annotations.json", "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
             for item in test_prompts_data:
                 task_id = item.get("task_id", "")
                 tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
                 expected_tools = []
                 if tools_str:
-                    tools_list = [t.strip() for t in tools_str.replace("1.", "").replace("2.", "").replace("3.", "").replace("4.", "").replace("5.", "").replace("6.", "").split("\n") if t.strip()]
+                    # 去掉序号 "1."、"2." ... 再拆分
+                    tools_list = [
+                        t.strip()
+                        for t in re.sub(r"\d+\.", "", tools_str).split("\n")
+                        if t.strip()
+                    ]
                     expected_tools = [t for t in tools_list if t]
-                if task_id and task_id in task_dict:
-                    steps_desc = item.get("Annotator Metadata", {}).get("Steps", "").lower()
-                    if expected_tools:
-                        if ("geocode" in steps_desc or "parking" in steps_desc or "nearby" in steps_desc) and \
-                           (any(tool in expected_tools for tool in ["geocode_address", "find_parking_facilities", "find_nearby_places", "reverse_geocode"])):
-                            task_dict[task_id]["expected_tools"] = expected_tools
-                        elif "valorant" in steps_desc and "valorant" in tools_str:
-                            task_dict[task_id]["expected_tools"] = expected_tools
-                else:
-                    task_data = {
-                        "id": task_id or f"task-{len(dataset)+1}",
-                        "description": item.get("Question", ""),
-                        "input": item.get("Question", ""),
-                        "expected_tools": expected_tools,
-                        "category": item.get("category", ""),
-                        "correct_behavior": "N/A",
-                        "wrong_behavior": "N/A"
-                    }
-                    dataset.append(task_data)
-                    if task_id:
-                        task_dict[task_id] = task_data
+
+                task_data = {
+                    "id": task_id or f"task-{len(dataset)+1}",
+                    "description": item.get("Question", ""),
+                    "input": item.get("Question", ""),
+                    "expected_tools": expected_tools,
+                    "category": item.get("category", "")
+                }
+                dataset.append(task_data)
     except FileNotFoundError:
-        print("警告: 未找到数据集文件 ./datasets/test_prompts.json")
+        print("警告: 未找到数据集文件 ./datasets/all_annotations.json")
     except Exception as e:
-        print(f"加载 ./datasets/test_prompts.json 时出错: {e}")
+        print(f"加载 ./datasets/all_annotations.json 时出错: {e}")
     
     if dataset:
         asyncio.run(main(dataset, use_mytool=args.use_mytool))
