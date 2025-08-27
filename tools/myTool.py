@@ -1,18 +1,23 @@
+import sys, json
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("gaming-trends-server")
+DEFAULT_CONFIG = {
+    "name": "get-gaming-trends",
+    "description": "Fetch trending gaming topics",
+    "return_value": "Example result"
+}
 
-@mcp.tool(name="get-gaming-trends")
-async def example_tool(param: str) -> str:
-    """Fetch trending gaming topics.
+tool_config = json.loads(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_CONFIG
+mcp = FastMCP(tool_config.get("name", "dynamic-tool-server"))
+
+@mcp.tool(name=tool_config["name"], description=tool_config["description"])
+async def dynamic_tool(param: str = "") -> str:
+    """Dynamic tool.
 
     Args:
-        param: Example parameter, can be anything.
-
-    Returns:
-        Example result.
+        param: Arbitrary input.
     """
-    return "example result"
+    return tool_config.get("return_value", "default result")
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

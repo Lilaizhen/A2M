@@ -465,11 +465,22 @@ async def fetch_server_tool_names(server_key: str, server_cfg: dict) -> set[str]
             await close()
 
 
-async def main(dataset, use_mytool: bool = True):
+async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None):
     setup_run_logger()
 
     all_mcp_config = load_mcp_configs_from_live_config("./configs/live_mcp.json")
     tool_to_mcp, mcp_configs = load_tool_to_mcp_mapping("./configs/tool2mcp.json")
+    
+    # 加载attack数据集（如果提供）
+    attack_tool_mapping = {}
+    if attack_dataset_path:
+        try:
+            with open(attack_dataset_path, "r", encoding="utf-8") as f:
+                attack_data = json.load(f)
+                # 建立task_id到attack_tools的映射
+                attack_tool_mapping = {item["task_id"]: item["attack_tools"] for item in attack_data}
+        except Exception as e:
+            log_and_echo(f"⚠️ 加载attack数据集失败: {e}")
 
     for tool in all_mcp_config.values():
         tool.setdefault("transport", "stdio")
@@ -510,11 +521,22 @@ async def main(dataset, use_mytool: bool = True):
         mytool_server_key = "mytool"
         mytool_server_path = "./tools/myTool.py"
         if use_mytool:
-            filtered_config[mytool_server_key] = {
+            # 检查是否有针对当前任务的attack工具配置
+            mytool_config = {
                 "command": "python",
                 "args": [os.path.abspath(mytool_server_path)],
                 "transport": "stdio"
             }
+            
+            # 如果有attack数据集且当前任务有对应的attack工具配置
+            if attack_dataset_path and task_id in attack_tool_mapping and attack_tool_mapping[task_id]:
+                # 使用第一个attack工具的配置
+                attack_tool = attack_tool_mapping[task_id][0]
+                # 将配置转换为JSON字符串作为参数传递给myTool.py
+                config_json = json.dumps(attack_tool, ensure_ascii=False)
+                mytool_config["args"].extend([config_json])
+            
+            filtered_config[mytool_server_key] = mytool_config
 
         for server_name in required_mcp_servers:
             if server_name in mcp_configs:
@@ -762,26 +784,41 @@ async def main(dataset, use_mytool: bool = True):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # 选择数据集：all、test、filter
+    parser.add_argument(
+        "--dataset",
+        choices=["all", "test", "filter"],
+        default="all",
+        help=(
+            "选择数据集：\n"
+            "all=./datasets/all_annotations.json（默认）\n"
+            "test=./datasets/test_prompts.json\n"
+            "filter=./datasets/all_annotations_filter.json"
+        )
+    )
     parser.add_argument("--use-mytool", action="store_true", help="启用 mytool MCP server")
+    parser.add_argument("--attack-dataset", type=str, help="attack数据集路径")
     args = parser.parse_args()
+
+    # 路径映射
+    if args.dataset == "test":
+        data_path = "./datasets/test_prompts.json"
+    elif args.dataset == "filter":
+        data_path = "./datasets/all_annotations_filter.json"
+    else:  # 默认 all
+        data_path = "./datasets/all_annotations.json"
 
     dataset = []
     try:
-        with open("./datasets/all_annotations_filter.json", "r", encoding="utf-8") as f:
+        with open(data_path, "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
             for item in test_prompts_data:
                 task_id = item.get("task_id", "")
                 tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
                 expected_tools = []
                 if tools_str:
-                    # 去掉序号 "1."、"2." ... 再拆分
-                    tools_list = [
-                        t.strip()
-                        for t in re.sub(r"\d+\.", "", tools_str).split("\n")
-                        if t.strip()
-                    ]
+                    tools_list = [t.strip() for t in re.sub(r"\d+\.", "", tools_str).split("\n") if t.strip()]
                     expected_tools = [t for t in tools_list if t]
-
                 task_data = {
                     "id": task_id or f"task-{len(dataset)+1}",
                     "description": item.get("Question", ""),
@@ -791,11 +828,11 @@ if __name__ == "__main__":
                 }
                 dataset.append(task_data)
     except FileNotFoundError:
-        print("警告: 未找到数据集文件 ./datasets/all_annotations.json")
+        print(f"警告: 未找到数据集文件 {data_path}")
     except Exception as e:
-        print(f"加载 ./datasets/all_annotations.json 时出错: {e}")
+        print(f"加载 {data_path} 时出错: {e}")
     
     if dataset:
-        asyncio.run(main(dataset, use_mytool=args.use_mytool))
+        asyncio.run(main(dataset, use_mytool=args.use_mytool, attack_dataset_path=args.attack_dataset))
     else:
         print("错误: 没有找到任何有效的数据集文件")
