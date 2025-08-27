@@ -767,7 +767,7 @@ if __name__ == "__main__":
 
     dataset = []
     try:
-        with open("./datasets/all_annotations.json", "r", encoding="utf-8") as f:
+        with open("./datasets/all_annotations_filter.json", "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
             for item in test_prompts_data:
                 task_id = item.get("task_id", "")
