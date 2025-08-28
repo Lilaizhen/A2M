@@ -1,0 +1,77 @@
+import json
+import re
+import asyncio
+
+
+def load_mcp_configs_from_live_config(live_config_path):
+    """从live配置文件加载MCP配置"""
+    with open(live_config_path, "r", encoding="utf-8") as f:
+        live_configs = json.load(f)
+    merged_config = {}
+    for item in live_configs:
+        if "config" in item and "mcpServers" in item["config"]:
+            servers = item["config"]["mcpServers"]
+            merged_config.update(servers)
+    return merged_config
+
+
+def load_tool_to_mcp_mapping(tool2mcp_path):
+    """加载工具到MCP的映射"""
+    with open(tool2mcp_path, "r", encoding="utf-8") as f:
+        tool2mcp_data = json.load(f)
+    
+    tool_to_mcp = {}
+    mcp_configs = {}
+    
+    for item in tool2mcp_data:
+        if "config" in item and "mcpServers" in item["config"]:
+            servers = item["config"]["mcpServers"]
+            mcp_configs.update(servers)
+            server_name = list(servers.keys())[0] if servers else None
+            if server_name and "tools" in item:
+                server_tools = item["tools"].get(server_name, {})
+                for tool_item in server_tools.get("tools", []):
+                    tool_name = tool_item.get("name")
+                    if tool_name:
+                        tool_to_mcp[tool_name] = server_name
+    return tool_to_mcp, mcp_configs
+
+
+async def fetch_server_tool_names(server_key: str, server_cfg: dict, MultiServerMCPClient):
+    """单独连接一个 server，返回其当前暴露的工具名集合"""
+    client = MultiServerMCPClient({server_key: server_cfg})
+    try:
+        tools = await asyncio.wait_for(client.get_tools(), timeout=30)
+        return {t.name for t in tools}
+    finally:
+        close = getattr(client, "close", None)
+        if callable(close):
+            await close()
+
+
+def load_dataset(data_path):
+    """加载数据集"""
+    dataset = []
+    try:
+        with open(data_path, "r", encoding="utf-8") as f:
+            test_prompts_data = json.load(f)
+            for item in test_prompts_data:
+                task_id = item.get("task_id", "")
+                tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
+                expected_tools = []
+                if tools_str:
+                    tools_list = [t.strip() for t in re.sub(r"\d+\.", "", tools_str).split("\n") if t.strip()]
+                    expected_tools = [t for t in tools_list if t]
+                task_data = {
+                    "id": task_id or f"task-{len(dataset)+1}",
+                    "description": item.get("Question", ""),
+                    "input": item.get("Question", ""),
+                    "expected_tools": expected_tools,
+                    "category": item.get("category", "")
+                }
+                dataset.append(task_data)
+    except FileNotFoundError:
+        print(f"警告: 未找到数据集文件 {data_path}")
+    except Exception as e:
+        print(f"加载 {data_path} 时出错: {e}")
+    return dataset
