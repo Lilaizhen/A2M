@@ -98,10 +98,14 @@ def truncate_tool_outputs(response_text: str, max_lines_per_tool: int = 10) -> s
     return '\n'.join(truncated_lines)
 
 
-def create_tool_wrapper(original_func, max_length, max_list_length=100, max_category_items=20):
-    """创建工具函数包装器"""
+def create_tool_wrapper(original_func, max_length, max_list_length=100, max_category_items=20, timeout=30):
+    """创建带超时的工具函数包装器"""
     async def wrapped_func(*args, **kwargs):
-        result = await original_func(*args, **kwargs)
+        try:
+            result = await asyncio.wait_for(original_func(*args, **kwargs), timeout=timeout)
+        except asyncio.TimeoutError:
+            logging.warning(f"工具调用超时（>{timeout}s）: {getattr(original_func, '__name__', 'mcp_tool')}")
+            return {"error": f"工具调用超时（>{timeout}s）"}
         return limit_result_length(result, max_length, max_list_length, max_category_items)
     return wrapped_func
 
@@ -280,23 +284,27 @@ def render_behavior_from_trace(action_trace, max_tool_out_chars=2000):
 
 
 class LimitedMCPClient:
-    def __init__(self, config, max_response_length=5000, max_list_length=100, max_category_items=20):
+    def __init__(self, config, max_response_length=5000, max_list_length=100, max_category_items=20, timeout=30):
         self.client = MultiServerMCPClient(config)
         self.max_length = max_response_length
         self.max_list_length = max_list_length
         self.max_category_items = max_category_items
+        self.timeout = timeout
     
     async def get_tools(self):
-        tools = await self.client.get_tools()
+        # get_tools 本身也加超时，避免卡在握手阶段
+        tools = await asyncio.wait_for(self.client.get_tools(), timeout=self.timeout)
         for tool in tools:
             original_func = tool.func
             tool.func = create_tool_wrapper(
                 original_func, 
                 self.max_length, 
                 self.max_list_length, 
-                self.max_category_items
+                self.max_category_items,
+                timeout=self.timeout
             )
         return tools
+
 
 
 def format_agent_step(step_message):
@@ -347,7 +355,9 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
         openai_api_key=api_key,
         openai_api_base=api_base,
         model="deepseek-ai/DeepSeek-V3",
-        temperature=0.0
+        temperature=0.0,
+        timeout=100,     # 100s
+        max_retries=0
     )
 
     prompt_template = """
@@ -378,11 +388,12 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
     chain = prompt | judge_llm | StrOutputParser()
     
     try:
-        response = await chain.ainvoke({
+        # 整体裁判调用包 100s 超时
+        response = await asyncio.wait_for(chain.ainvoke({
             "agent_behavior": agent_behavior,
             "task_description": task_description,
             "expected_tools": ", ".join(expected_tools) if expected_tools else "无特定工具要求"
-        })
+        }), timeout=100)
         log_and_echo("\n--- 裁判模型分析 ---\n裁判模型输出: " + str(response).strip())
         try:
             cleaned_response = response.strip()
@@ -415,6 +426,10 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
                 return True, text, json_result
             json_result = {"result": "未完成", "reason": f"裁判输出不规范：{text}", "failure_type": "other"}
             return False, f"裁判输出不规范：{text}", json_result
+    except asyncio.TimeoutError:
+        logging.warning("裁判模型调用超时（>100s）")
+        json_result = {"result": "未完成", "reason": "裁判模型超时（>100s）", "failure_type": "other"}
+        return False, "[other] 裁判模型超时", json_result
     except Exception as e:
         logging.exception("裁判模型调用失败: %s", e)
         json_result = {"result": "未完成", "reason": f"裁判模型调用失败: {str(e)}", "failure_type": "other"}
@@ -457,7 +472,7 @@ async def fetch_server_tool_names(server_key: str, server_cfg: dict) -> set[str]
     """单独连接一个 server，返回其当前暴露的工具名集合"""
     client = MultiServerMCPClient({server_key: server_cfg})
     try:
-        tools = await client.get_tools()
+        tools = await asyncio.wait_for(client.get_tools(), timeout=30)
         return {t.name for t in tools}
     finally:
         close = getattr(client, "close", None)
@@ -477,7 +492,6 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
         try:
             with open(attack_dataset_path, "r", encoding="utf-8") as f:
                 attack_data = json.load(f)
-                # 建立task_id到attack_tools的映射
                 attack_tool_mapping = {item["task_id"]: item["attack_tools"] for item in attack_data}
         except Exception as e:
             log_and_echo(f"⚠️ 加载attack数据集失败: {e}")
@@ -494,7 +508,9 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
         openai_api_base=api_base,
         model="glm-4.5",
         streaming=True,
-        temperature=0.7
+        temperature=0.7,
+        timeout=100,   # 业务 LLM 100s
+        max_retries=1
     )
 
     results_summary = []
@@ -521,21 +537,15 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
         mytool_server_key = "mytool"
         mytool_server_path = "./tools/myTool.py"
         if use_mytool:
-            # 检查是否有针对当前任务的attack工具配置
             mytool_config = {
                 "command": "python",
                 "args": [os.path.abspath(mytool_server_path)],
                 "transport": "stdio"
             }
-            
-            # 如果有attack数据集且当前任务有对应的attack工具配置
             if attack_dataset_path and task_id in attack_tool_mapping and attack_tool_mapping[task_id]:
-                # 使用第一个attack工具的配置
                 attack_tool = attack_tool_mapping[task_id][0]
-                # 将配置转换为JSON字符串作为参数传递给myTool.py
                 config_json = json.dumps(attack_tool, ensure_ascii=False)
                 mytool_config["args"].extend([config_json])
-            
             filtered_config[mytool_server_key] = mytool_config
 
         for server_name in required_mcp_servers:
@@ -559,10 +569,16 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
                 log_and_echo(f"⚠️ 获取 mytool 工具名失败，将无法区分其调用：{e}")
                 mytool_tool_names = set()
 
-        # --- 加载 MCP 工具（容错） ---
+        # --- 加载 MCP 工具（使用 LimitedMCPClient，带超时与返回截断） ---
         try:
-            client = MultiServerMCPClient(filtered_config)
-            tools = await client.get_tools()
+            limited = LimitedMCPClient(
+                filtered_config,
+                max_response_length=5000,
+                max_list_length=100,
+                max_category_items=20,
+                timeout=30
+            )
+            tools = await limited.get_tools()
         except Exception as e:
             log_and_echo(f"❌ 加载 MCP 工具失败: {e}")
             task_end_time = time.time()
@@ -608,40 +624,63 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
 
             # 使用回调来统计token使用量
             with get_openai_callback() as cb:
-                async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
-                    last_message = step["messages"][-1]
-                    pretty = format_agent_step(last_message)
-                    log_and_echo(pretty)
+                async def _drain_stream():
+                    nonlocal final_response, action_trace
+                    async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
+                        last_message = step["messages"][-1]
+                        pretty = format_agent_step(last_message)
+                        log_and_echo(pretty)
 
-                    # 1) 工具输出
-                    if isinstance(last_message, ToolMessage):
-                        tool_output_text = _as_text(last_message.content)
-                        if isinstance(tool_output_text, str) and len(tool_output_text) > MAX_TOOL_OUTPUT_CHARS:
-                            tool_output_text = tool_output_text[:MAX_TOOL_OUTPUT_CHARS] + "...(内容已截断)"
-                        action_trace.append({
-                            "ts": _now(),
-                            "type": "tool_output",
-                            "tool": last_message.name,
-                            "output": tool_output_text
-                        })
-                        continue
-
-                    # 2) AI 消息 + 其中的工具调用
-                    if isinstance(last_message, AIMessage):
-                        content_text = _as_text(last_message.content).strip()
-                        if content_text:
-                            final_response = content_text
+                        # 1) 工具输出
+                        if isinstance(last_message, ToolMessage):
+                            tool_output_text = _as_text(last_message.content)
+                            if isinstance(tool_output_text, str) and len(tool_output_text) > MAX_TOOL_OUTPUT_CHARS:
+                                tool_output_text = tool_output_text[:MAX_TOOL_OUTPUT_CHARS] + "...(内容已截断)"
                             action_trace.append({
                                 "ts": _now(),
-                                "type": "ai_message",
-                                "content": content_text
+                                "type": "tool_output",
+                                "tool": last_message.name,
+                                "output": tool_output_text
                             })
+                            continue
 
-                        tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
-                        for tc in tool_calls or []:
-                            fn = (tc.get("function") or {})
-                            name = fn.get("name") or tc.get("name", "unknown_tool")
-                            args = fn.get("arguments") or tc.get("args") or {}
+                        # 2) AI 消息 + 其中的工具调用
+                        if isinstance(last_message, AIMessage):
+                            content_text = _as_text(last_message.content).strip()
+                            if content_text:
+                                final_response = content_text
+                                action_trace.append({
+                                    "ts": _now(),
+                                    "type": "ai_message",
+                                    "content": content_text
+                                })
+
+                            tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
+                            for tc in tool_calls or []:
+                                fn = (tc.get("function") or {})
+                                name = fn.get("name") or tc.get("name", "unknown_tool")
+                                args = fn.get("arguments") or tc.get("args") or {}
+                                try:
+                                    if isinstance(args, str):
+                                        args = json.loads(args)
+                                except Exception:
+                                    pass
+                                action_trace.append({
+                                    "ts": _now(),
+                                    "type": "tool_call",
+                                    "tool": name,
+                                    "args": args
+                                })
+                                tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
+                                tc_pretty = format_agent_step(tool_call_msg)
+                                log_and_echo(tc_pretty)
+                            continue
+
+                        # 3) 兜底：dict 形式的 tool_call
+                        if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
+                            fn = (last_message.get("function") or {})
+                            name = fn.get("name") or last_message.get("name", "unknown_tool")
+                            args = fn.get("arguments") or last_message.get("args") or {}
                             try:
                                 if isinstance(args, str):
                                     args = json.loads(args)
@@ -656,28 +695,18 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
                             tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
                             tc_pretty = format_agent_step(tool_call_msg)
                             log_and_echo(tc_pretty)
-                        continue
+                            return
 
-                    # 3) 兜底：dict 形式的 tool_call
-                    if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
-                        fn = (last_message.get("function") or {})
-                        name = fn.get("name") or last_message.get("name", "unknown_tool")
-                        args = fn.get("arguments") or last_message.get("args") or {}
-                        try:
-                            if isinstance(args, str):
-                                args = json.loads(args)
-                        except Exception:
-                            pass
-                        action_trace.append({
-                            "ts": _now(),
-                            "type": "tool_call",
-                            "tool": name,
-                            "args": args
-                        })
-                        tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
-                        tc_pretty = format_agent_step(tool_call_msg)
-                        log_and_echo(tc_pretty)
-                        continue
+                # 整体 agent 运行加一层总超时 500s
+                try:
+                    await asyncio.wait_for(_drain_stream(), timeout=500)
+                except asyncio.TimeoutError:
+                    logging.warning("Agent 流式执行超时（>500s）")
+                    action_trace.append({
+                        "ts": _now(),
+                        "type": "ai_message",
+                        "content": "Agent 执行超时（>500s）"
+                    })
 
                 # 统计 token
                 token_usage = {

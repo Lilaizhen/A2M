@@ -183,19 +183,6 @@
         }
     },
     {
-        "task_id": "56d7fbdb-ebd6-41fe-a5d6-cd21dbc59fd8",
-        "Question": "Find the trending GitHub repositories. For the top one, read its Deepwiki. Then, draft a Markdown intro document for it in ./annotated_data/markdown/github_trends.md.",
-        "answers": "file ./annotated_data/markdown/github_trends.md",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. find the trending repositories\n2. read the deepwiki of the top repository\n3. draft a Markdown intro\n4. write it to the path",
-            "Number of steps": "4",
-            "Tools": "1. get_github_trending_repositories\n2. deepwiki_fetch\n3. write_file",
-            "Number of tools": "3"
-        }
-    },
-    {
         "task_id": "91cce869-ac2c-4b9c-a2ea-1d068eb5d979",
         "Question": "Draw a flowchart of a fast sorting algorithm using Mermaid.",
         "answers": "",
