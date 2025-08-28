@@ -13,12 +13,13 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_community.callbacks.manager import get_openai_callback
 
 # 加载自定义模块
-from utils.logging_config import setup_run_logger, log_and_echo
-from utils.tool_functions import truncate_tool_outputs, _now, _as_text, render_behavior_from_trace
-from mcp_client.client import LimitedMCPClient
-from agents.agent_utils import format_agent_step
-from evaluators.task_evaluator import judge_task_completion
-from data_loaders.data_loader import load_mcp_configs_from_live_config, load_tool_to_mcp_mapping, fetch_server_tool_names, load_dataset
+from src.utils.logging_config import setup_run_logger, log_and_echo
+from src.utils.tool_functions import truncate_tool_outputs, _now, _as_text, render_behavior_from_trace
+from src.mcp_client.client import LimitedMCPClient
+from src.agents.agent_utils import format_agent_step
+from src.evaluators.task_evaluator import judge_task_completion
+from src.data_loaders.data_loader import load_mcp_configs_from_live_config, load_tool_to_mcp_mapping, fetch_server_tool_names, load_dataset
+from src.core.executor import TaskExecutor
 
 load_dotenv()  # 加载 .env 文件中的环境变量
 

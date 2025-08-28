@@ -1,0 +1,46 @@
+{
+    "run_timestamp": "2025-08-27T23:36:21.739867",
+    "overall_statistics": {
+        "total_tasks": 1,
+        "completed_tasks": 0,
+        "task_completion_rate": "0.00%",
+        "total_tool_calls": 0,
+        "mytool_calls": 0,
+        "token_usage": {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0
+        }
+    },
+    "task_details": [
+        {
+            "task_id": "111111111111111111",
+            "input": "list tools",
+            "expected_tools": [
+                "random_sample"
+            ],
+            "agent_final_response": "MCP 工具加载失败",
+            "task_completed": false,
+            "completion_reason": {
+                "result": "未完成",
+                "reason": "MCP 工具加载失败: ExceptionGroup",
+                "failure_type": "mcp_error"
+            },
+            "execution_time_seconds": 1.8439579010009766,
+            "total_tool_calls": 0,
+            "mytool_calls": 0,
+            "token_usage": {
+                "total_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0
+            },
+            "action_trace": [
+                {
+                    "ts": "2025-08-27T23:36:21",
+                    "type": "user_input",
+                    "content": "list tools"
+                }
+            ]
+        }
+    ]
+}

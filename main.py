@@ -1,7 +1,7 @@
 import asyncio
 import argparse
 from main_module import main as main_function
-from data_loaders.data_loader import load_dataset
+from src.data_loaders.data_loader import load_dataset
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
