@@ -178,8 +178,13 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
 
             # 使用回调来统计token使用量
             with get_openai_callback() as cb:
+                # 创建一个变量来跟踪当前正在执行的工具
+                current_tool_execution = None
+                # 创建一个锁来确保工具调用的串行执行
+                tool_lock = asyncio.Lock()
+                
                 async def _drain_stream():
-                    nonlocal final_response, action_trace
+                    nonlocal final_response, action_trace, current_tool_execution
                     async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
                         last_message = step["messages"][-1]
                         pretty = format_agent_step(last_message)
@@ -196,6 +201,8 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
                                 "tool": last_message.name,
                                 "output": tool_output_text
                             })
+                            # 清除当前工具执行状态
+                            current_tool_execution = None
                             continue
 
                         # 2) AI 消息 + 其中的工具调用
@@ -209,25 +216,37 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
                                     "content": content_text
                                 })
 
+                            # 获取所有工具调用
                             tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
-                            for tc in tool_calls or []:
-                                fn = (tc.get("function") or {})
-                                name = fn.get("name") or tc.get("name", "unknown_tool")
-                                args = fn.get("arguments") or tc.get("args") or {}
-                                try:
-                                    if isinstance(args, str):
-                                        args = json.loads(args)
-                                except Exception:
-                                    pass
-                                action_trace.append({
-                                    "ts": _now(),
-                                    "type": "tool_call",
-                                    "tool": name,
-                                    "args": args
-                                })
-                                tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
-                                tc_pretty = format_agent_step(tool_call_msg)
-                                log_and_echo(tc_pretty)
+                            
+                            # 使用锁确保一次只处理一个工具调用
+                            async with tool_lock:
+                                # 如果有正在执行的工具，等待其完成
+                                while current_tool_execution is not None:
+                                    await asyncio.sleep(0.1)
+                                
+                                # 只处理第一个工具调用
+                                if tool_calls:
+                                    tc = tool_calls[0]
+                                    fn = (tc.get("function") or {})
+                                    name = fn.get("name") or tc.get("name", "unknown_tool")
+                                    args = fn.get("arguments") or tc.get("args") or {}
+                                    try:
+                                        if isinstance(args, str):
+                                            args = json.loads(args)
+                                    except Exception:
+                                        pass
+                                    action_trace.append({
+                                        "ts": _now(),
+                                        "type": "tool_call",
+                                        "tool": name,
+                                        "args": args
+                                    })
+                                    tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
+                                    tc_pretty = format_agent_step(tool_call_msg)
+                                    log_and_echo(tc_pretty)
+                                    # 设置当前正在执行的工具
+                                    current_tool_execution = name
                             continue
 
                         # 3) 兜底：dict 形式的 tool_call
@@ -240,15 +259,23 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
                                     args = json.loads(args)
                             except Exception:
                                 pass
-                            action_trace.append({
-                                "ts": _now(),
-                                "type": "tool_call",
-                                "tool": name,
-                                "args": args
-                            })
-                            tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
-                            tc_pretty = format_agent_step(tool_call_msg)
-                            log_and_echo(tc_pretty)
+                            # 使用锁确保一次只处理一个工具调用
+                            async with tool_lock:
+                                # 如果有正在执行的工具，等待其完成
+                                while current_tool_execution is not None:
+                                    await asyncio.sleep(0.1)
+                                    
+                                action_trace.append({
+                                    "ts": _now(),
+                                    "type": "tool_call",
+                                    "tool": name,
+                                    "args": args
+                                })
+                                tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
+                                tc_pretty = format_agent_step(tool_call_msg)
+                                log_and_echo(tc_pretty)
+                                # 设置当前正在执行的工具
+                                current_tool_execution = name
                             return
 
                 # 整体 agent 运行加一层总超时 500s
