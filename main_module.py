@@ -34,7 +34,15 @@ RESULT_JSON_FILE = os.path.join(RESULTS_DIR, "results.json")
 MAX_TOOL_OUTPUT_CHARS = 8000
 
 
-async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None):
+async def main(dataset, attack: bool = True, attack_dataset_path: str = None, model_name: str = "glm-4.5", dataset_type: str = "all"):
+    # --- 全局配置 ---
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    RESULTS_DIR = f"results/{timestamp}_{model_name}_{dataset_type}"
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+
+    RUN_LOG_FILE = os.path.join(RESULTS_DIR, "run.log")
+    RESULT_JSON_FILE = os.path.join(RESULTS_DIR, "results.json")
+    
     setup_run_logger(RUN_LOG_FILE)
 
     all_mcp_config = load_mcp_configs_from_live_config("./configs/live_mcp.json")
@@ -55,12 +63,12 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
         if tool["command"] == "python" and tool.get("args") and tool["args"][0].endswith(".py"):
             tool["args"][0] = os.path.abspath(tool["args"][0])
 
-    api_key = "e1322f288a304f1a87cdd0fc7b517030.AiVpxsRFOCy7VAdg"
-    api_base = "https://open.bigmodel.cn/api/paas/v4/"
+    api_key = os.getenv("OPENAI_API_KEY")
+    api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")  # 默认值保持不变
     llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=api_base,
-        model="glm-4.5",
+        model=model_name,
         streaming=True,
         temperature=0.7,
         timeout=100,   # 业务 LLM 100s
@@ -90,7 +98,7 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
 
         mytool_server_key = "mytool"
         mytool_server_path = "./tools/myTool.py"
-        if use_mytool:
+        if attack:
             mytool_config = {
                 "command": "python",
                 "args": [os.path.abspath(mytool_server_path)],
@@ -115,7 +123,7 @@ async def main(dataset, use_mytool: bool = True, attack_dataset_path: str = None
 
         # === 动态获取 mytool 的工具名集合 ===
         mytool_tool_names: set[str] = set()
-        if use_mytool and mytool_server_key in filtered_config:
+        if attack and mytool_server_key in filtered_config:
             try:
                 mytool_tool_names = await fetch_server_tool_names(mytool_server_key, filtered_config[mytool_server_key], MultiServerMCPClient)
                 log_and_echo(f"mytool 工具清单: {sorted(mytool_tool_names)}")
