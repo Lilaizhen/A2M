@@ -51,7 +51,7 @@ def _sanitize_attack_map(attack_dataset):
     except Exception:
         return {}
 
-def _build_filtered_mcp_config(expected_tools, use_mytool, tool_to_mcp, mcp_configs, attack_tools_for_task=None):
+def _build_filtered_mcp_config(expected_tools, attack, tool_to_mcp, mcp_configs, attack_tools_for_task=None):
     """只加载期望工具和可选mytool；mytool可注入攻击工具定义用于红队测试。"""
     filtered = {}
     required_servers = set()
@@ -60,7 +60,7 @@ def _build_filtered_mcp_config(expected_tools, use_mytool, tool_to_mcp, mcp_conf
             if t in tool_to_mcp:
                 required_servers.add(tool_to_mcp[t])
 
-    if use_mytool:
+    if attack:
         mytool_cfg = {
             "command": "python",
             "args": [_os.path.abspath("./tools/myTool.py")],
@@ -83,7 +83,7 @@ def _build_filtered_mcp_config(expected_tools, use_mytool, tool_to_mcp, mcp_conf
 
     return filtered
 
-async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, use_mytool, attack_map):
+async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map):
     """运行单个任务，返回结果字典。"""
     task_id = task["id"]
     task_desc = task["description"]
@@ -94,7 +94,7 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, use_mytool, atta
     # 仅为该task构建MCP配置
     filtered_config = _build_filtered_mcp_config(
         expected_tools=expected_tools,
-        use_mytool=use_mytool,
+        attack=attack,
         tool_to_mcp=tool_to_mcp,
         mcp_configs=mcp_configs,
         attack_tools_for_task=attack_map.get(task_id),
@@ -102,7 +102,7 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, use_mytool, atta
 
     # 尝试枚举mytool的工具名集合，便于统计
     mytool_names = set()
-    if use_mytool and "mytool" in filtered_config:
+    if attack and "mytool" in filtered_config:
         try:
             mytool_names = await fetch_server_tool_names("mytool", filtered_config["mytool"])
         except Exception:
@@ -216,7 +216,7 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, use_mytool, atta
 async def run_tasks_as_function(
     dataset,
     *,
-    use_mytool=True,
+    attack=True,
     attack_dataset=None,
     model="glm-4.5",
     api_key_env="OPENAI_API_KEY",
@@ -226,7 +226,7 @@ async def run_tasks_as_function(
     作为库函数调用的入口。
     参数
       - dataset: 任务列表，每项至少包含 id/description/input/expected_tools
-      - use_mytool: 是否加载mytool
+      - attack: 是否启用攻击模式（加载mytool）
       - attack_dataset: 路径或对象；用于红队测试的恶意工具定义
       - model/api_key_env/api_base_env: LLM配置（从环境变量读取）
     返回
@@ -235,7 +235,7 @@ async def run_tasks_as_function(
     load_dotenv()
     # LLM配置：从环境变量读取，避免硬编码
     api_key = os.getenv(api_key_env) or ""
-    api_base = os.getenv(api_base_env) or None
+    api_base = os.getenv(api_base_env) or "https://apis.iflow.cn/v1"  # 与主模块保持一致
 
     llm = ChatOpenAI(
         openai_api_key=api_key,
@@ -260,7 +260,7 @@ async def run_tasks_as_function(
 
     results_summary = []
     for task in dataset:
-        res = await _run_single_task(task, llm, tool_to_mcp, mcp_configs, use_mytool, attack_map)
+        res = await _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map)
         results_summary.append(res)
 
     total_tasks = len(results_summary)
@@ -307,8 +307,8 @@ class RealExecutor:
     若你更想用原 TaskExecutor，可切回注释的实现。
     """
 
-    def __init__(self, use_mytool: bool = True):
-        self.use_mytool = use_mytool
+    def __init__(self, attack: bool = True):
+        self.attack = attack
 
     def execute_task(self, task: Dict) -> Dict:
         """执行单个任务并返回反馈"""
@@ -321,7 +321,7 @@ class RealExecutor:
                     "input": task.get("input") or task.get("Question", ""),
                     "expected_tools": task.get("expected_tools", [])
                 }],
-                use_mytool=self.use_mytool,
+                attack=self.attack,
                 attack_dataset=None  # 生成攻击工具时不注入
             ))
             detail = report["task_details"][0] if report["task_details"] else {}
