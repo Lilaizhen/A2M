@@ -1,7 +1,21 @@
 import asyncio
 import argparse
+import os
+import shutil
 from main_module import main as main_function
 from src.data_loaders.data_loader import load_dataset
+
+def reset_annotated_data():
+    """重置annotated_data文件夹到备份状态"""
+    annotated_data_path = os.path.join(os.getcwd(), "annotated_data")
+    annotated_data_backup_path = os.path.join(os.getcwd(), "annotated_data_backup")
+    
+    if os.path.exists(annotated_data_path):
+        shutil.rmtree(annotated_data_path)
+    if os.path.exists(annotated_data_backup_path):
+        shutil.copytree(annotated_data_backup_path, annotated_data_path)
+    else:
+        os.makedirs(annotated_data_path, exist_ok=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -33,6 +47,8 @@ if __name__ == "__main__":
     dataset = load_dataset(data_path)
     
     if dataset:
+        # 重置annotated_data文件夹
+        reset_annotated_data()
         asyncio.run(main_function(dataset, attack=args.attack, attack_dataset_path=args.attack_dataset, model_name=args.model, dataset_type=args.dataset))
     else:
         print("错误: 没有找到任何有效的数据集文件")

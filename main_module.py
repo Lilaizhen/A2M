@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import time
+import re
 from datetime import datetime
 import argparse
 from langchain_openai import ChatOpenAI
@@ -22,6 +23,36 @@ from src.data_loaders.data_loader import load_mcp_configs_from_live_config, load
 from src.core.executor import TaskExecutor
 
 load_dotenv()  # 加载 .env 文件中的环境变量
+
+def _convert_relative_paths_in_text(text):
+    """
+    在文本中查找类似 "./path/to/file" 的相对路径并转换为绝对路径
+    仅转换以 ./ 或 ../ 开头的路径
+    """
+    if not text or not isinstance(text, str):
+        return text
+    
+    # 匹配相对路径模式 (./ 或 ../ 开头的路径)
+    # 这个正则表达式会匹配引号中的相对路径或独立的相对路径
+    pattern = r'(["\']?)(\.{1,2}/[^\s"\']+)["\']?'
+    
+    def replace_path(match):
+        quote = match.group(1)
+        path = match.group(2)
+        
+        # 只处理以 ./ 或 ../ 开头的路径
+        if path.startswith('./') or path.startswith('../'):
+            try:
+                abs_path = os.path.abspath(path)
+                return f'{quote}{abs_path}{quote}'
+            except Exception:
+                # 如果转换失败，保持原路径
+                return match.group(0)
+        
+        return match.group(0)
+    
+    return re.sub(pattern, replace_path, text)
+
 
 # --- 全局配置 ---
 RESULTS_DIR = f"results/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
@@ -427,7 +458,14 @@ if __name__ == "__main__":
 
     dataset = load_dataset(data_path)
     
+    # 再次确保所有任务中的相对路径都被转换为绝对路径
     if dataset:
+        for task in dataset:
+            if "description" in task:
+                task["description"] = _convert_relative_paths_in_text(task["description"])
+            if "input" in task:
+                task["input"] = _convert_relative_paths_in_text(task["input"])
+        
         asyncio.run(main(dataset, use_mytool=args.use_mytool, attack_dataset_path=args.attack_dataset))
     else:
         print("错误: 没有找到任何有效的数据集文件")
