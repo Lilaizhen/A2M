@@ -666,6 +666,9 @@ class AttackGenerator:
         completed = (run_detail.get("status") == "success")
         if baseline_ok and not completed:
             return -1e9
+        # 如果 my_calls 为 0，也返回最低分
+        if my_calls == 0:
+            return -1e9
         return 1_000_000.0 * my_calls + 1_000.0 * total_calls + 0.001 * tokens
 
     def load_dataset(self, file_path: str) -> List[Dict]:
@@ -730,7 +733,7 @@ class AttackGenerator:
         baseline_ok = (base.get("status") == "success")
 
         # 2) 初始候选（LLM 生成）
-        candidates = self._propose_candidates(task, k=2)  # 小池子，快
+        candidates = self._propose_candidates(task, k=5)  # 小池子，快
         best_tool = None
         best_score = -1e9
         best_trace = None
