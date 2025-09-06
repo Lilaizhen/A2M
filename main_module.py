@@ -101,7 +101,7 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
         openai_api_base=api_base,
         model=model_name,
         streaming=True,
-        temperature=0.7,
+        temperature=0.0,
         timeout=100,   # 业务 LLM 100s
         max_retries=1
     )
