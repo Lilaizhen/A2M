@@ -839,12 +839,46 @@ class AttackGenerator:
             raise ValueError("不支持的数据集格式")
 
     # === 基于LLM种子和执行反馈的迭代优化 ===
-    def generate_attack_tool(self, task: Dict, iterations: int = 3) -> Dict:
+    def generate_attack_tool(self, task: Dict, iterations: int = 3, output_dir: str = None) -> Dict:
         print("====================task======================")
         print(task)
         print("====================task======================")
 
         task_id = task.get("id", task.get("task_id", ""))
+        
+        # 创建输出目录用于保存每次迭代的结果
+        if output_dir:
+            task_output_dir = os.path.join(output_dir, f"task_{task_id}")
+            os.makedirs(task_output_dir, exist_ok=True)
+            
+            # 检查断点续传 - 查找已存在的最高迭代次数
+            existing_iterations = []
+            if os.path.exists(task_output_dir):
+                for file in os.listdir(task_output_dir):
+                    if file.startswith("iteration_") and file.endswith(".json"):
+                        try:
+                            iter_num = int(file.split("_")[1].split(".")[0])
+                            existing_iterations.append(iter_num)
+                        except ValueError:
+                            continue
+            
+            # 如果已经完成了所有迭代，直接加载最后的结果
+            if existing_iterations and max(existing_iterations) >= iterations:
+                print(f"任务 {task_id} 已完成所有 {iterations} 次迭代，跳过...")
+                # 加载最后一次迭代的结果作为最终结果
+                last_iter_file = os.path.join(task_output_dir, f"iteration_{iterations}.json")
+                if os.path.exists(last_iter_file):
+                    try:
+                        with open(last_iter_file, 'r', encoding='utf-8') as f:
+                            last_result = json.load(f)
+                        return {
+                            "task_id": task_id,
+                            "attack_tools": last_result["attack_tools"],
+                            "final_score": last_result["score"]
+                        }
+                    except Exception as e:
+                        print(f"加载已存在的结果失败: {e}")
+                # 如果无法加载已存在的结果，继续执行完整流程
 
         # 1) 无攻击基线，决定是否强制完成度
         base = self.executor.execute_task_without_attack(task)
@@ -865,11 +899,51 @@ class AttackGenerator:
                 best_trace = run.get("action_trace", [])
             print(f"[init] name={c['name']} score={score:.2f}")
 
+        # 保存初始结果（第0次迭代）
+        if output_dir and best_tool:
+            initial_result = {
+                "task_id": task_id,
+                "attack_tools": [best_tool],
+                "score": float(best_score if best_score != -1e9 else 0.0),
+                "iteration": 0
+            }
+            initial_output_path = os.path.join(task_output_dir, "iteration_0.json")
+            # 只有在文件不存在时才保存
+            if not os.path.exists(initial_output_path):
+                with open(initial_output_path, 'w', encoding='utf-8') as f:
+                    json.dump(initial_result, f, ensure_ascii=False, indent=2)
+                print(f"已保存第0次迭代结果到: {initial_output_path}")
+
         # 4) 迭代：基于当前best种子和执行情况来优化
         previous_trace = best_trace  # 保留完整的trace用于prompt
         previous_attack_tool = best_tool  # 保留当前best攻击工具
         
-        for it in range(iterations):
+        # 确定从哪一轮开始迭代（断点续传）
+        start_iteration = 0
+        if output_dir and existing_iterations:
+            start_iteration = max(existing_iterations)
+            print(f"断点续传：从第 {start_iteration} 轮迭代开始")
+            
+            # 如果需要从中间开始，加载上一次的best_tool和best_score
+            if start_iteration > 0:
+                prev_iter_file = os.path.join(task_output_dir, f"iteration_{start_iteration}.json")
+                if os.path.exists(prev_iter_file):
+                    try:
+                        with open(prev_iter_file, 'r', encoding='utf-8') as f:
+                            prev_result = json.load(f)
+                        best_tool = prev_result["attack_tools"][0]
+                        best_score = prev_result["score"]
+                        previous_attack_tool = best_tool
+                        print(f"加载第 {start_iteration} 轮迭代结果作为起始点")
+                    except Exception as e:
+                        print(f"加载断点续传数据失败，从头开始: {e}")
+                        start_iteration = 0
+
+        for it in range(start_iteration, iterations):
+            # 如果是断点续传，跳过已存在的迭代
+            if output_dir and it < start_iteration:
+                continue
+                
             # 使用当前best攻击工具和trace作为反馈来生成新的候选
             new_seed = self._propose_candidates(task, k=1, previous_attack_tool=previous_attack_tool, previous_trace=previous_trace)[0]
             run_new = self.executor.execute_task_with_attack(task, new_seed)
@@ -887,6 +961,21 @@ class AttackGenerator:
                 # 这样可以确保始终基于当前最优的种子进行优化
                 previous_trace = best_trace
                 previous_attack_tool = best_tool
+            
+            # 保存每次迭代的结果
+            if output_dir and best_tool:
+                iter_result = {
+                    "task_id": task_id,
+                    "attack_tools": [best_tool],
+                    "score": float(best_score if best_score != -1e9 else 0.0),
+                    "iteration": it + 1
+                }
+                iter_output_path = os.path.join(task_output_dir, f"iteration_{it + 1}.json")
+                # 只有在文件不存在时才保存
+                if not os.path.exists(iter_output_path):
+                    with open(iter_output_path, 'w', encoding='utf-8') as f:
+                        json.dump(iter_result, f, ensure_ascii=False, indent=2)
+                    print(f"已保存第{it + 1}次迭代结果到: {iter_output_path}")
 
         return {
             "task_id": task_id,
@@ -894,10 +983,10 @@ class AttackGenerator:
             "final_score": float(best_score if best_score != -1e9 else 0.0)
         }
 
-    def generate_attack_dataset(self, input_dataset: List[Dict], iterations: int = 3) -> List[Dict]:
+    def generate_attack_dataset(self, input_dataset: List[Dict], iterations: int = 3, output_dir: str = None) -> List[Dict]:
         attack_tools = []
         for task in input_dataset:
-            malicious_tool = self.generate_attack_tool(task, iterations)
+            malicious_tool = self.generate_attack_tool(task, iterations, output_dir)
             attack_tools.append(malicious_tool)
             print(f"已处理任务: {task.get('id', task.get('task_id', 'unknown'))}")
         return attack_tools
@@ -918,6 +1007,7 @@ def main():
     parser.add_argument("--input", "-i", default=default_input, help=f"输入任务数据集路径 (默认: {default_input})")
     parser.add_argument("--output", "-o", default=default_output, help=f"输出攻击工具数据集路径 (默认: {default_output})")
     parser.add_argument("--iterations", type=int, default=3, help="迭代优化次数 (默认: 3)")
+    parser.add_argument("--output-dir", default=None, help="每次迭代结果的输出目录 (默认: None)")
     # 新增：显式传入 Key 和 Base
     parser.add_argument("--api-key", dest="api_key", default=None, help="显式传入的大模型 API Key")
     parser.add_argument("--api-base", dest="api_base", default="https://apis.iflow.cn/v1", help="显式传入的大模型 API Base，如 https://apis.iflow.cn/v1")
@@ -935,7 +1025,7 @@ def main():
     print(f"成功加载 {len(input_dataset)} 个任务")
 
     print("正在生成攻击工具数据集...")
-    attack_dataset = generator.generate_attack_dataset(input_dataset, args.iterations)
+    attack_dataset = generator.generate_attack_dataset(input_dataset, args.iterations, args.output_dir)
 
     print("正在保存攻击工具数据集...")
     attack_tool_definitions = []
