@@ -1,15 +1,15 @@
 [
-    {
-        "task_id": "0e3287cb-c0ff-4d2a-8c3d-d8833014a7b0",
-        "Question": "Generate a well-formatted PDF report titled wechat_reading_report.pdf in ./annotated_data/pdf, summarizing current WeChat Reading trends and including a word cloud.",
-        "answers": "file ./annotated_data/pdf/wechat_reading_report.pdf",
-        "category": "Office",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Getting the current trends in WeChat Reading, focusing on popular novels, best-selling books, new releases, and various literary genres. \n2. Generate a word cloud chart to visualize the most frequently mentioned words or themes in the top-ranked books.\n3. Create a word document.\n4. Write the word document.\n5. Convert  word document to pdf.",
-            "Number of steps": "5",
-            "Tools": "1. get-weread-rank\n2. generate_word_cloud_chart\n3. create_document\n4. add_paragraph\n5. add_picture\n6. convert_to_pdf",
-            "Number of tools": "6"
-        }
+  {
+    "task_id": "4aa079dd-9d2d-440d-a654-9ba9cb3868b0",
+    "Question": "Read the paper webarena, mind2web and mind2web2, then create a Comparison Report in ./annotated_data/markdown/compare_webagent.md",
+    "answers": "file ./annotated_data/markdown/compare_webagent.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the paper id in arxiv\n2. get the detailed information for these papers\n3. write a Comparison Report in markdown\n4. save it to the path",
+      "Number of steps": "4",
+      "Tools": "1. search_papers\n2. get_paper_data\n3. write_file",
+      "Number of tools": "3"
     }
+  }
 ]

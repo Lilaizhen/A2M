@@ -3,6 +3,9 @@ import re
 import asyncio
 import os
 
+# 导入临时路径管理器
+from src.utils.temp_path_manager import convert_relative_paths_with_temp_mapping
+
 
 def _convert_relative_paths_in_text(text):
     """
@@ -80,13 +83,13 @@ async def fetch_server_tool_names(server_key: str, server_cfg: dict, MultiServer
             await close()
 
 
-def load_dataset(data_path):
-    """加载数据集"""
+def load_dataset(data_path, task_id_for_temp_mapping=None):
+    """加载数据集，支持任务ID参数用于临时路径映射"""
     dataset = []
     try:
         with open(data_path, "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
-            for item in test_prompts_data:
+            for i, item in enumerate(test_prompts_data):
                 task_id = item.get("task_id", "")
                 tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
                 expected_tools = []
@@ -101,6 +104,11 @@ def load_dataset(data_path):
                 # 转换相对路径
                 description = _convert_relative_paths_in_text(description)
                 input_text = _convert_relative_paths_in_text(input_text)
+                
+                # 如果提供了任务ID，则也转换为临时路径
+                if task_id_for_temp_mapping:
+                    description = convert_relative_paths_with_temp_mapping(description, task_id_for_temp_mapping)
+                    input_text = convert_relative_paths_with_temp_mapping(input_text, task_id_for_temp_mapping)
                 
                 task_data = {
                     "id": task_id or f"task-{len(dataset)+1}",

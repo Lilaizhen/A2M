@@ -21,6 +21,7 @@ from src.agents.agent_utils import format_agent_step
 from src.evaluators.task_evaluator import judge_task_completion
 from src.data_loaders.data_loader import load_mcp_configs_from_live_config, load_tool_to_mcp_mapping, fetch_server_tool_names, load_dataset
 from src.core.executor import TaskExecutor
+from src.utils.temp_path_manager import create_task_temp_dir, cleanup_task_temp_dir, convert_relative_paths_with_temp_mapping
 
 load_dotenv()  # 加载 .env 文件中的环境变量
 
@@ -117,164 +118,217 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
         task_start_time = time.time()
         log_and_echo(f"=============== 运行任务 {task_id}（{task_desc}） ===============")
 
-        # === 构造 filtered_config（包含 expected 工具 + 可选 mytool）===
-        filtered_config = {}
-        required_mcp_servers = set()
+        # === 为任务创建临时目录 ===
+        temp_dir = create_task_temp_dir(task_id)
+        log_and_echo(f"🔧 为任务 {task_id} 创建临时目录: {temp_dir}")
 
-        if expected_tools:
-            for tool_name in expected_tools:
-                if tool_name in tool_to_mcp:
-                    mcp_server_name = tool_to_mcp[tool_name]
-                    required_mcp_servers.add(mcp_server_name)
+        try:
+            # 转换任务描述和输入中的相对路径为临时路径
+            original_task_desc = task_desc
+            original_user_prompt = user_prompt
+            task_desc = convert_relative_paths_with_temp_mapping(task_desc, task_id)
+            user_prompt = convert_relative_paths_with_temp_mapping(user_prompt, task_id)
+            
+            # 调试输出
+            if original_task_desc != task_desc:
+                log_and_echo(f"🔧 任务描述路径转换: {original_task_desc} -> {task_desc}")
+            if original_user_prompt != user_prompt:
+                log_and_echo(f"🔧 用户输入路径转换: {original_user_prompt} -> {user_prompt}")
 
-        mytool_server_key = "mytool"
-        mytool_server_path = "./tools/myTool.py"
-        if attack:
-            mytool_config = {
-                "command": "python",
-                "args": [os.path.abspath(mytool_server_path)],
-                "transport": "stdio"
-            }
-            if attack_dataset_path and task_id in attack_tool_mapping and attack_tool_mapping[task_id]:
-                attack_tool = attack_tool_mapping[task_id][0]
-                config_json = json.dumps(attack_tool, ensure_ascii=False)
-                mytool_config["args"].extend([config_json])
-            filtered_config[mytool_server_key] = mytool_config
+            # === 构造 filtered_config（包含 expected 工具 + 可选 mytool）===
+            filtered_config = {}
+            required_mcp_servers = set()
 
-        for server_name in required_mcp_servers:
-            if server_name in mcp_configs:
-                filtered_config[server_name] = mcp_configs[server_name].copy()
-                filtered_config[server_name].setdefault("transport", "stdio")
-                if (filtered_config[server_name]["command"] == "python" and
-                    filtered_config[server_name].get("args") and
-                    filtered_config[server_name]["args"][0].endswith(".py")):
-                    filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
+            if expected_tools:
+                for tool_name in expected_tools:
+                    if tool_name in tool_to_mcp:
+                        mcp_server_name = tool_to_mcp[tool_name]
+                        required_mcp_servers.add(mcp_server_name)
 
-        log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
+            mytool_server_key = "mytool"
+            mytool_server_path = "./tools/myTool.py"
+            if attack:
+                mytool_config = {
+                    "command": "python",
+                    "args": [os.path.abspath(mytool_server_path)],
+                    "transport": "stdio"
+                }
+                if attack_dataset_path and task_id in attack_tool_mapping and attack_tool_mapping[task_id]:
+                    attack_tool = attack_tool_mapping[task_id][0]
+                    config_json = json.dumps(attack_tool, ensure_ascii=False)
+                    mytool_config["args"].extend([config_json])
+                filtered_config[mytool_server_key] = mytool_config
 
-        # === 动态获取 mytool 的工具名集合 ===
-        mytool_tool_names: set[str] = set()
-        if attack and mytool_server_key in filtered_config:
+            for server_name in required_mcp_servers:
+                if server_name in mcp_configs:
+                    filtered_config[server_name] = mcp_configs[server_name].copy()
+                    filtered_config[server_name].setdefault("transport", "stdio")
+                    if (filtered_config[server_name]["command"] == "python" and
+                        filtered_config[server_name].get("args") and
+                        filtered_config[server_name]["args"][0].endswith(".py")):
+                        filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
+                    # 处理args中的相对路径
+                    if filtered_config[server_name].get("args"):
+                        for i, arg in enumerate(filtered_config[server_name]["args"]):
+                            if isinstance(arg, str) and (arg.startswith('./annotated_data') or arg.startswith('../annotated_data')):
+                                # 转换相对路径为临时路径
+                                converted_arg = convert_relative_paths_with_temp_mapping(arg, task_id)
+                                filtered_config[server_name]["args"][i] = converted_arg
+
+            log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
+
+            # === 动态获取 mytool 的工具名集合 ===
+            mytool_tool_names: set[str] = set()
+            if attack and mytool_server_key in filtered_config:
+                try:
+                    mytool_tool_names = await fetch_server_tool_names(mytool_server_key, filtered_config[mytool_server_key], MultiServerMCPClient)
+                    log_and_echo(f"mytool 工具清单: {sorted(mytool_tool_names)}")
+                except Exception as e:
+                    log_and_echo(f"⚠️ 获取 mytool 工具名失败，将无法区分其调用：{e}")
+                    mytool_tool_names = set()
+
+            # --- 加载 MCP 工具（使用 LimitedMCPClient，带超时与返回截断）---
             try:
-                mytool_tool_names = await fetch_server_tool_names(mytool_server_key, filtered_config[mytool_server_key], MultiServerMCPClient)
-                log_and_echo(f"mytool 工具清单: {sorted(mytool_tool_names)}")
+                limited = LimitedMCPClient(
+                    filtered_config,
+                    max_response_length=5000,
+                    max_list_length=100,
+                    max_category_items=20,
+                    timeout=30
+                )
+                tools = await limited.get_tools()
             except Exception as e:
-                log_and_echo(f"⚠️ 获取 mytool 工具名失败，将无法区分其调用：{e}")
-                mytool_tool_names = set()
+                log_and_echo(f"❌ 加载 MCP 工具失败: {e}")
+                task_end_time = time.time()
+                task_execution_time = task_end_time - task_start_time
 
-        # --- 加载 MCP 工具（使用 LimitedMCPClient，带超时与返回截断）---
-        try:
-            limited = LimitedMCPClient(
-                filtered_config,
-                max_response_length=5000,
-                max_list_length=100,
-                max_category_items=20,
-                timeout=30
-            )
-            tools = await limited.get_tools()
-        except Exception as e:
-            log_and_echo(f"❌ 加载 MCP 工具失败: {e}")
-            task_end_time = time.time()
-            task_execution_time = task_end_time - task_start_time
+                results_summary.append({
+                    "task_id": task_id,
+                    "input": user_prompt,
+                    "expected_tools": expected_tools,
+                    "agent_final_response": "MCP 工具加载失败",
+                    "task_completed": False,
+                    "completion_reason": {
+                        "result": "未完成",
+                        "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
+                        "failure_type": "mcp_error"
+                    },
+                    "execution_time_seconds": task_execution_time,
+                    "total_tool_calls": 0,
+                    "mytool_calls": 0,
+                    "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                    "action_trace": [
+                        {"ts": _now(), "type": "user_input", "content": user_prompt}
+                    ]
+                })
+                continue
 
-            results_summary.append({
-                "task_id": task_id,
-                "input": user_prompt,
-                "expected_tools": expected_tools,
-                "agent_final_response": "MCP 工具加载失败",
-                "task_completed": False,
-                "completion_reason": {
-                    "result": "未完成",
-                    "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
-                    "failure_type": "mcp_error"
-                },
-                "execution_time_seconds": task_execution_time,
-                "total_tool_calls": 0,
-                "mytool_calls": 0,
-                "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
-                "action_trace": [
-                    {"ts": _now(), "type": "user_input", "content": user_prompt}
-                ]
+            # --- 创建 Agent 并行（容错） ---
+            final_response = ""
+            action_trace = []  # 行动轨迹
+            token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+
+            # 任务开始即记录用户输入
+            action_trace.append({
+                "ts": _now(),
+                "type": "user_input",
+                "content": user_prompt
             })
-            continue
 
-        # --- 创建 Agent 并行（容错） ---
-        final_response = ""
-        action_trace = []  # 行动轨迹
-        token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+            try:
+                agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
+                config = {"recursion_limit": 100, "configurable": {"thread_id": f"test-{task_id}"}}
+                user_input = {"role": "user", "content": user_prompt}
 
-        # 任务开始即记录用户输入
-        action_trace.append({
-            "ts": _now(),
-            "type": "user_input",
-            "content": user_prompt
-        })
+                # 使用回调来统计token使用量
+                with get_openai_callback() as cb:
+                    # 创建一个变量来跟踪当前正在执行的工具
+                    current_tool_execution = None
+                    # 创建一个锁来确保工具调用的串行执行
+                    tool_lock = asyncio.Lock()
+                    
+                    async def _drain_stream():
+                        nonlocal final_response, action_trace, current_tool_execution
+                        async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
+                            last_message = step["messages"][-1]
+                            pretty = format_agent_step(last_message)
+                            log_and_echo(pretty)
 
-        try:
-            agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
-            config = {"recursion_limit": 100, "configurable": {"thread_id": f"test-{task_id}"}}
-            user_input = {"role": "user", "content": user_prompt}
-
-            # 使用回调来统计token使用量
-            with get_openai_callback() as cb:
-                # 创建一个变量来跟踪当前正在执行的工具
-                current_tool_execution = None
-                # 创建一个锁来确保工具调用的串行执行
-                tool_lock = asyncio.Lock()
-                
-                async def _drain_stream():
-                    nonlocal final_response, action_trace, current_tool_execution
-                    async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
-                        last_message = step["messages"][-1]
-                        pretty = format_agent_step(last_message)
-                        log_and_echo(pretty)
-
-                        # 1) 工具输出
-                        if isinstance(last_message, ToolMessage):
-                            tool_output_text = _as_text(last_message.content)
-                            if isinstance(tool_output_text, str) and len(tool_output_text) > MAX_TOOL_OUTPUT_CHARS:
-                                tool_output_text = tool_output_text[:MAX_TOOL_OUTPUT_CHARS] + "...(内容已截断)"
-                            action_trace.append({
-                                "ts": _now(),
-                                "type": "tool_output",
-                                "tool": last_message.name,
-                                "output": tool_output_text
-                            })
-                            # 清除当前工具执行状态
-                            current_tool_execution = None
-                            continue
-
-                        # 2) AI 消息 + 其中的工具调用
-                        if isinstance(last_message, AIMessage):
-                            content_text = _as_text(last_message.content).strip()
-                            if content_text:
-                                final_response = content_text
+                            # 1) 工具输出
+                            if isinstance(last_message, ToolMessage):
+                                tool_output_text = _as_text(last_message.content)
+                                if isinstance(tool_output_text, str) and len(tool_output_text) > MAX_TOOL_OUTPUT_CHARS:
+                                    tool_output_text = tool_output_text[:MAX_TOOL_OUTPUT_CHARS] + "...(内容已截断)"
                                 action_trace.append({
                                     "ts": _now(),
-                                    "type": "ai_message",
-                                    "content": content_text
+                                    "type": "tool_output",
+                                    "tool": last_message.name,
+                                    "output": tool_output_text
                                 })
+                                # 清除当前工具执行状态
+                                current_tool_execution = None
+                                continue
 
-                            # 获取所有工具调用
-                            tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
-                            
-                            # 使用锁确保一次只处理一个工具调用
-                            async with tool_lock:
-                                # 如果有正在执行的工具，等待其完成
-                                while current_tool_execution is not None:
-                                    await asyncio.sleep(0.1)
+                            # 2) AI 消息 + 其中的工具调用
+                            if isinstance(last_message, AIMessage):
+                                content_text = _as_text(last_message.content).strip()
+                                if content_text:
+                                    final_response = content_text
+                                    action_trace.append({
+                                        "ts": _now(),
+                                        "type": "ai_message",
+                                        "content": content_text
+                                    })
+
+                                # 获取所有工具调用
+                                tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
                                 
-                                # 只处理第一个工具调用
-                                if tool_calls:
-                                    tc = tool_calls[0]
-                                    fn = (tc.get("function") or {})
-                                    name = fn.get("name") or tc.get("name", "unknown_tool")
-                                    args = fn.get("arguments") or tc.get("args") or {}
-                                    try:
-                                        if isinstance(args, str):
-                                            args = json.loads(args)
-                                    except Exception:
-                                        pass
+                                # 使用锁确保一次只处理一个工具调用
+                                async with tool_lock:
+                                    # 如果有正在执行的工具，等待其完成
+                                    while current_tool_execution is not None:
+                                        await asyncio.sleep(0.1)
+                                    
+                                    # 只处理第一个工具调用
+                                    if tool_calls:
+                                        tc = tool_calls[0]
+                                        fn = (tc.get("function") or {})
+                                        name = fn.get("name") or tc.get("name", "unknown_tool")
+                                        args = fn.get("arguments") or tc.get("args") or {}
+                                        try:
+                                            if isinstance(args, str):
+                                                args = json.loads(args)
+                                        except Exception:
+                                            pass
+                                        action_trace.append({
+                                            "ts": _now(),
+                                            "type": "tool_call",
+                                            "tool": name,
+                                            "args": args
+                                        })
+                                        tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
+                                        tc_pretty = format_agent_step(tool_call_msg)
+                                        log_and_echo(tc_pretty)
+                                        # 设置当前正在执行的工具
+                                        current_tool_execution = name
+                                continue
+
+                            # 3) 兜底：dict 形式的 tool_call
+                            if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
+                                fn = (last_message.get("function") or {})
+                                name = fn.get("name") or last_message.get("name", "unknown_tool")
+                                args = fn.get("arguments") or last_message.get("args") or {}
+                                try:
+                                    if isinstance(args, str):
+                                        args = json.loads(args)
+                                except Exception:
+                                    pass
+                                # 使用锁确保一次只处理一个工具调用
+                                async with tool_lock:
+                                    # 如果有正在执行的工具，等待其完成
+                                    while current_tool_execution is not None:
+                                        await asyncio.sleep(0.1)
+                                        
                                     action_trace.append({
                                         "ts": _now(),
                                         "type": "tool_call",
@@ -286,112 +340,88 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
                                     log_and_echo(tc_pretty)
                                     # 设置当前正在执行的工具
                                     current_tool_execution = name
-                            continue
+                                return
 
-                        # 3) 兜底：dict 形式的 tool_call
-                        if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
-                            fn = (last_message.get("function") or {})
-                            name = fn.get("name") or last_message.get("name", "unknown_tool")
-                            args = fn.get("arguments") or last_message.get("args") or {}
-                            try:
-                                if isinstance(args, str):
-                                    args = json.loads(args)
-                            except Exception:
-                                pass
-                            # 使用锁确保一次只处理一个工具调用
-                            async with tool_lock:
-                                # 如果有正在执行的工具，等待其完成
-                                while current_tool_execution is not None:
-                                    await asyncio.sleep(0.1)
-                                    
-                                action_trace.append({
-                                    "ts": _now(),
-                                    "type": "tool_call",
-                                    "tool": name,
-                                    "args": args
-                                })
-                                tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
-                                tc_pretty = format_agent_step(tool_call_msg)
-                                log_and_echo(tc_pretty)
-                                # 设置当前正在执行的工具
-                                current_tool_execution = name
-                            return
+                    # 整体 agent 运行加一层总超时 500s
+                    try:
+                        await asyncio.wait_for(_drain_stream(), timeout=500)
+                    except asyncio.TimeoutError:
+                        log_and_echo("Agent 流式执行超时（>500s）")
+                        action_trace.append({
+                            "ts": _now(),
+                            "type": "ai_message",
+                            "content": "Agent 执行超时（>500s）"
+                        })
 
-                # 整体 agent 运行加一层总超时 500s
-                try:
-                    await asyncio.wait_for(_drain_stream(), timeout=500)
-                except asyncio.TimeoutError:
-                    log_and_echo("Agent 流式执行超时（>500s）")
-                    action_trace.append({
-                        "ts": _now(),
-                        "type": "ai_message",
-                        "content": "Agent 执行超时（>500s）"
-                    })
+                    # 统计 token
+                    token_usage = {
+                        "total_tokens": cb.total_tokens,
+                        "prompt_tokens": cb.prompt_tokens,
+                        "completion_tokens": cb.completion_tokens
+                    }
 
-                # 统计 token
-                token_usage = {
-                    "total_tokens": cb.total_tokens,
-                    "prompt_tokens": cb.prompt_tokens,
-                    "completion_tokens": cb.completion_tokens
-                }
+            except Exception as e:
+                log_and_echo(f"❌ 运行代理失败: {e}")
+                task_end_time = time.time()
+                task_execution_time = task_end_time - task_start_time
+                results_summary.append({
+                    "task_id": task_id,
+                    "input": user_prompt,
+                    "expected_tools": expected_tools,
+                    "agent_final_response": f"Agent 运行失败: {e}",
+                    "task_completed": False,
+                    "completion_reason": {
+                        "result": "未完成",
+                        "reason": f"Agent 运行失败: {e.__class__.__name__}",
+                        "failure_type": "agent_error"
+                    },
+                    "execution_time_seconds": task_execution_time,
+                    "total_tool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call"),
+                    "mytool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in mytool_tool_names),
+                    "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                    "action_trace": action_trace
+                })
+                continue
 
-        except Exception as e:
-            log_and_echo(f"❌ 运行代理失败: {e}")
+            # === 任务完成度判断（改为基于轨迹）===
+            is_task_completed = False
+            completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
+            if action_trace and task_desc:
+                behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
+                is_task_completed, _, completion_json = await judge_task_completion(
+                    agent_behavior=behavior_text,
+                    task_description=task_desc,
+                    expected_tools=expected_tools
+                )
+            else:
+                log_and_echo("⚠️  跳过任务完成度判断（缺少必要信息）")
+
+            # 统计
+            total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
+            mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in mytool_tool_names)
+
+            # 执行时间
             task_end_time = time.time()
             task_execution_time = task_end_time - task_start_time
+
             results_summary.append({
                 "task_id": task_id,
                 "input": user_prompt,
                 "expected_tools": expected_tools,
-                "agent_final_response": f"Agent 运行失败: {e}",
-                "task_completed": False,
-                "completion_reason": {
-                    "result": "未完成",
-                    "reason": f"Agent 运行失败: {e.__class__.__name__}",
-                    "failure_type": "agent_error"
-                },
+                "agent_final_response": final_response,
+                "task_completed": is_task_completed,
+                "completion_reason": completion_json,
                 "execution_time_seconds": task_execution_time,
-                "total_tool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call"),
-                "mytool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in mytool_tool_names),
-                "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                "total_tool_calls": total_tool_calls,
+                "mytool_calls": mytool_calls,
+                "token_usage": token_usage,
                 "action_trace": action_trace
             })
-            continue
 
-        # === 任务完成度判断（改为基于轨迹）===
-        is_task_completed = False
-        completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
-        if action_trace and task_desc:
-            behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
-            is_task_completed, _, completion_json = await judge_task_completion(
-                agent_behavior=behavior_text,
-                task_description=task_desc,
-                expected_tools=expected_tools
-            )
-        else:
-            log_and_echo("⚠️  跳过任务完成度判断（缺少必要信息）")
-
-        # 统计
-        total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
-        mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in mytool_tool_names)
-
-        # 执行时间
-        task_end_time = time.time()
-        task_execution_time = task_end_time - task_start_time
-
-        results_summary.append({
-            "task_id": task_id,
-            "input": user_prompt,
-            "expected_tools": expected_tools,
-            "agent_final_response": final_response,
-            "task_completed": is_task_completed,
-            "completion_reason": completion_json,
-            "execution_time_seconds": task_execution_time,
-            "total_tool_calls": total_tool_calls,
-            "mytool_calls": mytool_calls,
-            "token_usage": token_usage,
-            "action_trace": action_trace
-        })
+        finally:
+            # 清理临时目录
+            cleanup_task_temp_dir(task_id)
+            log_and_echo(f"🗑️  清理任务 {task_id} 的临时目录")
 
     # === 汇总结果 ===
     total_tasks = len(results_summary)
@@ -466,6 +496,6 @@ if __name__ == "__main__":
             if "input" in task:
                 task["input"] = _convert_relative_paths_in_text(task["input"])
         
-        asyncio.run(main(dataset, use_mytool=args.use_mytool, attack_dataset_path=args.attack_dataset))
+        asyncio.run(main(dataset, attack=args.use_mytool, attack_dataset_path=args.attack_dataset))
     else:
         print("错误: 没有找到任何有效的数据集文件")
