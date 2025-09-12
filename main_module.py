@@ -21,7 +21,7 @@ from src.agents.agent_utils import format_agent_step
 from src.evaluators.task_evaluator import judge_task_completion
 from src.data_loaders.data_loader import load_mcp_configs_from_live_config, load_tool_to_mcp_mapping, fetch_server_tool_names, load_dataset
 from src.core.executor import TaskExecutor
-from src.utils.temp_path_manager import create_task_temp_dir, cleanup_task_temp_dir, convert_relative_paths_with_temp_mapping
+import shutil
 
 load_dotenv()  # 加载 .env 文件中的环境变量
 
@@ -53,6 +53,25 @@ def _convert_relative_paths_in_text(text):
         return match.group(0)
     
     return re.sub(pattern, replace_path, text)
+
+
+def _reset_annotated_data():
+    """
+    重置annotated_data文件夹到备份状态
+    """
+    annotated_data_path = "./annotated_data"
+    annotated_data_backup_path = "./annotated_data_backup"
+    
+    # 删除现有的annotated_data目录
+    if os.path.exists(annotated_data_path):
+        shutil.rmtree(annotated_data_path)
+    
+    # 从备份复制，确保annotated_data是干净的
+    if os.path.exists(annotated_data_backup_path):
+        shutil.copytree(annotated_data_backup_path, annotated_data_path)
+    else:
+        # 如果备份不存在，创建空的annotated_data目录
+        os.makedirs(annotated_data_path, exist_ok=True)
 
 
 # --- 全局配置 ---
@@ -118,22 +137,18 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
         task_start_time = time.time()
         log_and_echo(f"=============== 运行任务 {task_id}（{task_desc}） ===============")
 
-        # === 为任务创建临时目录 ===
-        temp_dir = create_task_temp_dir(task_id)
-        log_and_echo(f"🔧 为任务 {task_id} 创建临时目录: {temp_dir}")
+        # === 使用annotated_data目录 ===
+        temp_dir = "./annotated_data"
+        log_and_echo(f"🔧 使用annotated_data目录: {temp_dir}")
+        
+        # 重置annotated_data文件夹到备份状态
+        _reset_annotated_data()
+        log_and_echo("🔄 重置annotated_data目录到备份状态")
 
         try:
-            # 转换任务描述和输入中的相对路径为临时路径
+            # 保持任务描述和输入不变
             original_task_desc = task_desc
             original_user_prompt = user_prompt
-            task_desc = convert_relative_paths_with_temp_mapping(task_desc, task_id)
-            user_prompt = convert_relative_paths_with_temp_mapping(user_prompt, task_id)
-            
-            # 调试输出
-            if original_task_desc != task_desc:
-                log_and_echo(f"🔧 任务描述路径转换: {original_task_desc} -> {task_desc}")
-            if original_user_prompt != user_prompt:
-                log_and_echo(f"🔧 用户输入路径转换: {original_user_prompt} -> {user_prompt}")
 
             # === 构造 filtered_config（包含 expected 工具 + 可选 mytool）===
             filtered_config = {}
@@ -170,13 +185,8 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
                         filtered_config[server_name].get("args") and
                         filtered_config[server_name]["args"][0].endswith(".py")):
                         filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
-                    # 处理args中的相对路径
-                    if filtered_config[server_name].get("args"):
-                        for i, arg in enumerate(filtered_config[server_name]["args"]):
-                            if isinstance(arg, str) and (arg.startswith('./annotated_data') or arg.startswith('../annotated_data')):
-                                # 转换相对路径为临时路径
-                                converted_arg = convert_relative_paths_with_temp_mapping(arg, task_id)
-                                filtered_config[server_name]["args"][i] = converted_arg
+                    # 保持args中的路径不变
+                    pass
 
             log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
 
@@ -422,9 +432,8 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
             })
 
         finally:
-            # 清理临时目录
-            cleanup_task_temp_dir(task_id)
-            log_and_echo(f"🗑️  清理任务 {task_id} 的临时目录")
+            # 不需要清理临时目录
+            log_and_echo(f"ℹ️  使用annotated_data目录，无需清理")
 
     # === 汇总结果 ===
     total_tasks = len(results_summary)

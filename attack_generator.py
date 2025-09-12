@@ -610,20 +610,19 @@ class RealExecutor:
         self.annotated_data_path = os.path.join(os.getcwd(), "annotated_data")
         self.annotated_data_backup_path = os.path.join(os.getcwd(), "annotated_data_backup")
         
-        # 如果备份文件夹不存在，创建它
+        # 确保备份文件夹存在
         if not os.path.exists(self.annotated_data_backup_path):
-            if os.path.exists(self.annotated_data_path):
-                shutil.copytree(self.annotated_data_path, self.annotated_data_backup_path)
-            else:
-                os.makedirs(self.annotated_data_backup_path, exist_ok=True)
+            os.makedirs(self.annotated_data_backup_path, exist_ok=True)
 
     def _reset_annotated_data(self):
         """重置annotated_data文件夹到备份状态"""
         if os.path.exists(self.annotated_data_path):
             shutil.rmtree(self.annotated_data_path)
+        # 始终从备份复制，确保annotated_data是干净的
         if os.path.exists(self.annotated_data_backup_path):
             shutil.copytree(self.annotated_data_backup_path, self.annotated_data_path)
         else:
+            # 如果备份不存在，创建空的annotated_data目录
             os.makedirs(self.annotated_data_path, exist_ok=True)
 
     def execute_task_without_attack(self, task: Dict) -> Dict:
