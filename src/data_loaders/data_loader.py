@@ -61,13 +61,15 @@ def load_tool_to_mcp_mapping(tool2mcp_path):
         if "config" in item and "mcpServers" in item["config"]:
             servers = item["config"]["mcpServers"]
             mcp_configs.update(servers)
-            server_name = list(servers.keys())[0] if servers else None
-            if server_name and "tools" in item:
-                server_tools = item["tools"].get(server_name, {})
-                for tool_item in server_tools.get("tools", []):
-                    tool_name = tool_item.get("name")
-                    if tool_name:
-                        tool_to_mcp[tool_name] = server_name
+            for server_name in servers.keys():
+                if "tools" in item:
+                    server_tools = item["tools"].get(server_name, {})
+                    for tool_item in server_tools.get("tools", []):
+                        tool_name = tool_item.get("name")
+                        if tool_name:
+                            if tool_name not in tool_to_mcp:
+                                tool_to_mcp[tool_name] = []
+                            tool_to_mcp[tool_name].append(server_name)
     return tool_to_mcp, mcp_configs
 
 

@@ -138,7 +138,7 @@
         "Annotator Metadata": {
             "Steps": "1. Retrieves publications and other references associated with a single clinical trial identified by its NCT ID\n2. Generate a markdown report\n3. Write it to the path",
             "Number of steps": "3",
-            "Tools": "1. trial_references\n2. write_file",
+            "Tools": "1. trial_references_getter\n2. write_file",
             "Number of tools": "2"
         }
     },
