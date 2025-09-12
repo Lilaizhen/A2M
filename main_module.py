@@ -142,8 +142,11 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
             if expected_tools:
                 for tool_name in expected_tools:
                     if tool_name in tool_to_mcp:
-                        mcp_server_name = tool_to_mcp[tool_name]
-                        required_mcp_servers.add(mcp_server_name)
+                        mcp_server_names = tool_to_mcp[tool_name]
+                        if isinstance(mcp_server_names, list):
+                            required_mcp_servers.update(mcp_server_names)
+                        else:
+                            required_mcp_servers.add(mcp_server_names)
 
             mytool_server_key = "mytool"
             mytool_server_path = "./tools/myTool.py"

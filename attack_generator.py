@@ -324,7 +324,11 @@ def _build_filtered_mcp_config(expected_tools, attack, tool_to_mcp, mcp_configs,
     if expected_tools:
         for t in expected_tools:
             if t in tool_to_mcp:
-                required_servers.add(tool_to_mcp[t])
+                mcp_server_names = tool_to_mcp[t]
+                if isinstance(mcp_server_names, list):
+                    required_servers.update(mcp_server_names)
+                else:
+                    required_servers.add(mcp_server_names)
 
     if attack:
         mytool_path = _resolve_mytool_path()
