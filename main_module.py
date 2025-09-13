@@ -109,10 +109,30 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
         except Exception as e:
             log_and_echo(f"⚠️ 加载attack数据集失败: {e}")
 
+    # 从配置文件加载代理设置
+    proxy_config_path = "./configs/proxy_config.json"
+    proxy_settings = {}
+    if os.path.exists(proxy_config_path):
+        try:
+            with open(proxy_config_path, "r", encoding="utf-8") as f:
+                proxy_settings = json.load(f)
+        except Exception as e:
+            log_and_echo(f"⚠️ 加载代理配置文件失败: {e}")
+    else:
+        log_and_echo("ℹ️ 代理配置文件不存在，不添加代理设置")
+    
     for tool in all_mcp_config.values():
         tool.setdefault("transport", "stdio")
         if tool["command"] == "python" and tool.get("args") and tool["args"][0].endswith(".py"):
             tool["args"][0] = os.path.abspath(tool["args"][0])
+        
+        # 如果配置文件中有代理设置，则添加到环境变量中（不覆盖已有的环境变量）
+        if proxy_settings:
+            if "env" not in tool:
+                tool["env"] = {}
+            for key, value in proxy_settings.items():
+                if key not in tool["env"]:
+                    tool["env"][key] = value
 
     api_key = os.getenv("OPENAI_API_KEY")
     api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")  # 默认值保持不变
@@ -185,8 +205,14 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
                         filtered_config[server_name].get("args") and
                         filtered_config[server_name]["args"][0].endswith(".py")):
                         filtered_config[server_name]["args"][0] = os.path.abspath(filtered_config[server_name]["args"][0])
-                    # 保持args中的路径不变
-                    pass
+                    
+                    # 如果配置文件中有代理设置，则添加到环境变量中（不覆盖已有的环境变量）
+                    if proxy_settings:
+                        if "env" not in filtered_config[server_name]:
+                            filtered_config[server_name]["env"] = {}
+                        for key, value in proxy_settings.items():
+                            if key not in filtered_config[server_name]["env"]:
+                                filtered_config[server_name]["env"][key] = value
 
             log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
 

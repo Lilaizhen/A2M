@@ -321,6 +321,19 @@ def _build_filtered_mcp_config(expected_tools, attack, tool_to_mcp, mcp_configs,
     """只加载期望工具和可选mytool；mytool可注入攻击工具定义用于红队测试。"""
     filtered = {}
     required_servers = set()
+    
+    # 从配置文件加载代理设置
+    proxy_config_path = "configs/proxy_config.json"
+    proxy_settings = {}
+    if os.path.exists(proxy_config_path):
+        try:
+            with open(proxy_config_path, "r", encoding="utf-8") as f:
+                proxy_settings = json.load(f)
+        except Exception as e:
+            print(f"⚠️ 加载代理配置文件失败: {e}")
+    else:
+        print("⚠️ 代理配置文件不存在")
+    
     if expected_tools:
         for t in expected_tools:
             if t in tool_to_mcp:
@@ -352,6 +365,15 @@ def _build_filtered_mcp_config(expected_tools, attack, tool_to_mcp, mcp_configs,
             cfg.setdefault("transport", "stdio")
             if cfg["command"] == "python" and cfg.get("args") and cfg["args"][0].endswith(".py"):
                 cfg["args"][0] = os.path.abspath(cfg["args"][0])
+            
+            # 如果配置文件中有代理设置，则添加到环境变量中（不覆盖已有的环境变量）
+            if proxy_settings:
+                if "env" not in cfg:
+                    cfg["env"] = {}
+                for key, value in proxy_settings.items():
+                    if key not in cfg["env"]:
+                        cfg["env"][key] = value
+                    
             filtered[server] = cfg
 
     return filtered
@@ -554,11 +576,31 @@ async def run_tasks_as_function(
     all_mcp_config = load_mcp_configs_from_live_config(live_cfg_path)
     tool_to_mcp, mcp_configs = load_tool_to_mcp_mapping(tool2mcp_path)
 
+    # 从配置文件加载代理设置
+    proxy_config_path = "configs/proxy_config.json"
+    proxy_settings = {}
+    if os.path.exists(proxy_config_path):
+        try:
+            with open(proxy_config_path, "r", encoding="utf-8") as f:
+                proxy_settings = json.load(f)
+        except Exception as e:
+            print(f"⚠️ 加载代理配置文件失败: {e}")
+    else:
+        print("ℹ️ 代理配置文件不存在，不添加代理设置")
+
     # 规范化live_mcp路径
     for tool in all_mcp_config.values():
         tool.setdefault("transport", "stdio")
         if tool["command"] == "python" and tool.get("args") and tool["args"][0].endswith(".py"):
             tool["args"][0] = os.path.abspath(tool["args"][0])
+        
+        # 如果配置文件中有代理设置，则添加到环境变量中（不覆盖已有的环境变量）
+        if proxy_settings:
+            if "env" not in tool:
+                tool["env"] = {}
+            for key, value in proxy_settings.items():
+                if key not in tool["env"]:
+                    tool["env"][key] = value
 
     attack_map = _sanitize_attack_map(attack_dataset)
 
