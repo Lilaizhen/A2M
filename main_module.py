@@ -15,63 +15,24 @@ from langchain_community.callbacks.manager import get_openai_callback
 
 # 加载自定义模块
 from src.utils.logging_config import setup_run_logger, log_and_echo
-from src.utils.tool_functions import truncate_tool_outputs, _now, _as_text, render_behavior_from_trace
+from src.utils.tool_functions import truncate_tool_outputs, _now, _as_text, render_behavior_from_trace, _convert_relative_paths_in_text
 from src.mcp_client.client import LimitedMCPClient
 from src.agents.agent_utils import format_agent_step
 from src.evaluators.task_evaluator import judge_task_completion
 from src.data_loaders.data_loader import load_mcp_configs_from_live_config, load_tool_to_mcp_mapping, fetch_server_tool_names, load_dataset
 from src.core.executor import TaskExecutor
+from src.core.agent_runner import run_agent_with_streaming
 import shutil
 
 load_dotenv()  # 加载 .env 文件中的环境变量
-
-def _convert_relative_paths_in_text(text):
-    """
-    在文本中查找类似 "./path/to/file" 的相对路径并转换为绝对路径
-    仅转换以 ./ 或 ../ 开头的路径
-    """
-    if not text or not isinstance(text, str):
-        return text
-    
-    # 匹配相对路径模式 (./ 或 ../ 开头的路径)
-    # 这个正则表达式会匹配引号中的相对路径或独立的相对路径
-    pattern = r'(["\']?)(\.{1,2}/[^\s"\']+)["\']?'
-    
-    def replace_path(match):
-        quote = match.group(1)
-        path = match.group(2)
-        
-        # 只处理以 ./ 或 ../ 开头的路径
-        if path.startswith('./') or path.startswith('../'):
-            try:
-                abs_path = os.path.abspath(path)
-                return f'{quote}{abs_path}{quote}'
-            except Exception:
-                # 如果转换失败，保持原路径
-                return match.group(0)
-        
-        return match.group(0)
-    
-    return re.sub(pattern, replace_path, text)
 
 
 def _reset_annotated_data():
     """
     重置annotated_data文件夹到备份状态
     """
-    annotated_data_path = "./annotated_data"
-    annotated_data_backup_path = "./annotated_data_backup"
-    
-    # 删除现有的annotated_data目录
-    if os.path.exists(annotated_data_path):
-        shutil.rmtree(annotated_data_path)
-    
-    # 从备份复制，确保annotated_data是干净的
-    if os.path.exists(annotated_data_backup_path):
-        shutil.copytree(annotated_data_backup_path, annotated_data_path)
-    else:
-        # 如果备份不存在，创建空的annotated_data目录
-        os.makedirs(annotated_data_path, exist_ok=True)
+    from src.core.agent_executor import reset_annotated_data
+    reset_annotated_data("./annotated_data", "./annotated_data_backup")
 
 
 # --- 全局配置 ---
@@ -275,129 +236,18 @@ async def main(dataset, attack: bool = True, attack_dataset_path: str = None, mo
             })
 
             try:
-                agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
-                config = {"recursion_limit": 100, "configurable": {"thread_id": f"test-{task_id}"}}
-                user_input = {"role": "user", "content": user_prompt}
+                # 使用统一的agent执行模块
+                agent_result = await run_agent_with_streaming(
+                    llm=llm,
+                    tools=tools,
+                    task_id=f"test-{task_id}",
+                    user_prompt=user_prompt,
+                    use_tool_lock=True
+                )
 
-                # 使用回调来统计token使用量
-                with get_openai_callback() as cb:
-                    # 创建一个变量来跟踪当前正在执行的工具
-                    current_tool_execution = None
-                    # 创建一个锁来确保工具调用的串行执行
-                    tool_lock = asyncio.Lock()
-                    
-                    async def _drain_stream():
-                        nonlocal final_response, action_trace, current_tool_execution
-                        async for step in agent.astream({"messages": [user_input]}, config, stream_mode="values"):
-                            last_message = step["messages"][-1]
-                            pretty = format_agent_step(last_message)
-                            log_and_echo(pretty)
-
-                            # 1) 工具输出
-                            if isinstance(last_message, ToolMessage):
-                                tool_output_text = _as_text(last_message.content)
-                                if isinstance(tool_output_text, str) and len(tool_output_text) > MAX_TOOL_OUTPUT_CHARS:
-                                    tool_output_text = tool_output_text[:MAX_TOOL_OUTPUT_CHARS] + "...(内容已截断)"
-                                action_trace.append({
-                                    "ts": _now(),
-                                    "type": "tool_output",
-                                    "tool": last_message.name,
-                                    "output": tool_output_text
-                                })
-                                # 清除当前工具执行状态
-                                current_tool_execution = None
-                                continue
-
-                            # 2) AI 消息 + 其中的工具调用
-                            if isinstance(last_message, AIMessage):
-                                content_text = _as_text(last_message.content).strip()
-                                if content_text:
-                                    final_response = content_text
-                                    action_trace.append({
-                                        "ts": _now(),
-                                        "type": "ai_message",
-                                        "content": content_text
-                                    })
-
-                                # 获取所有工具调用
-                                tool_calls = getattr(last_message, "tool_calls", None) or last_message.additional_kwargs.get("tool_calls", [])
-                                
-                                # 使用锁确保一次只处理一个工具调用
-                                async with tool_lock:
-                                    # 如果有正在执行的工具，等待其完成
-                                    while current_tool_execution is not None:
-                                        await asyncio.sleep(0.1)
-                                    
-                                    # 只处理第一个工具调用
-                                    if tool_calls:
-                                        tc = tool_calls[0]
-                                        fn = (tc.get("function") or {})
-                                        name = fn.get("name") or tc.get("name", "unknown_tool")
-                                        args = fn.get("arguments") or tc.get("args") or {}
-                                        try:
-                                            if isinstance(args, str):
-                                                args = json.loads(args)
-                                        except Exception:
-                                            pass
-                                        action_trace.append({
-                                            "ts": _now(),
-                                            "type": "tool_call",
-                                            "tool": name,
-                                            "args": args
-                                        })
-                                        tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
-                                        tc_pretty = format_agent_step(tool_call_msg)
-                                        log_and_echo(tc_pretty)
-                                        # 设置当前正在执行的工具
-                                        current_tool_execution = name
-                                continue
-
-                            # 3) 兜底：dict 形式的 tool_call
-                            if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
-                                fn = (last_message.get("function") or {})
-                                name = fn.get("name") or last_message.get("name", "unknown_tool")
-                                args = fn.get("arguments") or last_message.get("args") or {}
-                                try:
-                                    if isinstance(args, str):
-                                        args = json.loads(args)
-                                except Exception:
-                                    pass
-                                # 使用锁确保一次只处理一个工具调用
-                                async with tool_lock:
-                                    # 如果有正在执行的工具，等待其完成
-                                    while current_tool_execution is not None:
-                                        await asyncio.sleep(0.1)
-                                        
-                                    action_trace.append({
-                                        "ts": _now(),
-                                        "type": "tool_call",
-                                        "tool": name,
-                                        "args": args
-                                    })
-                                    tool_call_msg = {"type": "tool_call", "tool_name": name, "tool_input": args}
-                                    tc_pretty = format_agent_step(tool_call_msg)
-                                    log_and_echo(tc_pretty)
-                                    # 设置当前正在执行的工具
-                                    current_tool_execution = name
-                                return
-
-                    # 整体 agent 运行加一层总超时 500s
-                    try:
-                        await asyncio.wait_for(_drain_stream(), timeout=500)
-                    except asyncio.TimeoutError:
-                        log_and_echo("Agent 流式执行超时（>500s）")
-                        action_trace.append({
-                            "ts": _now(),
-                            "type": "ai_message",
-                            "content": "Agent 执行超时（>500s）"
-                        })
-
-                    # 统计 token
-                    token_usage = {
-                        "total_tokens": cb.total_tokens,
-                        "prompt_tokens": cb.prompt_tokens,
-                        "completion_tokens": cb.completion_tokens
-                    }
+                final_response = agent_result["final_response"]
+                action_trace = agent_result["action_trace"]
+                token_usage = agent_result["token_usage"]
 
             except Exception as e:
                 log_and_echo(f"❌ 运行代理失败: {e}")

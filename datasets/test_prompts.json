@@ -1,15 +1,15 @@
 [
-  {
-    "task_id": "4aa079dd-9d2d-440d-a654-9ba9cb3868b0",
-    "Question": "Read the paper webarena, mind2web and mind2web2, then create a Comparison Report in ./annotated_data/markdown/compare_webagent.md",
-    "answers": "file ./annotated_data/markdown/compare_webagent.md",
-    "category": "Office",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. get the paper id in arxiv\n2. get the detailed information for these papers\n3. write a Comparison Report in markdown\n4. save it to the path",
-      "Number of steps": "4",
-      "Tools": "1. search_papers\n2. get_paper_data\n3. write_file",
-      "Number of tools": "3"
+    {
+        "task_id": "d1ea5598-27d2-4a21-ae9d-be30ec099ee3",
+        "Question": "Get today's bbc news, reserved for finance related content.",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get bbc news today\n2. filter the content",
+            "Number of steps": "2",
+            "Tools": "1. get-bbc-news",
+            "Number of tools": "1"
+        }
     }
-  }
 ]

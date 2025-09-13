@@ -100,3 +100,33 @@ def render_behavior_from_trace(action_trace, max_tool_out_chars=2000):
                 out = out[:max_tool_out_chars] + "...(截断)"
             lines.append(f"输出:\n{out}")
     return "\n".join(lines)
+
+
+def _convert_relative_paths_in_text(text):
+    """
+    在文本中查找类似 "./path/to/file" 的相对路径并转换为绝对路径
+    仅转换以 ./ 或 ../ 开头的路径
+    """
+    if not text or not isinstance(text, str):
+        return text
+
+    # 匹配相对路径模式 (./ 或 ../ 开头的路径)
+    # 这个正则表达式会匹配引号中的相对路径或独立的相对路径
+    pattern = r'(["\']?)(\.{1,2}/[^\s"\']+)["\']?'
+
+    def replace_path(match):
+        quote = match.group(1)
+        path = match.group(2)
+
+        # 只处理以 ./ 或 ../ 开头的路径
+        if path.startswith('./') or path.startswith('../'):
+            try:
+                abs_path = os.path.abspath(path)
+                return f'{quote}{abs_path}{quote}'
+            except Exception:
+                # 如果转换失败，保持原路径
+                return match.group(0)
+
+        return match.group(0)
+
+    return re.sub(pattern, replace_path, text)
