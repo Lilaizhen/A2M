@@ -1,19 +1,19 @@
 import asyncio
 import json
-import os
 import re
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 
-async def judge_task_completion(agent_behavior: str, task_description: str, expected_tools: list) -> tuple[bool, str, dict]:
+async def judge_task_completion(agent_behavior: str, task_description: str, expected_tools: list, api_key: str = None, api_base: str = None) -> tuple[bool, str, dict]:
     """
     使用 LLM 判断 Agent 是否成功完成任务，并返回 (是否完成, 原因, 完整JSON)
     """
+    # 暂时不使用传入的api_key和api_base参数，保持原有逻辑
     api_key = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
     api_base = "https://api.siliconflow.cn/v1"
-    
+
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
 
