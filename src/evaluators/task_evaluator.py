@@ -1,16 +1,66 @@
 import asyncio
 import json
 import re
+from typing import Tuple, Dict, Any
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 
-async def judge_task_completion(agent_behavior: str, task_description: str, expected_tools: list, api_key: str = None, api_base: str = None) -> tuple[bool, str, dict]:
+def _parse_judge_output(response: str) -> Tuple[bool, str, Dict[str, Any]]:
+    """
+    解析裁判模型输出为 (是否完成, 原因, 完整JSON)
+    兼容纯文本“完成/未完成”和```json 包裹的响应
+    """
+    try:
+        cleaned_response = response.strip()
+        if cleaned_response.startswith("```json"):
+            cleaned_response = cleaned_response[7:]
+        if cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response[:-3]
+        cleaned_response = cleaned_response.strip()
+
+        result = json.loads(cleaned_response)
+        is_completed = result.get("result", "") == "完成"
+        reason = result.get("reason", "无具体原因")
+        failure_type = result.get("failure_type", "unknown")
+        if failure_type != "success":
+            reason = f"[{failure_type}] {reason}"
+        return is_completed, reason, result
+    except json.JSONDecodeError:
+        text = str(response).strip()
+        norm = re.sub(r"\s+", "", text)
+        if norm == "完成":
+            json_result = {"result": "完成", "reason": "任务已完成", "failure_type": "success"}
+            return True, "任务已完成", json_result
+        if norm == "未完成":
+            json_result = {"result": "未完成", "reason": "任务未完成", "failure_type": "other"}
+            return False, "任务未完成", json_result
+        if "未完成" in text:
+            json_result = {"result": "未完成", "reason": text, "failure_type": "other"}
+            return False, text, json_result
+        if "完成" in text:
+            json_result = {"result": "完成", "reason": text, "failure_type": "success"}
+            return True, text, json_result
+        json_result = {"result": "未完成", "reason": f"裁判输出不规范：{text}", "failure_type": "other"}
+        return False, f"裁判输出不规范：{text}", json_result
+
+
+async def judge_task_completion(
+    agent_behavior: str,
+    task_description: str,
+    expected_tools: list,
+    api_key: str = None,
+    api_base: str = None,
+    max_retries: int = 10,           # 新增：失败重试次数
+    retry_delay: int = 10           # 新增：固定重试等待时间（秒）
+) -> tuple[bool, str, dict]:
     """
     使用 LLM 判断 Agent 是否成功完成任务，并返回 (是否完成, 原因, 完整JSON)
+    失败会固定等待 retry_delay 秒后重试
     """
-    # 暂时不使用传入的api_key和api_base参数，保持原有逻辑
+
+    # 暂时不使用传入的 api_key 和 api_base，保持原有逻辑
     api_key = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
     api_base = "https://api.siliconflow.cn/v1"
 
@@ -22,8 +72,8 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
         openai_api_base=api_base,
         model="deepseek-ai/DeepSeek-V3",
         temperature=0.0,
-        timeout=100,     # 100s
-        max_retries=0
+        timeout=100,     # 单次请求上限100s
+        max_retries=0    # 关闭 LangChain 内部重试，使用外层重试
     )
 
     prompt_template = """
@@ -50,51 +100,37 @@ async def judge_task_completion(agent_behavior: str, task_description: str, expe
         "failure_type": "success" 或 "mcp_error" 或 "agent_error" 或 "other"
     }}
     """
-    
+
     prompt = ChatPromptTemplate.from_template(prompt_template)
     chain = prompt | judge_llm | StrOutputParser()
-    
-    try:
-        # 整体裁判调用包 100s 超时
-        response = await asyncio.wait_for(chain.ainvoke({
-            "agent_behavior": agent_behavior,
-            "task_description": task_description,
-            "expected_tools": ", ".join(expected_tools) if expected_tools else "无特定工具要求"
-        }), timeout=100)
+
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_retries + 1):
         try:
-            cleaned_response = response.strip()
-            if cleaned_response.startswith("```json"):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.endswith("```"):
-                cleaned_response = cleaned_response[:-3]
-            cleaned_response = cleaned_response.strip()
-            result = json.loads(cleaned_response)
-            is_completed = result.get("result", "") == "完成"
-            reason = result.get("reason", "无具体原因")
-            failure_type = result.get("failure_type", "unknown")
-            if failure_type != "success":
-                reason = f"[{failure_type}] {reason}"
-            return is_completed, reason, result
-        except json.JSONDecodeError:
-            text = str(response).strip()
-            norm = re.sub(r"\s+", "", text)
-            if norm == "完成":
-                json_result = {"result": "完成", "reason": "任务已完成", "failure_type": "success"}
-                return True, "任务已完成", json_result
-            if norm == "未完成":
-                json_result = {"result": "未完成", "reason": "任务未完成", "failure_type": "other"}
-                return False, "任务未完成", json_result
-            if "未完成" in text:
-                json_result = {"result": "未完成", "reason": text, "failure_type": "other"}
-                return False, text, json_result
-            if "完成" in text:
-                json_result = {"result": "完成", "reason": text, "failure_type": "success"}
-                return True, text, json_result
-            json_result = {"result": "未完成", "reason": f"裁判输出不规范：{text}", "failure_type": "other"}
-            return False, f"裁判输出不规范：{text}", json_result
-    except asyncio.TimeoutError:
+            response = await asyncio.wait_for(
+                chain.ainvoke({
+                    "agent_behavior": agent_behavior,
+                    "task_description": task_description,
+                    "expected_tools": ", ".join(expected_tools) if expected_tools else "无特定工具要求"
+                }),
+                timeout=100
+            )
+            return _parse_judge_output(response)
+        except asyncio.TimeoutError as e:
+            last_error = e
+        except Exception as e:
+            last_error = e
+
+        if attempt < max_retries:
+            try:
+                await asyncio.sleep(retry_delay)  # 固定等待10秒
+            except asyncio.CancelledError:
+                break
+
+    if isinstance(last_error, asyncio.TimeoutError):
         json_result = {"result": "未完成", "reason": "裁判模型超时（>100s）", "failure_type": "other"}
         return False, "[other] 裁判模型超时", json_result
-    except Exception as e:
-        json_result = {"result": "未完成", "reason": f"裁判模型调用失败: {str(e)}", "failure_type": "other"}
-        return False, f"裁判模型调用失败: {str(e)}", json_result
+
+    json_result = {"result": "未完成", "reason": f"裁判模型调用失败: {str(last_error)}", "failure_type": "other"}
+    return False, f"裁判模型调用失败: {str(last_error)}", json_result
