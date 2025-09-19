@@ -1,0 +1,20 @@
+[
+
+
+
+
+
+  {
+    "task_id": "38c156c5-ff2c-4cf4-9a23-984d761b8bcb",
+    "Question": "Help me do a full investment analysis on Nvidia's stock",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get the stock prices for one month\n2. Get cashflow,  income statement \n3. Get news\n4. make a report",
+      "Number of steps": "4",
+      "Tools": "1. get_stock_price_date_range\n2. get_income_statement\n3. get_cashflow\n4. get_news",
+      "Number of tools": "4"
+    }
+  }
+]

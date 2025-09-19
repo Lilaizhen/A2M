@@ -1,0 +1,169 @@
+[{
+        "task_id": "91cce869-ac2c-4b9c-a2ea-1d068eb5d979",
+        "Question": "Draw a flowchart of a fast sorting algorithm using Mermaid.",
+        "answers": "",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. write the flowchart of a fast sorting algorithm using Mermaid\n2. validates the Mermaid diagram and returns the rendered SVG if valid",
+            "Number of steps": "2",
+            "Tools": "1. validateMermaid",
+            "Number of tools": "1"
+        }
+    },
+    {
+        "task_id": "9fc8b7f3-776c-4756-bb84-a7ae667521a9",
+        "Question": "Help me find Mr. Lu Yaojie's resume in the Chinese Information Processing Laboratory of the Institute of Software and save it to ./annotated_data/markdown/cv.md.",
+        "answers": "file ./annotated_data/markdown/cv.md.",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. fetch the https://www.icip.org.cn/zh/zh_team/ to get the member information\n2. fetch the resume of Lu Yaojie in https://luyaojie.github.io/\n3. save it to ./annotated_data/markdown/cv.md",
+            "Number of steps": "3",
+            "Tools": "1. fetch\n2. write_file",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "8aaa7e7f-aff7-4735-9dc8-8bb5f474506c",
+        "Question": "Find today's top LLM-related news.",
+        "answers": "",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get related news related to LLM",
+            "Number of steps": "1",
+            "Tools": "1. getStories\n2. get-36kr-trending\n3. get-bbc-news\n4. get-theverge-news",
+            "Number of tools": "4"
+        }
+    },
+    {
+        "task_id": "a984d31b-f3e9-47d4-8726-19a06e6babc5",
+        "Question": "Help me make a STEINS;GATE introduction PPT and help me save it to ./annotated_data/ppt/STEINS_GATE.pptx.",
+        "answers": "",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Find materials related to making PPT\n2. make a ppt and save it to the path",
+            "Number of steps": "2",
+            "Tools": "1. ddg-search\n2. create_presentation\n3. add_slide\n4. save_presentation",
+            "Number of tools": "4"
+        }
+    },
+    {
+        "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+        "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+        "answers": "20.76",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. read the excel\n2. caculate the bmi",
+            "Number of steps": "2",
+            "Tools": "1. excel_read_sheet\n2. calculate",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "7bda47e8-1b8b-4f1f-b67c-573a81417d36",
+        "Question": "Introduce me to the article on arxiv 2203.12277",
+        "answers": "",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get detailed information about the paper\n2. fetch the full text of the paper\n3. write a introduction",
+            "Number of steps": "3",
+            "Tools": "1. get_paper_data\n2. fetch",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "1a3ffa81-d1fe-4b97-9308-3d2ae2d0d9b1",
+        "Question": "Extract the key points of this TED talk in https://www.youtube.com/watch?v=arj7oStGLkU, organize them into a mind map, and tell me what the main content of the lecture is.",
+        "answers": "",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. extract transcript from the YouTube video URL\n2. write a markdown mindmap \n3. conver markdown mindmap to real mindmap\n4. summary the main content of the lecture",
+            "Number of steps": "4",
+            "Tools": "1. get_transcript\n2. convert_markdown_to_mindmap",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "10b5dbf7-0bac-4b25-835f-e806967ad340",
+        "Question": "Help me arrange a three-day trip from Beijing to Tianjin tomorrow, round-trip by rail, give me a detailed timetable and include an approximate total budget.",
+        "answers": "",
+        "category": "Travel",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get current data\n2. check the 12306 ticks\n3. arrange the trip and find the nearby places\n4. generate the report with timetable and budget",
+            "Number of steps": "4",
+            "Tools": "1. get-current-date\n2. get-station-code-of-citys\n3. get-tickets\n4. geocode_address\n5. find_nearby_places\n6. get_route_directions\n7. reverse_geocode",
+            "Number of tools": "7"
+        }
+    },
+    {
+        "task_id": "37d72d03-29ae-48d1-9a48-66c9294d82fa",
+        "Question": "Analyze the last 24h of BTC and remind me if there is anything I need to pay special attention to",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Get the current time\n2. Get current price and 24h stats for a cryptocurrency\n3. Get detailed market analysis including top exchanges and volume distribution\n4. Generate a report",
+            "Number of steps": "4",
+            "Tools": "1. get_current_time\n2. get-crypto-price\n3. get-market-analysis",
+            "Number of tools": "3"
+        }
+    },
+    {
+        "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
+        "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
+        "answers": "",
+        "category": "Shopping",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
+            "Number of steps": "1",
+            "Tools": "1. mcp_howtocook_recommendMeals",
+            "Number of tools": "1"
+        }
+    },
+    {
+        "task_id": "3c65e618-2ed0-444b-b7c7-6135d3841976",
+        "Question": "Recommend me a combination of dishes for a potluck dinner for three people and then tell me what ingredients I need to prepare in total and how each dish should be prepared",
+        "answers": "",
+        "category": "Shopping",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Recommend a combination of dishes\n2. Get the detailed information about all dishes\n3. Write a report",
+            "Number of steps": "3",
+            "Tools": "1. mcp_howtocook_whatToEat\n2. mcp_howtocook_getRecipeById",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
+        "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+        "answers": "",
+        "category": "Travel",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
+            "Number of steps": "3",
+            "Tools": "1. get_current_time\n2. airbnb_search",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "00e13e2e-07fa-4d0b-9863-e966190cffd6",
+        "Question": "find the painting \"Corridor in the Asylum\" and give me some background information,",
+        "answers": "",
+        "category": "Leisure",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Realizes that \"Corridor in the Asylum\" is located in the Metropolitan Museum of Art Collection\n2. Search for objects in the Metropolitan Museum of Art\n3. Get the detailed information",
+            "Number of steps": "3",
+            "Tools": "1. search-museum-objects\n2. get-museum-object",
+            "Number of tools": "2"
+        }
+    }]

@@ -1,0 +1,54 @@
+[
+      {
+        "task_id": "e9df60b1-37a6-4b10-aff0-d432fa79d400",
+        "Question": "Please help me find the latest articles about 'MCP' on arXiv. Identify the potentially most influential papers among them and analyze the current trends in this field.",
+        "answers": "",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. Search for papers on arXiv and find some may important papers\n2. Get abstract of  these papers and identify the potentially most influential paper\n3. Analyze the current trends in this field",
+            "Number of steps": "3",
+            "Tools": "1. search_papers\n2. get_paper_data",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+        "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+        "answers": "20.76",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. read the excel\n2. caculate the bmi",
+            "Number of steps": "2",
+            "Tools": "1. excel_read_sheet\n2. calculate",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
+        "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
+        "answers": "",
+        "category": "Finance",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get the current gold price\n2. calculate the price",
+            "Number of steps": "2",
+            "Tools": "1. get_asset_price\n2. calculate",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "84326f9f-d4b7-4dc8-b9e0-3c8868a3f79f",
+        "Question": "Read the comments on hacker news story 44490510 and help me summarize the views in the comments.",
+        "answers": "",
+        "category": "Lifestyle",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get the comments in story 44490510 \n2. summarize the comments",
+            "Number of steps": "2",
+            "Tools": "1. getStoryWithComments",
+            "Number of tools": "1"
+        }
+    }
+]
