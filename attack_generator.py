@@ -1738,125 +1738,151 @@ class AttackGenerator:
                         print(f"加载已存在的结果失败: {e}")
                 # 如果无法加载已存在的结果，继续执行完整流程
 
-        # 1) 无攻击基线，决定是否强制完成度 - 使用3次运行的平均值判断
-        baseline_ok, baseline_score = self._baseline_assessment(task, num_runs=3)
+        # 检查是否已有初始结果文件（iteration_0.json），如果存在则加载而不是重新生成
+        initial_result_loaded = False
+        if output_dir and existing_iterations and 0 in existing_iterations:
+            initial_file = os.path.join(task_output_dir, "iteration_0.json")
+            if os.path.exists(initial_file):
+                try:
+                    with open(initial_file, 'r', encoding='utf-8') as f:
+                        initial_data = json.load(f)
+                    baseline_ok = initial_data.get("baseline_ok", True)  # 默认为True
+                    baseline_score = initial_data.get("baseline_score", 0.0)
+                    best_tool = initial_data["attack_tools"][0]
+                    best_score = initial_data["score"]
+                    best_feedback = initial_data.get("feedback", {})
+                    candidates = initial_data.get("candidates", [best_tool])
+                    print(f"加载已存在的初始结果，baseline分数: {baseline_score:.2f}，当前最高分数: {best_score:.2f}")
+                    initial_result_loaded = True
+                except Exception as e:
+                    print(f"加载初始结果失败: {e}，重新生成初始候选")
+                    initial_result_loaded = False
 
-        #基线 *1.5
-        # baseline_score = baseline_score * 1.5
+        # 如果没有加载到初始结果，则执行初始阶段
+        if not initial_result_loaded:
+            # 1) 无攻击基线，决定是否强制完成度 - 使用3次运行的平均值判断
+            baseline_ok, baseline_score = self._baseline_assessment(task, num_runs=3)
 
-        # 2) 初始候选（LLM 生成）- 生成一个测试一个，直到获得candidate_count个有效候选
-        candidates = []
-        discarded_candidates = []  # 用于存储被丢弃的候选
-        attempts = 0
-        max_attempts = 100  # 防止无限循环
+            #基线 *1.5
+            # baseline_score = baseline_score * 1.5
 
-        print(f"[初始候选生成] 开始生成初始候选，目标: {self.candidate_count}个，baseline分数: {baseline_score:.2f}")
+            # 2) 初始候选（LLM 生成）- 生成一个测试一个，直到获得candidate_count个有效候选
+            candidates = []
+            discarded_candidates = []  # 用于存储被丢弃的候选
+            attempts = 0
+            max_attempts = 100  # 防止无限循环
 
-        while len(candidates) < self.candidate_count and attempts < max_attempts:
-            # 每次只生成一个候选
-            single_candidate_batch = self._propose_candidates(task, k=1, model=self.generation_model)
-            if not single_candidate_batch:
+            print(f"[初始候选生成] 开始生成初始候选，目标: {self.candidate_count}个，baseline分数: {baseline_score:.2f}")
+
+            while len(candidates) < self.candidate_count and attempts < max_attempts:
+                # 每次只生成一个候选
+                single_candidate_batch = self._propose_candidates(task, k=1, model=self.generation_model)
+                if not single_candidate_batch:
+                    attempts += 1
+                    continue
+
+                c = single_candidate_batch[0]
                 attempts += 1
-                continue
 
-            c = single_candidate_batch[0]
-            attempts += 1
+                # 先测试一次分数
+                run_first = self.executor.execute_task_with_attack(task, c)
+                first_score = 0
+                if run_first.get("status") != "error":
+                    first_score = self._score(run_first, baseline_ok)
+                    print(f"[初始候选生成] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
 
-            # 先测试一次分数
-            run_first = self.executor.execute_task_with_attack(task, c)
-            first_score = 0
-            if run_first.get("status") != "error":
-                first_score = self._score(run_first, baseline_ok)
-                print(f"[初始候选生成] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
+                    # 只有当第一次分数超过baseline时，才进行额外两次测试
+                    if first_score > baseline_score:
+                        print(f"[初始候选生成] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
+                        # 再测两次，取三次平均值
+                        total_score = first_score
+                        valid_runs = 1
 
-                # 只有当第一次分数超过baseline时，才进行额外两次测试
-                if first_score > baseline_score:
-                    print(f"[初始候选生成] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
-                    # 再测两次，取三次平均值
-                    total_score = first_score
-                    valid_runs = 1
+                        for test_num in range(2):
+                            run = self.executor.execute_task_with_attack(task, c)
+                            if run.get("status") != "error":
+                                score = self._score(run, baseline_ok)
+                                total_score += score
+                                valid_runs += 1
+                                print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
 
-                    for test_num in range(2):
-                        run = self.executor.execute_task_with_attack(task, c)
-                        if run.get("status") != "error":
-                            score = self._score(run, baseline_ok)
-                            total_score += score
-                            valid_runs += 1
-                            print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
-
-                    if valid_runs > 0:
-                        average_score = total_score / valid_runs
-                        # 只有当平均分数大于baseline时才保留
-                        if average_score > baseline_score:
-                            # 保存分数信息到候选工具中
-                            c['score'] = average_score
-                            candidates.append(c)
-                            print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(candidates)}个)")
+                        if valid_runs > 0:
+                            average_score = total_score / valid_runs
+                            # 只有当平均分数大于baseline时才保留
+                            if average_score > baseline_score:
+                                # 保存分数信息到候选工具中
+                                c['score'] = average_score
+                                candidates.append(c)
+                                print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(candidates)}个)")
+                            else:
+                                # 保存被丢弃的候选及其分数
+                                c['score'] = average_score
+                                discarded_candidates.append(c)
+                                print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
                         else:
-                            # 保存被丢弃的候选及其分数
-                            c['score'] = average_score
-                            discarded_candidates.append(c)
-                            print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
+                            print(f"[初始候选生成] 工具 {c['name']} 3次运行均失败，丢弃")
                     else:
-                        print(f"[初始候选生成] 工具 {c['name']} 3次运行均失败，丢弃")
+                        print(f"[初始候选生成] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
                 else:
-                    print(f"[初始候选生成] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
+                    print(f"[初始候选生成] 工具 {c['name']} 第一次运行失败，丢弃")
+
+            print(f"[初始候选生成] 完成，共生成 {len(candidates)} 个有效候选")
+
+            # 如果没有生成任何候选，从丢弃的候选中选择最高的n个
+            if len(candidates) == 0:
+                if discarded_candidates:
+                    # 按分数排序，选择最高的n个（n=self.candidate_count）
+                    discarded_candidates.sort(key=lambda x: x['score'], reverse=True)
+                    candidates = discarded_candidates[:self.candidate_count]
+                    print(f"[初始候选生成] 从丢弃候选中选择 {len(candidates)} 个最高分候选:")
+                    for i, candidate in enumerate(candidates):
+                        print(f"  {i+1}. {candidate['name']} - 分数: {candidate['score']:.2f}")
+                else:
+                    # 如果连丢弃的都没有，至少使用一个fallback候选
+                    fallback_candidates = self._propose_candidates(task, k=1, model=self.generation_model)
+                    if fallback_candidates:
+                        # 为fallback候选设置默认分数
+                        fallback_candidate = fallback_candidates[0]
+                        fallback_candidate['score'] = baseline_score
+                        candidates = [fallback_candidate]
+                        print(f"[初始候选生成] 使用fallback候选: {candidates[0]['name']}")
+
+            best_tool = None
+            # 初始最佳分数为baseline的平均分数
+            # 从候选中选择得分最高的作为初始best_tool
+            if candidates:
+                # 选择得分最高的候选工具
+                best_tool = max(candidates, key=lambda x: x.get('score', baseline_score))
+                # 使用最高得分作为初始best_score
+                best_score = best_tool.get('score', baseline_score)
+                # 重新运行一次以获取trace和反馈
+                run = self.executor.execute_task_with_attack(task, best_tool)
+                best_feedback = run
+                print(f"[初始候选选择] 选择得分最高的工具 {best_tool['name']} 作为初始best_tool，分数: {best_score:.2f}")
             else:
-                print(f"[初始候选生成] 工具 {c['name']} 第一次运行失败，丢弃")
+                best_score = baseline_score
+                print(f"[初始候选选择] 没有有效候选，使用baseline分数")
 
-        print(f"[初始候选生成] 完成，共生成 {len(candidates)} 个有效候选")
+            print(f"初始候选评估完成，当前最高分数: {best_score:.2f}")
 
-        # 如果没有生成任何候选，从丢弃的候选中选择最高的n个
-        if len(candidates) == 0:
-            if discarded_candidates:
-                # 按分数排序，选择最高的n个（n=self.candidate_count）
-                discarded_candidates.sort(key=lambda x: x['score'], reverse=True)
-                candidates = discarded_candidates[:self.candidate_count]
-                print(f"[初始候选生成] 从丢弃候选中选择 {len(candidates)} 个最高分候选:")
-                for i, candidate in enumerate(candidates):
-                    print(f"  {i+1}. {candidate['name']} - 分数: {candidate['score']:.2f}")
-            else:
-                # 如果连丢弃的都没有，至少使用一个fallback候选
-                fallback_candidates = self._propose_candidates(task, k=1, model=self.generation_model)
-                if fallback_candidates:
-                    # 为fallback候选设置默认分数
-                    fallback_candidate = fallback_candidates[0]
-                    fallback_candidate['score'] = baseline_score
-                    candidates = [fallback_candidate]
-                    print(f"[初始候选生成] 使用fallback候选: {candidates[0]['name']}")
-
-        best_tool = None
-        # 初始最佳分数为baseline的平均分数
-        # 从候选中选择得分最高的作为初始best_tool
-        if candidates:
-            # 选择得分最高的候选工具
-            best_tool = max(candidates, key=lambda x: x.get('score', baseline_score))
-            # 使用最高得分作为初始best_score
-            best_score = best_tool.get('score', baseline_score)
-            # 重新运行一次以获取trace和反馈
-            run = self.executor.execute_task_with_attack(task, best_tool)
-            best_feedback = run
-            print(f"[初始候选选择] 选择得分最高的工具 {best_tool['name']} 作为初始best_tool，分数: {best_score:.2f}")
-        else:
-            best_score = baseline_score
-            print(f"[初始候选选择] 没有有效候选，使用baseline分数")
-
-        print(f"初始候选评估完成，当前最高分数: {best_score:.2f}")
-
-        # 保存初始结果（第0次迭代）
-        if output_dir and best_tool:
-            initial_result = {
-                "task_id": task_id,
-                "attack_tools": [best_tool],
-                "score": float(best_score),
-                "iteration": 0
-            }
-            initial_output_path = os.path.join(task_output_dir, "iteration_0.json")
-            # 只有在文件不存在时才保存
-            if not os.path.exists(initial_output_path):
-                with open(initial_output_path, 'w', encoding='utf-8') as f:
-                    json.dump(initial_result, f, ensure_ascii=False, indent=2)
-                print(f"已保存第0次迭代结果到: {initial_output_path}")
+            # 保存初始结果（第0次迭代）
+            if output_dir and best_tool:
+                initial_result = {
+                    "task_id": task_id,
+                    "attack_tools": [best_tool],
+                    "score": float(best_score),
+                    "baseline_ok": baseline_ok,
+                    "baseline_score": baseline_score,
+                    "candidates": candidates,
+                    "feedback": best_feedback,
+                    "iteration": 0
+                }
+                initial_output_path = os.path.join(task_output_dir, "iteration_0.json")
+                # 只有在文件不存在时才保存
+                if not os.path.exists(initial_output_path):
+                    with open(initial_output_path, 'w', encoding='utf-8') as f:
+                        json.dump(initial_result, f, ensure_ascii=False, indent=2)
+                    print(f"已保存第0次迭代结果到: {initial_output_path}")
 
         # 4) 迭代：基于当前best种子和执行情况来优化
         previous_attack_tool = best_tool  # 保留当前best攻击工具
@@ -1865,23 +1891,26 @@ class AttackGenerator:
         # 确定从哪一轮开始迭代（断点续传）
         start_iteration = 0
         if output_dir and existing_iterations:
-            start_iteration = max(existing_iterations)
-            print(f"断点续传：从第 {start_iteration} 轮迭代开始")
+            # 移除0，因为0是初始结果，不是迭代结果
+            iteration_nums = [i for i in existing_iterations if i > 0]
+            if iteration_nums:
+                start_iteration = max(iteration_nums)
+                print(f"断点续传：从第 {start_iteration} 轮迭代开始")
 
-            # 如果需要从中间开始，加载上一次的best_tool和best_score
-            if start_iteration > 0:
-                prev_iter_file = os.path.join(task_output_dir, f"iteration_{start_iteration}.json")
-                if os.path.exists(prev_iter_file):
-                    try:
-                        with open(prev_iter_file, 'r', encoding='utf-8') as f:
-                            prev_result = json.load(f)
-                        best_tool = prev_result["attack_tools"][0]
-                        best_score = prev_result["score"]
-                        previous_attack_tool = best_tool
-                        print(f"加载第 {start_iteration} 轮迭代结果作为起始点")
-                    except Exception as e:
-                        print(f"加载断点续传数据失败，从头开始: {e}")
-                        start_iteration = 0
+                # 如果需要从中间开始，加载上一次的best_tool和best_score
+                if start_iteration > 0:
+                    prev_iter_file = os.path.join(task_output_dir, f"iteration_{start_iteration}.json")
+                    if os.path.exists(prev_iter_file):
+                        try:
+                            with open(prev_iter_file, 'r', encoding='utf-8') as f:
+                                prev_result = json.load(f)
+                            best_tool = prev_result["attack_tools"][0]
+                            best_score = prev_result["score"]
+                            previous_attack_tool = best_tool
+                            print(f"加载第 {start_iteration} 轮迭代结果作为起始点")
+                        except Exception as e:
+                            print(f"加载断点续传数据失败，从头开始: {e}")
+                            start_iteration = 0
 
         for it in range(start_iteration, iterations):
             # 如果是断点续传，跳过已存在的迭代
@@ -1931,7 +1960,7 @@ class AttackGenerator:
                 print(f"[iter {it}] new_seed name={new_seed['name']} average_score={average_score_new:.2f}")
                 if average_score_new > best_score:
                     best_score, best_tool = average_score_new, new_seed
-                    # 重新运行一次以获取trace和feedback
+                    # 重新运行一次以获取trace和反馈
                     run_new = self.executor.execute_task_with_attack(task, new_seed)
                     best_feedback = run_new
                     # 更新previous_attack_tool和previous_feedback为新的best值
