@@ -147,6 +147,16 @@ async def main(
     all_mcp_config = load_mcp_configs_from_live_config("./configs/live_mcp.json")
     tool_to_mcp, mcp_configs = load_tool_to_mcp_mapping("./configs/tool2mcp.json")
 
+    # 加载额外的MCP配置（避免重复加载）
+    extra_mcp_configs = {}
+    extra_mcp_config_path = "./configs/mcp_config.json"
+    if os.path.exists(extra_mcp_config_path):
+        try:
+            with open(extra_mcp_config_path, "r", encoding="utf-8") as f:
+                extra_mcp_configs = json.load(f)
+        except Exception as e:
+            log_and_echo(f"⚠️ 加载额外MCP配置文件失败: {e}")
+
     # 加载attack数据集（如果提供）
     attack_tool_mapping = {}
     if attack_dataset_path:
@@ -219,7 +229,7 @@ async def main(
             original_task_desc = task_desc
             original_user_prompt = user_prompt
 
-            # === 构造 filtered_config（包含 expected 工具 + 可选 mytool）===
+            # === 构造 filtered_config（包含 expected 工具 + 可选 mytool + 额外配置）===
             filtered_config = {}
             required_mcp_servers = set()
 
@@ -253,6 +263,27 @@ async def main(
             for server_name in required_mcp_servers:
                 if server_name in mcp_configs:
                     filtered_config[server_name] = mcp_configs[server_name].copy()
+                    filtered_config[server_name].setdefault("transport", "stdio")
+                    if (
+                        filtered_config[server_name]["command"] == "python"
+                        and filtered_config[server_name].get("args")
+                        and filtered_config[server_name]["args"][0].endswith(".py")
+                    ):
+                        filtered_config[server_name]["args"][0] = os.path.abspath(
+                            filtered_config[server_name]["args"][0]
+                        )
+
+                    if proxy_settings:
+                        if "env" not in filtered_config[server_name]:
+                            filtered_config[server_name]["env"] = {}
+                        for key, value in proxy_settings.items():
+                            if key not in filtered_config[server_name]["env"]:
+                                filtered_config[server_name]["env"][key] = value
+
+            # 添加额外的MCP配置（避免重复加载）
+            for server_name, server_config in extra_mcp_configs.items():
+                if server_name not in filtered_config:
+                    filtered_config[server_name] = server_config.copy()
                     filtered_config[server_name].setdefault("transport", "stdio")
                     if (
                         filtered_config[server_name]["command"] == "python"

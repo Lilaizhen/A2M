@@ -1,0 +1,15 @@
+[
+    {
+        "task_id": "simple_test_1",
+        "Question": "Get the content of line 10 in the file ./annotated_data/txt/Android.txt",
+        "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
+        "category": "Office",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. locate the 10th line in the file",
+            "Number of steps": "1",
+            "Tools": "1. get_text_file_contents",
+            "Number of tools": "1"
+        }
+    }
+]

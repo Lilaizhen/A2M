@@ -91,7 +91,7 @@ def load_dataset(data_path, task_id_for_temp_mapping=None):
     try:
         with open(data_path, "r", encoding="utf-8") as f:
             test_prompts_data = json.load(f)
-            for i, item in enumerate(test_prompts_data):
+            for item in test_prompts_data:
                 task_id = item.get("task_id", "")
                 tools_str = item.get("Annotator Metadata", {}).get("Tools", "")
                 expected_tools = []

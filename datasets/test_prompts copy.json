@@ -1,53 +1,54 @@
 [
-      {
-        "task_id": "e9df60b1-37a6-4b10-aff0-d432fa79d400",
-        "Question": "Please help me find the latest articles about 'MCP' on arXiv. Identify the potentially most influential papers among them and analyze the current trends in this field.",
-        "answers": "",
-        "category": "Lifestyle",
+
+    {
+        "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
+        "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
+        "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
+        "category": "Office",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. Search for papers on arXiv and find some may important papers\n2. Get abstract of  these papers and identify the potentially most influential paper\n3. Analyze the current trends in this field",
-            "Number of steps": "3",
-            "Tools": "1. search_papers\n2. get_paper_data",
-            "Number of tools": "2"
+            "Steps": "1. locate the 10th line in the file",
+            "Number of steps": "1",
+            "Tools": "1. get_text_file_contents",
+            "Number of tools": "1"
         }
     },
     {
-        "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
-        "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
-        "answers": "20.76",
-        "category": "Lifestyle",
+    "task_id": "423f89ba-be77-4f93-99d7-936548513eef",
+    "Question": "Help me create an example word that needs to have headings, tables, body, footnotes and insert clock.png under ./annotated_data/picture and save it in ./annotated_data/word/example.docx",
+    "answers": "file ./annotated_data/word/example.docx",
+    "category": "Office",
+    "file_name": "./annotated_data/picture/clock.png",
+    "Annotator Metadata": {
+      "Steps": "1. create the word document\n2. Add a heading, a table, a paragraph and a footnote \n3. Insert the image",
+      "Number of steps": "3",
+      "Tools": "1. create_document\n2. add_heading\n3. add_table\n4. add_paragraph\n5. add_footnote_to_document\n6. add_picture",
+      "Number of tools": "6"
+    }
+    },
+    {
+        "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
+        "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
+        "answers": "",
+        "category": "Shopping",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. read the excel\n2. caculate the bmi",
-            "Number of steps": "2",
-            "Tools": "1. excel_read_sheet\n2. calculate",
-            "Number of tools": "2"
+            "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
+            "Number of steps": "1",
+            "Tools": "1. mcp_howtocook_recommendMeals",
+            "Number of tools": "1"
         }
     },
     {
-        "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
-        "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
-        "answers": "",
-        "category": "Finance",
-        "file_name": "",
+        "task_id": "2e190c2a-8aab-44e1-896d-671cb3fcc495",
+        "Question": "What are the changes in my log files ./annotated_data/txt/log_today.txt and ./annotated_data/txt/log_yesterday.txt, help me to find out all the different lines which contain 'ERROR' ?",
+        "answers": "[ERROR] Database connection failed.",
+        "category": "Office",
+        "file_name": "./annotated_data/txt/log_today.txt, ./annotated_data/txt/log_yesterday.txt",
         "Annotator Metadata": {
-            "Steps": "1. get the current gold price\n2. calculate the price",
+            "Steps": "1. Compare two text files and show differences\n2. Find different lines which contain 'ERROR'",
             "Number of steps": "2",
-            "Tools": "1. get_asset_price\n2. calculate",
-            "Number of tools": "2"
-        }
-    },
-    {
-        "task_id": "84326f9f-d4b7-4dc8-b9e0-3c8868a3f79f",
-        "Question": "Read the comments on hacker news story 44490510 and help me summarize the views in the comments.",
-        "answers": "",
-        "category": "Lifestyle",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the comments in story 44490510 \n2. summarize the comments",
-            "Number of steps": "2",
-            "Tools": "1. getStoryWithComments",
+            "Tools": "1. text_diff",
             "Number of tools": "1"
         }
     }
