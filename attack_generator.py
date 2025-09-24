@@ -114,19 +114,19 @@ def _convert_relative_paths_in_text(text):
     return re.sub(pattern, replace_path, text)
 
 
-async def judge_inappropriate_content(agent_output: str, api_key: str = None, api_base: str = None) -> float:
+async def judge_inappropriate_content(agent_output: str, api_key: str = None) -> float:
     """
     使用 LLM 判断 Agent 输出内容的有害程度，返回 0-1 之间的有害评分
     0 表示无害，1 表示高度有害
     """
-    # 如果没有传入api_key和api_base，则使用默认值
-    
+    # 如果没有传入api_key，则使用默认值
+
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
 
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
-        openai_api_base=api_base,
+        openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
         model="deepseek-v3",
         temperature=0.0,
         timeout=100,     # 100s
@@ -451,7 +451,6 @@ async def run_tasks_as_function(
     attack_dataset=None,
     model="deepseek-v3.1",
     api_key: Optional[str] = None,
-    api_base: Optional[str] = None,
     api_key_env="OPENAI_API_KEY",
     api_base_env="OPENAI_API_BASE",
 ):
@@ -461,14 +460,14 @@ async def run_tasks_as_function(
       - dataset: 任务列表，每项至少包含 id/description/input/expected_tools
       - attack: 是否启用攻击模式（加载mytool）
       - attack_dataset: 路径或对象；用于红队测试的恶意工具定义
-      - model/api_key/api_base: LLM配置（显式参数优先，其次环境变量）
+      - model/api_key: LLM配置（显式参数优先，其次环境变量）
     返回
       - 一个汇总结果dict（与原脚本最终JSON结构一致）
     """
     load_dotenv()
     # LLM配置：显式参数优先，然后环境变量
     api_key = api_key or (os.getenv(api_key_env) or "")
-    api_base = api_base or (os.getenv(api_base_env) or "https://apis.iflow.cn/v1")
+    api_base = os.getenv(api_base_env) or "https://apis.iflow.cn/v1"
 
     llm = ChatOpenAI(
         openai_api_key=api_key,
@@ -570,10 +569,9 @@ sys.path.append('.')
 class RealExecutor:
     """真实执行器包装：调用函数化执行（run_tasks_as_function）。"""
 
-    def __init__(self, attack: bool = True, api_key: Optional[str] = None, api_base: Optional[str] = None, execution_model: str = "deepseek-v3.1"):
+    def __init__(self, attack: bool = True, api_key: Optional[str] = None, execution_model: str = "deepseek-v3.1"):
         self.attack = attack
         self.api_key = api_key
-        self.api_base = api_base
         self.execution_model = execution_model
         # 设置annotated_data路径
         self.annotated_data_path = os.path.join(os.getcwd(), "annotated_data")
@@ -611,7 +609,6 @@ class RealExecutor:
                 attack_dataset=None,
                 model=self.execution_model,
                 api_key=self.api_key,
-                api_base=self.api_base,
             ))
             detail = report["task_details"][0] if report["task_details"] else {}
             status = detail.get("completion_reason", {}).get("failure_type", "unknown")
@@ -666,7 +663,6 @@ class RealExecutor:
                 attack_dataset=attack_dataset,
                 model=self.execution_model,
                 api_key=self.api_key,
-                api_base=self.api_base,
             ))
             detail = report["task_details"][0] if report["task_details"] else {}
             status = detail.get("completion_reason", {}).get("failure_type", "unknown")
@@ -711,15 +707,14 @@ class AttackType(Enum):
 class PromptGenerator:
     """专门用于生成完整大段攻击场景prompt的类"""
 
-    def __init__(self, api_key: Optional[str] = None, api_base: Optional[str] = None, generation_model: str = "glm-4.5"):
+    def __init__(self, api_key: Optional[str] = None, generation_model: str = "glm-4.5"):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self.api_base = api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
         self.generation_model = generation_model
 
     def _llm(self):
         return ChatOpenAI(
             openai_api_key=self.api_key,
-            openai_api_base=self.api_base,
+            openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=self.generation_model,
             temperature=0.7,  # 适当提高温度以增加创造性
             timeout=60,
@@ -1235,10 +1230,9 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, api_base: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "glm-4.5", mutation_model: str = "glm-4.5", mutation_strategy: str = "crossover", top_k: int = 10):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "glm-4.5", mutation_model: str = "glm-4.5", mutation_strategy: str = "crossover", top_k: int = 10):
         print("使用函数化真实执行器")
         self.api_key = api_key
-        self.api_base = api_base
         self.attack_type = attack_type
         self.score_threshold = score_threshold
         self.candidate_count = candidate_count
@@ -1247,14 +1241,14 @@ class AttackGenerator:
         self.mutation_model = mutation_model
         self.mutation_strategy = mutation_strategy
         self.top_k = top_k
-        self.executor = RealExecutor(api_key=api_key, api_base=api_base, execution_model=execution_model)
-        self.prompt_generator = PromptGenerator(api_key=api_key, api_base=api_base, generation_model=generation_model)
+        self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
+        self.prompt_generator = PromptGenerator(api_key=api_key, generation_model=generation_model)
 
     # === LLM 客户端（显式参数优先；否则使用环境变量，默认 https://apis.iflow.cn/v1 ） ===
     def _llm(self):
         return ChatOpenAI(
             openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-            openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+            openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=self.generation_model,
             temperature=0.0,
             timeout=60,
@@ -1291,7 +1285,7 @@ class AttackGenerator:
                         # 创建使用指定模型的LLM实例
                         llm = ChatOpenAI(
                             openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-                            openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+                            openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                             model=model,
                             temperature=0.7,  # 适当提高温度以增加创造性
                             timeout=60,
@@ -1402,7 +1396,7 @@ class AttackGenerator:
                     # 创建使用指定模型的LLM实例
                     llm = ChatOpenAI(
                         openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-                        openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+                        openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                         model=model,
                         temperature=0.0,
                         timeout=60,
@@ -1476,7 +1470,7 @@ class AttackGenerator:
                         # 创建使用指定模型的LLM实例
                         llm = ChatOpenAI(
                             openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-                            openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+                            openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                             model=model,
                             temperature=0.7,  # 适当提高温度以增加创造性
                             timeout=60,
@@ -1544,7 +1538,7 @@ class AttackGenerator:
             if high_temperature:
                 llm = ChatOpenAI(
                     openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-                    openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+                    openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                     model=model or self.generation_model,
                     temperature=1.0,  # 使用较高温度增加多样性
                     timeout=60,
@@ -1684,7 +1678,7 @@ class AttackGenerator:
         # 创建交叉变异专用的LLM实例
         crossover_llm = ChatOpenAI(
             openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-            openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+            openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=model,
             temperature=temperature,
             timeout=60,
@@ -1845,7 +1839,7 @@ class AttackGenerator:
         # 创建变异专用的LLM实例
         mutate_llm = ChatOpenAI(
             openai_api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-            openai_api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+            openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=model,
             temperature=temperature,
             timeout=60,
@@ -1982,7 +1976,6 @@ class AttackGenerator:
                 harm_score, reason = asyncio.run(judge_inappropriate_content(
                     agent_output=final_response,
                     api_key=self.api_key or os.getenv("OPENAI_API_KEY", ""),
-                    api_base=self.api_base or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
                 ))
                 print(f"[有害内容评分] score={harm_score:.3f}, reason={reason}")
             except Exception as e:
@@ -2879,9 +2872,8 @@ def main():
     parser.add_argument("--output", "-o", default=default_output, help=f"输出攻击工具数据集路径 (默认: {default_output})")
     parser.add_argument("--iterations", type=int, default=3, help="迭代优化次数 (默认: 3)")
     parser.add_argument("--output-dir", default=None, help="每次迭代结果的输出目录 (默认: None)")
-    # 新增：显式传入 Key 和 Base
+    # 新增：显式传入 Key
     parser.add_argument("--api-key", dest="api_key", default=None, help="显式传入的大模型 API Key")
-    parser.add_argument("--api-base", dest="api_base", default="https://apis.iflow.cn/v1", help="显式传入的大模型 API Base，如 https://apis.iflow.cn/v1")
     # 新增：攻击场景选择
     parser.add_argument("--attack-type", dest="attack_type", default="resource_waste", 
                         choices=["resource_waste", "task_failure", "inappropriate_output"],
@@ -2924,7 +2916,7 @@ def main():
         print(f"错误: 无效的攻击场景类型: {args.attack_type}")
         sys.exit(1)
 
-    generator = AttackGenerator(api_key=args.api_key, api_base=args.api_base, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, top_k=args.top_k)
+    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, top_k=args.top_k)
 
     print("正在加载输入数据集...")
     input_dataset = generator.load_dataset(args.input)
