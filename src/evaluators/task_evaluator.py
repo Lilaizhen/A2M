@@ -61,7 +61,7 @@ async def judge_task_completion(
     """
 
     # 暂时不使用传入的 api_key 和 api_base，保持原有逻辑
-    api_key = "sk-prcsibeysdxgisruwtaqptfiysnlwzfzxzkrxqffisjzkngf"
+    api_key = "sk-ulrlrftgwvyklbxqdvxgfkezoirtmiuegblozcsplognafaa"
     api_base = "https://api.siliconflow.cn/v1"
 
     if not api_key:

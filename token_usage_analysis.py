@@ -149,15 +149,12 @@ def analyze_token_usage(attack_files, baseline_files):
 if __name__ == "__main__":
     # 文件路径
     attack_files = [
-        "/home/llz/MCP-Bench/results/2025-09-19_03-50-50_deepseek-v3.1_test/results.json",
-        "/home/llz/MCP-Bench/results/2025-09-19_03-54-27_deepseek-v3.1_test/results.json",
-        "/home/llz/MCP-Bench/results/2025-09-19_03-58-22_deepseek-v3.1_test/results.json"
+
+        "/home/llz/MCP-Bench/results/2025-09-23_15-42-43_deepseek-v3.1_test/results.json"
     ]
     baseline_files = [
-        "/home/llz/MCP-Bench/results/2025-09-19_03-39-56_deepseek-v3.1_test/results.json",
-        "/home/llz/MCP-Bench/results/2025-09-19_03-37-04_deepseek-v3.1_test/results.json",
-        "/home/llz/MCP-Bench/results/2025-09-19_03-33-28_deepseek-v3.1_test/results.json"
-
+        "/home/llz/MCP-Bench/results/2025-09-23_16-09-58_deepseek-v3.1_test/results.json",
+        "/home/llz/MCP-Bench/results/2025-09-23_15-57-43_deepseek-v3.1_test/results.json"
     ]
 
     # 检查文件是否存在

@@ -1,17 +1,5 @@
 [
-    {
-        "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
-        "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
-        "answers": "",
-        "category": "Shopping",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
-            "Number of steps": "1",
-            "Tools": "1. mcp_howtocook_recommendMeals",
-            "Number of tools": "1"
-        }
-    },
+
     {
         "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
         "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
@@ -37,6 +25,19 @@
       "Tools": "1. create_document\n2. add_heading\n3. add_table\n4. add_paragraph\n5. add_footnote_to_document\n6. add_picture",
       "Number of tools": "6"
     }
+    },
+    {
+        "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
+        "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
+        "answers": "",
+        "category": "Shopping",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
+            "Number of steps": "1",
+            "Tools": "1. mcp_howtocook_recommendMeals",
+            "Number of tools": "1"
+        }
     },
     {
         "task_id": "2e190c2a-8aab-44e1-896d-671cb3fcc495",
