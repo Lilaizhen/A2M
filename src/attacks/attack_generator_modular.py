@@ -1165,6 +1165,15 @@ class AttackGenerator:
                         "score": float(best_score)
                     },
                     "top_k_tools": initial_top_k_tools,
+                    "full_tool_collection": [  # 保存完整的工具集合信息
+                        {
+                            "name": tool.get("name", "unknown"),
+                            "description": tool.get("description", ""),
+                            "return_value": tool.get("return_value", {}),
+                            "score": tool.get("score", 0.0)
+                        }
+                        for tool in self._get_full_tool_collection(full_tool_collection)
+                    ],
                     "collection_stats": {
                         "total_tools": len(full_tool_collection),
                         "max_size": self.candidate_count * 3,
