@@ -26,6 +26,7 @@ from src.attacks.scoring.fitness_calculator import FitnessCalculator, AttackType
 from src.attacks.scenarios.resource_waste import ResourceWasteScenario
 from src.attacks.scenarios.task_failure import TaskFailureScenario
 from src.attacks.scenarios.inappropriate_output import InappropriateOutputScenario
+from src.attacks.embedding.embedding_calculator import EmbeddingCalculator
 
 # 你项目里的模块
 try:
@@ -153,6 +154,7 @@ class AttackGenerator:
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
         self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key)
         self.prompt_generator = PromptGenerator(api_key=api_key, generation_model=generation_model)
+        self.embedding_calculator = EmbeddingCalculator()
 
     # === LLM 客户端（显式参数优先；否则使用环境变量，默认 https://apis.iflow.cn/v1 ） ===
     def _llm(self):
@@ -593,12 +595,35 @@ class AttackGenerator:
             return random.random() * 1000
 
         scores = []
+        max_retries = 3
+
         for i in range(num_runs):
-            print(f"[平均评分] 第 {i+1}/{num_runs} 次运行任务")
-            run = self.executor.execute_task_with_attack(task, attack_tool)
-            score = self._score(run, baseline_ok)
-            scores.append(score)
-            print(f"[平均评分] 第 {i+1} 次运行得分: {score:.2f}")
+            run_success = False
+            run_attempts = 0
+
+            # 重试机制：遇到mcp_error时重试
+            while run_attempts < max_retries:
+                print(f"[平均评分] 第 {i+1}/{num_runs} 次运行任务 (尝试 {run_attempts+1}/{max_retries})")
+                run = self.executor.execute_task_with_attack(task, attack_tool)
+
+                # 检查是否为mcp_error
+                if run.get("status") == "mcp_error":
+                    print(f"[平均评分] 第 {i+1} 次运行遇到mcp_error，正在重试...")
+                    run_attempts += 1
+                    if run_attempts >= max_retries:
+                        print(f"[平均评分] 第 {i+1} 次运行重试次数已达上限，跳过此运行")
+                        break
+                    continue
+
+                score = self._score(run, baseline_ok)
+                scores.append(score)
+                print(f"[平均评分] 第 {i+1} 次运行得分: {score:.2f}")
+                run_success = True
+                break
+
+            # 如果所有重试都失败了，跳过这次运行
+            if not run_success:
+                print(f"[平均评分] 第 {i+1} 次运行完全失败，跳过此运行")
 
         if scores:
             average_score = sum(scores) / len(scores)
@@ -607,7 +632,7 @@ class AttackGenerator:
         else:
             return 0
 
-    def _baseline_assessment(self, task: Dict, num_runs: int = 3) -> tuple[bool, float]:
+    def _baseline_assessment(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
         """运行多次无攻击任务并同时计算成功率和平均分数"""
         if not IMPORTS_AVAILABLE:
             # 返回模拟数据用于测试
@@ -615,25 +640,54 @@ class AttackGenerator:
 
         success_count = 0
         scores = []
+        total_attempts = 0
+        mcp_error_count = 0
 
         for i in range(num_runs):
-            print(f"[基线评估] 第 {i+1}/{num_runs} 次运行无攻击任务")
-            base = self.executor.execute_task_without_attack(task)
+            run_success = False
+            run_attempts = 0
 
-            # 计算成功率
-            if base.get("status") == "success":
-                success_count += 1
-                print(f"[基线评估] 第 {i+1} 次运行成功")
-            else:
-                print(f"[基线评估] 第 {i+1} 次运行失败")
+            # 重试机制：遇到mcp_error时重试
+            while run_attempts < max_retries:
+                total_attempts += 1
+                print(f"[基线评估] 第 {i+1}/{num_runs} 次运行无攻击任务 (尝试 {run_attempts+1}/{max_retries})")
+                base = self.executor.execute_task_without_attack(task)
 
-            # 计算分数（临时使用baseline_ok=True来计算分数）
-            score = self._score(base, True)
-            scores.append(score)
-            print(f"[基线评分] 第 {i+1} 次运行得分: {score:.2f}")
+                # 检查是否为mcp_error
+                if base.get("status") == "mcp_error":
+                    mcp_error_count += 1
+                    print(f"[基线评估] 第 {i+1} 次运行遇到mcp_error，正在重试...")
+                    run_attempts += 1
+                    if run_attempts >= max_retries:
+                        print(f"[基线评估] 第 {i+1} 次运行重试次数已达上限，跳过此运行")
+                        break
+                    continue
+
+                # 计算成功率
+                if base.get("status") == "success":
+                    success_count += 1
+                    print(f"[基线评估] 第 {i+1} 次运行成功")
+                else:
+                    print(f"[基线评估] 第 {i+1} 次运行失败")
+
+                # 计算分数（临时使用baseline_ok=True来计算分数）
+                score = self._score(base, True)
+                scores.append(score)
+                print(f"[基线评分] 第 {i+1} 次运行得分: {score:.2f}")
+                run_success = True
+                break
+
+            # 如果所有重试都失败了，跳过这次运行
+            if not run_success:
+                print(f"[基线评估] 第 {i+1} 次运行完全失败，跳过此运行")
+
+        # 检查mcp_error是否超过一半
+        if total_attempts > 0 and mcp_error_count / total_attempts > 0.5:
+            print(f"[基线评估] mcp_error比例过高 ({mcp_error_count}/{total_attempts} = {mcp_error_count/total_attempts:.2f} > 0.5)，标记任务为跳过")
+            return None, 0  # 返回None表示应该跳过任务
 
         # 计算成功率
-        success_rate = success_count / num_runs
+        success_rate = success_count / num_runs if num_runs > 0 else 0
         print(f"[基线评估] {num_runs} 次运行成功率为: {success_rate:.2f}")
         baseline_ok = success_rate >= 0.5  # 如果成功率大于等于0.5，认为baseline是成功的
 
@@ -643,6 +697,12 @@ class AttackGenerator:
             print(f"[基线评分] {num_runs} 次运行平均得分: {average_score:.2f}")
         else:
             average_score = 0
+            print(f"[基线评分] 没有成功运行，平均得分为: {average_score:.2f}")
+
+        # 如果所有运行都失败了，返回特殊标记
+        if success_count == 0 and len(scores) == 0:
+            print(f"[基线评估] 所有运行都失败，标记任务为跳过")
+            return None, 0  # 返回None表示应该跳过任务
 
         return baseline_ok, average_score
 
@@ -801,13 +861,26 @@ class AttackGenerator:
         # 如果没有加载到初始结果，则执行初始阶段
         if not initial_result_loaded:
             # 1) 无攻击基线，决定是否强制完成度 - 使用3次运行的平均值判断
-            baseline_ok, baseline_score = self._baseline_assessment(task, num_runs=3)
+            baseline_result = self._baseline_assessment(task, num_runs=3)
+
+            # 检查是否应该跳过任务
+            if baseline_result[0] is None:
+                task_id = task.get("id", task.get("task_id", ""))
+                print(f"[任务跳过] 任务 {task_id} 的基线评估完全失败，跳过该任务")
+                return {
+                    "task_id": task_id,
+                    "attack_tools": [],
+                    "final_score": 0.0
+                }
+
+            baseline_ok, baseline_score = baseline_result
 
             # 2) 初始候选（LLM 生成）- 生成一个测试一个，直到获得candidate_count个有效候选
             candidates = []
             discarded_candidates = []  # 用于存储被丢弃的候选
             attempts = 0
             max_attempts = 100  # 防止无限循环
+            max_retries = 3  # 重试次数
 
             print(f"[初始候选生成] 开始生成初始候选，目标: {self.candidate_count}个，baseline分数: {baseline_score:.2f}")
 
@@ -821,47 +894,102 @@ class AttackGenerator:
                 c = single_candidate_batch[0]
                 attempts += 1
 
-                # 先测试一次分数
-                run_first = self.executor.execute_task_with_attack(task, c)
+                # 重试机制：遇到mcp_error时重试
                 first_score = 0
-                if run_first.get("status") != "error":
-                    first_score = self._score(run_first, baseline_ok)
-                    print(f"[初始候选生成] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
+                valid_runs = 0
+                total_score = 0
+                run_success = False
+                run_attempts = 0
 
-                    # 只有当第一次分数超过baseline时，才进行额外两次测试
-                    if first_score > baseline_score:
-                        print(f"[初始候选生成] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
-                        # 再测两次，取三次平均值
-                        total_score = first_score
-                        valid_runs = 1
+                while run_attempts < max_retries:
+                    # 先测试一次分数
+                    run_first = self.executor.execute_task_with_attack(task, c)
 
-                        for test_num in range(2):
-                            run = self.executor.execute_task_with_attack(task, c)
-                            if run.get("status") != "error":
-                                score = self._score(run, baseline_ok)
-                                total_score += score
-                                valid_runs += 1
-                                print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
+                    # 检查是否为mcp_error
+                    if run_first.get("status") == "mcp_error":
+                        print(f"[初始候选生成] 工具 {c['name']} 第一次运行遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                        run_attempts += 1
+                        if run_attempts >= max_retries:
+                            print(f"[初始候选生成] 工具 {c['name']} 重试次数已达上限，跳过此工具")
+                            break
+                        continue
 
-                        if valid_runs > 0:
-                            average_score = total_score / valid_runs
-                            # 只有当平均分数大于baseline时才保留
-                            if average_score > baseline_score:
-                                # 保存分数信息到候选工具中
-                                c['score'] = average_score
-                                candidates.append(c)
-                                print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(candidates)}个)")
+                    first_score = 0
+                    if run_first.get("status") != "error":
+                        first_score = self._score(run_first, baseline_ok)
+                        print(f"[初始候选生成] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
+
+                        # 只有当第一次分数超过baseline时，才进行额外两次测试
+                        if first_score > baseline_score:
+                            print(f"[初始候选生成] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
+                            # 再测两次，取三次平均值
+                            total_score = first_score
+                            valid_runs = 1
+
+                            test_success = True
+                            for test_num in range(2):
+                                test_run_success = False
+                                test_run_attempts = 0
+
+                                while test_run_attempts < max_retries:
+                                    run = self.executor.execute_task_with_attack(task, c)
+
+                                    # 检查是否为mcp_error
+                                    if run.get("status") == "mcp_error":
+                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
+                                        test_run_attempts += 1
+                                        if test_run_attempts >= max_retries:
+                                            print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
+                                            test_success = False
+                                            break
+                                        continue
+
+                                    if run.get("status") != "error":
+                                        score = self._score(run, baseline_ok)
+                                        total_score += score
+                                        valid_runs += 1
+                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
+                                        test_run_success = True
+                                        break
+                                    else:
+                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
+                                        test_success = False
+                                        break
+
+                                if not test_run_success:
+                                    test_success = False
+
+                                if not test_success:
+                                    break
+
+                            if test_success and valid_runs > 0:
+                                average_score = total_score / valid_runs
+                                # 只有当平均分数大于baseline时才保留
+                                if average_score > baseline_score:
+                                    # 保存分数信息到候选工具中
+                                    c['score'] = average_score
+                                    candidates.append(c)
+                                    print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(candidates)}个)")
+                                else:
+                                    # 保存被丢弃的候选及其分数
+                                    c['score'] = average_score
+                                    discarded_candidates.append(c)
+                                    print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
+                                run_success = True
                             else:
-                                # 保存被丢弃的候选及其分数
-                                c['score'] = average_score
-                                discarded_candidates.append(c)
-                                print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
+                                print(f"[初始候选生成] 工具 {c['name']} 测试过程中失败，丢弃")
+                                run_success = True
                         else:
-                            print(f"[初始候选生成] 工具 {c['name']} 3次运行均失败，丢弃")
+                            print(f"[初始候选生成] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
+                            run_success = True
                     else:
-                        print(f"[初始候选生成] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
-                else:
-                    print(f"[初始候选生成] 工具 {c['name']} 第一次运行失败，丢弃")
+                        print(f"[初始候选生成] 工具 {c['name']} 第一次运行失败，丢弃")
+                        run_success = True
+                    break
+
+                # 如果所有重试都失败了，跳过这个候选工具
+                if not run_success:
+                    print(f"[初始候选生成] 工具 {c['name']} 完全失败，跳过此工具")
 
             print(f"[初始候选生成] 完成，共生成 {len(candidates)} 个有效候选")
 
@@ -902,6 +1030,15 @@ class AttackGenerator:
 
             print(f"初始候选评估完成，当前最高分数: {best_score:.2f}")
 
+            # 如果所有评估都失败了（baseline_score为0且没有有效候选），则跳过该任务
+            if baseline_score == 0 and len(candidates) == 0 and best_tool is None:
+                print(f"[任务跳过] 任务 {task_id} 的基线评估完全失败且没有生成任何候选工具，跳过该任务")
+                return {
+                    "task_id": task_id,
+                    "attack_tools": [],
+                    "final_score": 0.0
+                }
+
             # 初始化工具集合：将初始候选添加到集合中，并按分数排序
             tool_collection = []
 
@@ -928,6 +1065,48 @@ class AttackGenerator:
             # 按分数排序
             tool_collection.sort(key=lambda x: x.get('score', 0.0), reverse=True)
             print(f"[工具集合初始化] 初始化工具集合，共{len(tool_collection)}个工具，最高分数: {tool_collection[0].get('score', 0.0):.2f}")
+
+            # 对top-k工具进行语义嵌入分析
+            if len(tool_collection) >= 2:
+                top_k = min(self.top_k, len(tool_collection))
+                top_k_tools = tool_collection[:top_k]
+
+                # 获取最优工具和与之差异最大的工具
+                best_tool_from_collection = tool_collection[0]  # 分数最高的工具
+                print(f"[语义分析] 当前最优工具: {best_tool_from_collection['name']} (分数: {best_tool_from_collection['score']:.3f})")
+
+                # 计算最优工具与其它工具的语义相似度
+                best_tool_desc = f"{best_tool_from_collection['name']} {best_tool_from_collection['description']}"
+                max_diff = -1
+                most_diverse_tool = None
+                most_diverse_tool_idx = -1
+
+                for i, tool in enumerate(top_k_tools[1:]):  # 从第二个工具开始比较
+                    tool_desc = f"{tool['name']} {tool['description']}"
+                    try:
+                        # 获取两个工具的嵌入向量
+                        embeddings = self.embedding_calculator.get_embeddings([best_tool_desc, tool_desc])
+                        # 计算相似度
+                        similarity = self.embedding_calculator.calculate_similarity(embeddings[0], embeddings[1])
+                        diff = 1 - similarity  # 差异度
+                        print(f"  - 工具'{tool['name']}' 与最优工具的相似度: {similarity:.3f}, 差异度: {diff:.3f}")
+
+                        if diff > max_diff:
+                            max_diff = diff
+                            most_diverse_tool = tool
+                            most_diverse_tool_idx = i + 1  # +1因为从索引1开始
+                    except Exception as e:
+                        print(f"  - 工具'{tool['name']}' 语义分析失败: {e}")
+                        # 即使分析失败也打印默认的相似度和差异度
+                        print(f"  - 工具'{tool['name']}' 与最优工具的相似度: 0.500, 差异度: 0.500")
+
+                if most_diverse_tool:
+                    print(f"[语义分析] 与最优工具差异最大的工具: {most_diverse_tool['name']} (差异度: {max_diff:.3f})")
+                    # 将最优工具和差异最大的工具作为交叉变异的父代
+                    # 这里我们不直接进行交叉，而是记录信息供后续交叉变异使用
+                    # 在实际的交叉变异中会选择这两个工具进行交叉
+                else:
+                    print("[语义分析] 未找到与最优工具差异较大的工具")
 
             # 保存初始结果（第0次迭代）- 保持与后续迭代一致的格式
             if output_dir and tool_collection:
@@ -1029,12 +1208,51 @@ class AttackGenerator:
         for it in range(start_iteration, iterations):
             print(f"\n[交叉变异迭代 {it+1}/{iterations}] 当前工具集合大小: {len(tool_collection)}，最高分数: {tool_collection[0].get('score', 0.0):.2f}")
 
-            # 从工具集合的top-k中随机选择2个父代进行交叉变异
-            top_k = min(5, len(tool_collection))  # 从前5个中选择，如果不足5个则选择所有
-            selected_parents = random.sample(tool_collection[:top_k], min(2, len(tool_collection[:top_k])))
+            # 从工具集合中选择2个父代进行交叉变异
+            # 首先尝试使用语义分析的结果选择父代
+            # 获取当前最优工具
+            current_best_tool = tool_collection[0] if tool_collection else None
 
-            parent1, parent2 = selected_parents[0], selected_parents[1]
-            print(f"[交叉变异迭代 {it+1}] 选择父代: {parent1.get('name', 'unknown')} (分数: {parent1.get('score', 0.0):.2f}) 和 {parent2.get('name', 'unknown')} (分数: {parent2.get('score', 0.0):.2f})")
+            # 尝试找到与最优工具语义差异最大的工具
+            parent1, parent2 = None, None
+            if current_best_tool and len(tool_collection) >= 2:
+                # 计算最优工具与其它工具的语义相似度
+                best_tool_desc = f"{current_best_tool['name']} {current_best_tool['description']}"
+                max_diff = -1
+                most_diverse_tool = None
+
+                # 从top-k工具中查找与最优工具差异最大的工具
+                top_k_count = min(self.top_k, len(tool_collection))
+                for tool in tool_collection[1:top_k_count]:  # 从第二个工具开始比较
+                    tool_desc = f"{tool['name']} {tool['description']}"
+                    try:
+                        # 获取两个工具的嵌入向量
+                        embeddings = self.embedding_calculator.get_embeddings([best_tool_desc, tool_desc])
+                        # 计算相似度
+                        similarity = self.embedding_calculator.calculate_similarity(embeddings[0], embeddings[1])
+                        diff = 1 - similarity  # 差异度
+                        print(f"  - 工具'{tool['name']}' 与最优工具的相似度: {similarity:.3f}, 差异度: {diff:.3f}")
+
+                        if diff > max_diff:
+                            max_diff = diff
+                            most_diverse_tool = tool
+                    except Exception as e:
+                        print(f"  - 工具'{tool['name']}' 语义分析失败: {e}")
+                        # 即使分析失败也打印默认的相似度和差异度
+                        print(f"  - 工具'{tool['name']}' 与最优工具的相似度: 0.500, 差异度: 0.500")
+
+                # 如果找到了差异最大的工具，则使用这两个工具作为父代
+                if most_diverse_tool:
+                    parent1 = current_best_tool
+                    parent2 = most_diverse_tool
+                    print(f"[交叉变异迭代 {it+1}] 基于语义分析选择父代: {parent1.get('name', 'unknown')} (分数: {parent1.get('score', 0.0):.2f}) 和 {parent2.get('name', 'unknown')} (分数: {parent2.get('score', 0.0):.2f}), 相似度: {1-max_diff:.3f}, 差异度: {max_diff:.3f}")
+
+            # 如果没有找到合适的父代对，则使用原来的方法随机选择
+            if not parent1 or not parent2:
+                top_k = min(5, len(tool_collection))  # 从前5个中选择，如果不足5个则选择所有
+                selected_parents = random.sample(tool_collection[:top_k], min(2, len(tool_collection[:top_k])))
+                parent1, parent2 = selected_parents[0], selected_parents[1]
+                print(f"[交叉变异迭代 {it+1}] 随机选择父代: {parent1.get('name', 'unknown')} (分数: {parent1.get('score', 0.0):.2f}) 和 {parent2.get('name', 'unknown')} (分数: {parent2.get('score', 0.0):.2f})")
 
             # 生成交叉变异的子代工具
             crossover_temperature = 0.5 + (it / iterations) * 0.5  # 递增温度
@@ -1058,34 +1276,74 @@ class AttackGenerator:
             )
             print(f"[交叉变异迭代 {it+1}] 生成子代: {child_tool.get('name', 'unknown')}")
 
-            # 评估子代工具
-            run_child = self.executor.execute_task_with_attack(task, child_tool)
-            score_child = self._score(run_child, baseline_ok)
-            print(f"[交叉变异迭代 {it+1}] 子代单次分数: {score_child:.2f}")
+            # 评估子代工具 - 添加重试机制
+            max_retries = 3
+            run_child = None
+            run_attempts = 0
+            score_child = 0
 
-            # 如果单次得分比当前最高分高，进行多次验证
-            if score_child > best_score + self.score_threshold:
-                print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 超过当前最优 {best_score:.2f} + {self.score_threshold}，进行多次验证")
-                average_score_child = self._score_average(task, child_tool, baseline_ok, num_runs=3)
-                child_tool['score'] = average_score_child  # 添加分数信息
-                print(f"[交叉变异迭代 {it+1}] 子代平均分数: {average_score_child:.2f}")
+            while run_attempts < max_retries:
+                run_child = self.executor.execute_task_with_attack(task, child_tool)
 
-                if average_score_child > best_score:
-                    print(f"[交叉变异迭代 {it+1}] 发现更优工具! 新的最高分数: {average_score_child:.2f}")
-                    best_score = average_score_child
-                    best_tool = child_tool
-
-                    # 重新运行以获取详细反馈
-                    run_child = self.executor.execute_task_with_attack(task, child_tool)
-                    child_tool['feedback'] = run_child  # 添加反馈信息
+                # 检查是否为mcp_error
+                if run_child.get("status") == "mcp_error":
+                    print(f"[交叉变异迭代 {it+1}] 子代工具运行遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                    run_attempts += 1
+                    if run_attempts >= max_retries:
+                        print(f"[交叉变异迭代 {it+1}] 子代工具运行重试次数已达上限，跳过此工具")
+                        break
+                    continue
                 else:
-                    print(f"[交叉变异迭代 {it+1}] 子代平均分数 {average_score_child:.2f} 未超过当前最优 {best_score:.2f}")
+                    break
+
+            if run_child and run_child.get("status") != "mcp_error":
+                score_child = self._score(run_child, baseline_ok)
+                print(f"[交叉变异迭代 {it+1}] 子代单次分数: {score_child:.2f}")
+
+                # 如果单次得分比当前最高分高，进行多次验证
+                if score_child > best_score + self.score_threshold:
+                    print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 超过当前最优 {best_score:.2f} + {self.score_threshold}，进行多次验证")
+                    average_score_child = self._score_average(task, child_tool, baseline_ok, num_runs=3)
+                    child_tool['score'] = average_score_child  # 添加分数信息
+                    print(f"[交叉变异迭代 {it+1}] 子代平均分数: {average_score_child:.2f}")
+
+                    if average_score_child > best_score:
+                        print(f"[交叉变异迭代 {it+1}] 发现更优工具! 新的最高分数: {average_score_child:.2f}")
+                        best_score = average_score_child
+                        best_tool = child_tool
+
+                        # 重新运行以获取详细反馈 - 添加重试机制
+                        run_attempts = 0
+                        while run_attempts < max_retries:
+                            run_child = self.executor.execute_task_with_attack(task, child_tool)
+
+                            # 检查是否为mcp_error
+                            if run_child.get("status") == "mcp_error":
+                                print(f"[交叉变异迭代 {it+1}] 重新运行更优工具遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                                run_attempts += 1
+                                if run_attempts >= max_retries:
+                                    print(f"[交叉变异迭代 {it+1}] 重新运行更优工具重试次数已达上限")
+                                    break
+                                continue
+                            else:
+                                break
+
+                        if run_child and run_child.get("status") != "mcp_error":
+                            child_tool['feedback'] = run_child  # 添加反馈信息
+                        else:
+                            print(f"[交叉变异迭代 {it+1}] 无法获取更优工具的反馈信息")
+                    else:
+                        print(f"[交叉变异迭代 {it+1}] 子代平均分数 {average_score_child:.2f} 未超过当前最优 {best_score:.2f}")
+                else:
+                    child_tool['score'] = score_child  # 添加分数信息
+                    if score_child > best_score:
+                        print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 超过当前最优 {best_score:.2f} 但未超过{self.score_threshold}分阈值")
+                    else:
+                        print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 未超过当前最优 {best_score:.2f}")
             else:
-                child_tool['score'] = score_child  # 添加分数信息
-                if score_child > best_score:
-                    print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 超过当前最优 {best_score:.2f} 但未超过{self.score_threshold}分阈值")
-                else:
-                    print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 未超过当前最优 {best_score:.2f}")
+                print(f"[交叉变异迭代 {it+1}] 子代工具运行完全失败，跳过此工具")
+                # 跳过这个子代工具，继续下一次迭代
+                continue
 
             # 将子代工具添加到工具集合中
             new_tools = [child_tool]
@@ -1178,9 +1436,17 @@ class AttackGenerator:
                     print(f"已保存第{it + 1}次迭代结果到: {iter_output_path}")
                     print(f"  📊 工具集合统计: 总数={len(tool_collection)}, 平均分={iter_result['collection_stats']['average_score']:.2f}, 最高分={best_score:.2f}")
 
+        # 检查best_tool是否为None，如果是则返回空的攻击工具列表
+        if best_tool is None and not candidates:
+            return {
+                "task_id": task_id,
+                "attack_tools": [],
+                "final_score": 0.0
+            }
+
         return {
             "task_id": task_id,
-            "attack_tools": [best_tool if best_tool else candidates[0]],
+            "attack_tools": [best_tool if best_tool else (candidates[0] if candidates else {})],
             "final_score": float(best_score)
         }
 
@@ -1217,7 +1483,7 @@ class AttackGenerator:
         # 按分数从高到低排序
         unique_tools.sort(key=lambda x: x.get("score", 0.0), reverse=True)
 
-        # 保持集合大小限制
+        # 如果工具数量超过最大限制，使用简单的截断方法
         return unique_tools[:max_size]
 
     def generate_attack_dataset(self, input_dataset: List[Dict], iterations: int = 3, output_dir: str = None) -> List[Dict]:
@@ -1286,17 +1552,40 @@ class AttackGenerator:
             c = single_candidate_batch[0]
             attempts += 1
 
-            # 先在每个任务上测试一次分数
+            # 先在每个任务上测试一次分数 - 添加重试机制
             total_first_score = 0
             all_first_valid = True
+            max_retries = 3
 
             for task in input_dataset:
                 task_id = task.get("id", task.get("task_id", ""))
                 # 先测试一次分数
-                run_first = self.executor.execute_task_with_attack(task, c)
-                if run_first.get("status") != "error":
-                    first_score = self._score(run_first, baselines[task_id])
-                    total_first_score += first_score
+                run_first = None
+                run_attempts = 0
+
+                # 重试机制：遇到mcp_error时重试
+                while run_attempts < max_retries:
+                    run_first = self.executor.execute_task_with_attack(task, c)
+
+                    # 检查是否为mcp_error
+                    if run_first.get("status") == "mcp_error":
+                        print(f"[初始候选生成] 工具 {c['name']} 在任务 {task_id} 上第一次运行遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                        run_attempts += 1
+                        if run_attempts >= max_retries:
+                            print(f"[初始候选生成] 工具 {c['name']} 在任务 {task_id} 上第一次运行重试次数已达上限，跳过此任务")
+                            all_first_valid = False
+                            break
+                        continue
+                    else:
+                        break
+
+                if run_first and run_first.get("status") != "mcp_error":
+                    if run_first.get("status") != "error":
+                        first_score = self._score(run_first, baselines[task_id])
+                        total_first_score += first_score
+                    else:
+                        all_first_valid = False
+                        break
                 else:
                     all_first_valid = False
                     break
@@ -1443,30 +1732,76 @@ class AttackGenerator:
             feedback_map_new = {}
             all_average_success_new = True
 
-            # 先进行单次评估
+            # 先进行单次评估 - 添加重试机制
+            max_retries = 3
             for task in input_dataset:
                 task_id = task.get("id", task.get("task_id", ""))
                 # 先进行单次评估
-                run_new = self.executor.execute_task_with_attack(task, new_seed)
-                score_new = self._score(run_new, baselines[task_id])
-                score_sum_new += score_new
+                run_new = None
+                run_attempts = 0
+
+                # 重试机制：遇到mcp_error时重试
+                while run_attempts < max_retries:
+                    run_new = self.executor.execute_task_with_attack(task, new_seed)
+
+                    # 检查是否为mcp_error
+                    if run_new.get("status") == "mcp_error":
+                        print(f"[跨任务优化迭代 {it+1}] 新候选工具在任务 {task_id} 上运行遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                        run_attempts += 1
+                        if run_attempts >= max_retries:
+                            print(f"[跨任务优化迭代 {it+1}] 新候选工具在任务 {task_id} 上运行重试次数已达上限，跳过此任务")
+                            break
+                        continue
+                    else:
+                        break
+
+                if run_new and run_new.get("status") != "mcp_error":
+                    score_new = self._score(run_new, baselines[task_id])
+                    score_sum_new += score_new
+                else:
+                    # 如果运行失败，跳过此任务
+                    print(f"[跨任务优化迭代 {it+1}] 新候选工具在任务 {task_id} 上运行完全失败，跳过此任务")
 
             # 只有当单次总分超过当前最优score_threshold分时，才进行多次运行计算平均值
             if score_sum_new > (best_score_sum + self.score_threshold):
                 print(f"[迭代 {it}] 新候选工具 单次总分 {score_sum_new:.2f} 超过当前最优 {best_score_sum:.2f} + {self.score_threshold}，进行多次运行验证")
-                # 使用平均得分来验证
+                # 使用平均得分来验证 - 添加重试机制
+                max_retries = 3
                 for task in input_dataset:
                     task_id = task.get("id", task.get("task_id", ""))
                     # 使用平均得分来评估新工具
                     average_score_new = self._score_average(task, new_seed, baselines[task_id], num_runs=3)
                     average_score_sum_new += average_score_new
-                    # 重新运行一次以获取trace和feedback
-                    run_new = self.executor.execute_task_with_attack(task, new_seed)
-                    trace_map_new[task_id] = run_new.get("action_trace", [])
-                    feedback_map_new[task_id] = run_new
 
-                    if run_new.get("status") == "error":
+                    # 重新运行一次以获取trace和feedback - 添加重试机制
+                    run_new = None
+                    run_attempts = 0
+
+                    # 重试机制：遇到mcp_error时重试
+                    while run_attempts < max_retries:
+                        run_new = self.executor.execute_task_with_attack(task, new_seed)
+
+                        # 检查是否为mcp_error
+                        if run_new.get("status") == "mcp_error":
+                            print(f"[跨任务优化迭代 {it+1}] 重新运行新候选工具在任务 {task_id} 上遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                            run_attempts += 1
+                            if run_attempts >= max_retries:
+                                print(f"[跨任务优化迭代 {it+1}] 重新运行新候选工具在任务 {task_id} 上重试次数已达上限，跳过此任务")
+                                break
+                            continue
+                        else:
+                            break
+
+                    if run_new and run_new.get("status") != "mcp_error":
+                        trace_map_new[task_id] = run_new.get("action_trace", [])
+                        feedback_map_new[task_id] = run_new
+
+                        if run_new.get("status") == "error":
+                            all_average_success_new = False
+                    else:
+                        # 如果运行失败，设置错误状态
                         all_average_success_new = False
+                        print(f"[跨任务优化迭代 {it+1}] 重新运行新候选工具在任务 {task_id} 上完全失败，设置错误状态")
 
                 print(f"[迭代 {it}] 新候选 name={new_seed['name']} 平均总分={average_score_sum_new:.2f}")
             else:
@@ -1514,6 +1849,11 @@ class AttackGenerator:
                     print(f"已保存第{it + 1}次迭代结果到: {iter_output_path}")
 
         # 5) 为每个任务生成最终的攻击工具定义（使用相同的工具）
+        # 如果best_tool为None，表示所有任务都失败了，跳过这个任务
+        if best_tool is None:
+            print("警告：未能生成有效的攻击工具，所有任务都失败了")
+            return []
+
         attack_tools = []
         for task in input_dataset:
             task_id = task.get("id", task.get("task_id", ""))
@@ -1746,11 +2086,11 @@ def main():
     parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=4,
                         help="生成的候选工具数量 (默认: 4)")
     # 新增：模型参数
-    parser.add_argument("--execution-model", dest="execution_model", default="deepseek-v3.1",
+    parser.add_argument("--execution-model", dest="execution_model", default="moonshotai/Kimi-K2-Instruct-0905",
                         help="执行任务的模型 (默认: deepseek-v3.1)")
-    parser.add_argument("--generation-model", dest="generation_model", default="glm-4.5",
+    parser.add_argument("--generation-model", dest="generation_model", default="ZhipuAI/GLM-4.5",
                         help="生成候选工具的模型 (默认: glm-4.5)")
-    parser.add_argument("--mutation-model", dest="mutation_model", default="glm-4.5",
+    parser.add_argument("--mutation-model", dest="mutation_model", default="ZhipuAI/GLM-4.5",
                         help="变异工具的模型 (默认: glm-4.5)")
     # 新增：变异策略选择
     parser.add_argument("--mutation-strategy", dest="mutation_strategy", default="crossover",

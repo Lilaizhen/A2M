@@ -524,7 +524,7 @@ async def main(
                     # 整体流式执行再加一层重试（抗瞬断）
                     await retry_async(
                         _run_stream_once,
-                        tries=2,
+                        tries=5,
                         base=1.0,
                         factor=2.0,
                         max_delay=5.0,
