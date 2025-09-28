@@ -551,7 +551,7 @@ async def main(
                         "completion_reason": {
                             "result": "未完成",
                             "reason": f"Agent 运行失败: {e.__class__.__name__}",
-                            "failure_type": "agent_error",
+                            "failure_type": "system_error",
                         },
                         "execution_time_seconds": task_execution_time,
                         "total_tool_calls": sum(1 for x in action_trace if x.get("type") == "tool_call"),

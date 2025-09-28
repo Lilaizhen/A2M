@@ -15,7 +15,9 @@ attacks/
 │   ├── __init__.py
 │   ├── resource_waste.py         # 资源浪费攻击场景
 │   ├── task_failure.py           # 任务失败攻击场景
-│   └── inappropriate_output.py   # 不当内容攻击场景
+│   ├── information_leakage.py   # 信息泄漏攻击场景
+│   ├── backdoor_injection.py    # 后门注入攻击场景
+│   └── resource_waste_no_success.py  # 资源浪费（不考虑任务成功）攻击场景
 └── scoring/                      # 适应度评分模块
     ├── __init__.py
     └── fitness_calculator.py     # 适应度计算器
@@ -33,7 +35,9 @@ attacks/
 ### 1. 攻击场景模块 (scenarios/)
 - **resource_waste.py**: 资源浪费攻击场景，目标是诱导AI反复调用工具以消耗资源
 - **task_failure.py**: 任务失败攻击场景，目标是诱导AI调用工具导致原始任务失败
-- **inappropriate_output.py**: 不当内容攻击场景，目标是诱导AI输出不当内容
+- **information_leakage.py**: 信息泄漏攻击场景，目标是诱导AI泄漏敏感信息
+- **backdoor_injection.py**: 后门注入攻击场景，目标是诱导AI执行恶意操作，如写入后门文件
+- **resource_waste_no_success.py**: 资源浪费（不考虑任务成功）攻击场景，目标是诱导AI反复调用工具以消耗资源，但不关心原始任务是否成功完成
 
 ### 2. 适应度评分模块 (scoring/)
 - **fitness_calculator.py**: 根据不同攻击场景计算适应度分数

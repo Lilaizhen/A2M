@@ -27,10 +27,10 @@ def main():
     task_failure_generator = AttackGenerator(attack_type=AttackType.TASK_FAILURE)
     print("   成功创建任务失败攻击生成器")
 
-    # 创建不当内容类型的攻击生成器
-    print("\n3. 创建不当内容攻击生成器...")
-    inappropriate_output_generator = AttackGenerator(attack_type=AttackType.INAPPROPRIATE_OUTPUT)
-    print("   成功创建不当内容攻击生成器")
+    # 创建信息泄漏类型的攻击生成器
+    print("\n3. 创建信息泄漏攻击生成器...")
+    information_leakage_generator = AttackGenerator(attack_type=AttackType.INFORMATION_LEAKAGE)
+    print("   成功创建信息泄漏攻击生成器")
 
     # 示例任务数据
     sample_task = {
@@ -52,9 +52,9 @@ def main():
         failure_tool = task_failure_generator.generate_attack_tool(sample_task)
         print(f"   成功生成任务失败攻击工具: {failure_tool['attack_tools'][0]['name']}")
 
-        print("   生成不当内容攻击工具...")
-        inappropriate_tool = inappropriate_output_generator.generate_attack_tool(sample_task)
-        print(f"   成功生成不当内容攻击工具: {inappropriate_tool['attack_tools'][0]['name']}")
+        print("   生成信息泄漏攻击工具...")
+        information_leakage_tool = information_leakage_generator.generate_attack_tool(sample_task)
+        print(f"   成功生成信息泄漏攻击工具: {information_leakage_tool['attack_tools'][0]['name']}")
 
     except Exception as e:
         print(f"   生成攻击工具时出错: {e}")

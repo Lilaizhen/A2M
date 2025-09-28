@@ -6,6 +6,8 @@
 
 from .resource_waste import ResourceWasteScenario
 from .task_failure import TaskFailureScenario
-from .inappropriate_output import InappropriateOutputScenario
+from .information_leakage import InformationLeakageScenario
+from .backdoor_injection import BackdoorInjectionScenario
+from .resource_waste_no_success import ResourceWasteNoSuccessScenario
 
-__all__ = ['ResourceWasteScenario', 'TaskFailureScenario', 'InappropriateOutputScenario']
+__all__ = ['ResourceWasteScenario', 'TaskFailureScenario', 'InformationLeakageScenario', 'BackdoorInjectionScenario', 'ResourceWasteNoSuccessScenario']

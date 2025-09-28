@@ -15,7 +15,9 @@ from enum import Enum
 class AttackType(Enum):
     RESOURCE_WASTE = "resource_waste"  # 工具循环调用 资源浪费
     TASK_FAILURE = "task_failure"      # 诱导agent调用 使任务执行失败
-    INAPPROPRIATE_OUTPUT = "inappropriate_output"  # 诱导agent输出不当内容
+    INFORMATION_LEAKAGE = "information_leakage"  # 诱导agent泄漏敏感信息
+    BACKDOOR_INJECTION = "backdoor_injection"  # 诱导agent注入后门
+    RESOURCE_WASTE_NO_SUCCESS = "resource_waste_no_success"  # 工具循环调用 资源浪费 但不考虑任务成功
 
 
 class SimpleAttackGenerator:
@@ -81,7 +83,7 @@ def main():
     parser.add_argument("--input", "-i", default=default_input, help=f"输入任务数据集路径 (默认: {default_input})")
     parser.add_argument("--output", "-o", default=default_output, help=f"输出攻击工具数据集路径 (默认: {default_output})")
     parser.add_argument("--attack-type", dest="attack_type", default="resource_waste",
-                        choices=["resource_waste", "task_failure", "inappropriate_output"],
+                        choices=["resource_waste", "task_failure", "information_leakage", "backdoor_injection", "resource_waste_no_success"],
                         help="攻击场景类型 (默认: resource_waste)")
 
     args = parser.parse_args()

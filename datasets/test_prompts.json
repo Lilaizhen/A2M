@@ -13,19 +13,6 @@
             "Number of tools": "1"
         }
     },
-    {
-        "task_id": "39c4c9fc-9074-474a-850f-4b088d499d8c",
-        "Question": "Tell me the price of nvidia's stock right now.",
-        "answers": "",
-        "category": "Finance",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. Get the name of the nvidia stock\n2. Get the price of NVDA",
-            "Number of steps": "2",
-            "Tools": "1. get_ticker_info",
-            "Number of tools": "1"
-        }
-    },
         {
         "task_id": "fab605cf-d337-4ac1-beba-b3f563eaffff",
         "Question": "What is the current effect text of 'Sky Striker Ace = Zero', and what are its ATK and DEF? Show me the picture.",
@@ -36,20 +23,6 @@
             "Steps": "1. get the latest card information\n2. get the picture of the card",
             "Number of steps": "2",
             "Tools": "1. search_cards\n2. get_card_image",
-            "Number of tools": "2"
-        }
-    },
-
-    {
-        "task_id": "0dafdf66-af3a-4110-ab79-d9c037f7bc62",
-        "Question": "Find the earliest available high-speed train from Beijing to Shanghai for tomorrow. What's the departure time and ticket price?",
-        "answers": "",
-        "category": "Travel",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. get the station codes\n2. check available tickets",
-            "Number of steps": "2",
-            "Tools": "1. get-station-code-by-names\n2. get-tickets",
             "Number of tools": "2"
         }
     },
