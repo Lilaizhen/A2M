@@ -1097,6 +1097,9 @@ class AttackGenerator:
             tool_collection.sort(key=lambda x: x.get('score', 0.0), reverse=True)
             print(f"[工具集合初始化] 初始化工具集合，共{len(tool_collection)}个工具，最高分数: {tool_collection[0].get('score', 0.0):.2f}")
 
+            # 更新完整工具集合
+            full_tool_collection = tool_collection.copy()
+
             # 对top-k工具进行语义嵌入分析
             if len(tool_collection) >= 2:
                 top_k = min(self.top_k, len(tool_collection))
