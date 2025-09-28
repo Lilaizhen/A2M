@@ -1160,13 +1160,13 @@ class AttackGenerator:
                     },
                     "top_k_tools": initial_top_k_tools,
                     "collection_stats": {
-                        "total_tools": len(tool_collection),
+                        "total_tools": len(full_tool_collection),
                         "max_size": self.candidate_count * 3,
-                        "average_score": sum(tool.get("score", 0.0) for tool in tool_collection) / len(tool_collection),
+                        "average_score": sum(tool.get("score", 0.0) for tool in full_tool_collection) / len(full_tool_collection) if full_tool_collection else 0.0,
                         "score_distribution": {
-                            "max_score": tool_collection[0].get("score", 0.0) if tool_collection else 0.0,
-                            "min_score": tool_collection[-1].get("score", 0.0) if tool_collection else 0.0,
-                            "median_score": tool_collection[len(tool_collection)//2].get("score", 0.0) if tool_collection else 0.0
+                            "max_score": full_tool_collection[0].get("score", 0.0) if full_tool_collection else 0.0,
+                            "min_score": full_tool_collection[-1].get("score", 0.0) if full_tool_collection else 0.0,
+                            "median_score": full_tool_collection[len(full_tool_collection)//2].get("score", 0.0) if full_tool_collection else 0.0
                         }
                     },
                     "initialization_info": {
@@ -1182,7 +1182,7 @@ class AttackGenerator:
                     with open(initial_output_path, 'w', encoding='utf-8') as f:
                         json.dump(initial_result, f, ensure_ascii=False, indent=2)
                     print(f"已保存第0次迭代结果到: {initial_output_path}")
-                    print(f"  📊 初始工具集合: 总数={len(tool_collection)}, 平均分={initial_result['collection_stats']['average_score']:.2f}, 最高分={best_score:.2f}")
+                    print(f"  📊 初始工具集合: 总数={len(full_tool_collection)}, 平均分={initial_result['collection_stats']['average_score']:.2f}, 最高分={best_score:.2f}")
 
         # 4) 交叉变异迭代优化：维护工具集合，每次从top-k中随机选择两个进行交叉变异
 
@@ -1218,6 +1218,8 @@ class AttackGenerator:
                                     }
                                     tool_collection.append(tool)
                                 print(f"加载第 {start_iteration} 轮迭代的完整工具集合，共{len(tool_collection)}个工具")
+                                # 重新初始化完整工具集合
+                                full_tool_collection = tool_collection.copy()
 
                             # 加载基线信息（如果存在）
                             if "baseline_info" in prev_result:
@@ -1230,8 +1232,11 @@ class AttackGenerator:
                             print(f"加载断点续传数据失败，从头开始: {e}")
                             start_iteration = 0
 
+        # 初始化完整工具集合（用于保存所有生成的候选工具）
+        full_tool_collection = tool_collection.copy() if tool_collection else []
+
         for it in range(start_iteration, iterations):
-            print(f"\n[交叉变异迭代 {it+1}/{iterations}] 当前工具集合大小: {len(tool_collection)}，最高分数: {tool_collection[0].get('score', 0.0):.2f}")
+            print(f"\n[交叉变异迭代 {it+1}/{iterations}] 当前工具集合大小: {len(tool_collection)}，完整工具集合大小: {len(full_tool_collection)}，最高分数: {tool_collection[0].get('score', 0.0):.2f}")
 
             # 从工具集合中选择2个父代进行交叉变异
             # 根据策略选择父代
@@ -1328,8 +1333,11 @@ class AttackGenerator:
                 # 跳过这个子代工具，继续下一次迭代
                 continue
 
-            # 将子代工具添加到工具集合中
+            # 将子代工具添加到完整工具集合中
             new_tools = [child_tool]
+            full_tool_collection.extend(new_tools)
+
+            # 更新工具集合（使用top-k限制算法层面的集合大小）
             tool_collection = self._manage_tool_collection(tool_collection, new_tools, max_size=self.candidate_count * 3)
 
             # 更新当前最高分和最高分工具
@@ -1376,16 +1384,16 @@ class AttackGenerator:
                             "return_value": tool.get("return_value", {}),
                             "score": tool.get("score", 0.0)
                         }
-                        for tool in tool_collection
+                        for tool in self._get_full_tool_collection(full_tool_collection)
                     ],
                     "collection_stats": {
-                        "total_tools": len(tool_collection),
+                        "total_tools": len(full_tool_collection),
                         "max_size": self.candidate_count * 3,
-                        "average_score": sum(tool.get("score", 0.0) for tool in tool_collection) / len(tool_collection),
+                        "average_score": sum(tool.get("score", 0.0) for tool in full_tool_collection) / len(full_tool_collection) if full_tool_collection else 0.0,
                         "score_distribution": {
-                            "max_score": tool_collection[0].get("score", 0.0) if tool_collection else 0.0,
-                            "min_score": tool_collection[-1].get("score", 0.0) if tool_collection else 0.0,
-                            "median_score": tool_collection[len(tool_collection)//2].get("score", 0.0) if tool_collection else 0.0
+                            "max_score": full_tool_collection[0].get("score", 0.0) if full_tool_collection else 0.0,
+                            "min_score": full_tool_collection[-1].get("score", 0.0) if full_tool_collection else 0.0,
+                            "median_score": full_tool_collection[len(full_tool_collection)//2].get("score", 0.0) if full_tool_collection else 0.0
                         }
                     },
                     "crossover_info": {
@@ -1417,7 +1425,7 @@ class AttackGenerator:
                     with open(iter_output_path, 'w', encoding='utf-8') as f:
                         json.dump(iter_result, f, ensure_ascii=False, indent=2)
                     print(f"已保存第{it + 1}次迭代结果到: {iter_output_path}")
-                    print(f"  📊 工具集合统计: 总数={len(tool_collection)}, 平均分={iter_result['collection_stats']['average_score']:.2f}, 最高分={best_score:.2f}")
+                    print(f"  📊 工具集合统计: 总数={len(full_tool_collection)}, 平均分={iter_result['collection_stats']['average_score']:.2f}, 最高分={best_score:.2f}")
 
         # 检查best_tool是否为None，如果是则返回空的攻击工具列表
         if best_tool is None and not candidates:
@@ -1440,13 +1448,13 @@ class AttackGenerator:
         Args:
             tool_collection: 当前工具集合
             new_tools: 待添加的新工具列表
-            max_size: 集合最大大小，默认为 candidate_count * 2
+            max_size: 集合最大大小，默认为 candidate_count * 3
 
         Returns:
             更新后的工具集合
         """
         if max_size is None:
-            max_size = self.candidate_count * 2
+            max_size = self.candidate_count * 3
 
         # 合并工具集合
         combined_tools = tool_collection + new_tools
@@ -1469,6 +1477,20 @@ class AttackGenerator:
         # 如果工具数量超过最大限制，使用简单的截断方法
         return unique_tools[:max_size]
 
+    def _get_full_tool_collection(self, tool_collection: List[Dict]) -> List[Dict]:
+        """
+        获取完整的工具集合，按分数排序
+
+        Args:
+            tool_collection: 工具集合
+
+        Returns:
+            按分数排序的完整工具集合
+        """
+        # 按分数从高到低排序
+        sorted_tools = sorted(tool_collection, key=lambda x: x.get("score", 0.0), reverse=True)
+        return sorted_tools
+
     def _select_parents(self, tool_collection: List[Dict], iteration: int) -> tuple[Dict, Dict]:
         """
         根据不同的策略选择两个父代工具进行交叉变异
@@ -1480,6 +1502,7 @@ class AttackGenerator:
         Returns:
             两个父代工具的元组 (parent1, parent2)
         """
+        # 当前实现不使用iteration参数，但在未来可能用于基于迭代次数的策略调整
         if not tool_collection or len(tool_collection) < 2:
             raise ValueError("工具集合中至少需要两个工具才能进行交叉变异")
 
