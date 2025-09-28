@@ -411,14 +411,32 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
     is_task_completed = False
     completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
     if action_trace and task_desc:
-        behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
-        is_task_completed, _, completion_json = await judge_task_completion(
-            agent_behavior=behavior_text,
-            task_description=task_desc,
-            expected_tools=expected_tools,
-            api_key=llm.openai_api_key,
-            api_base=llm.openai_api_base,
-        )
+        # 检查 agent 行为轨迹的最后一个步骤是否是 AI 输出的信息
+        def _check_last_step_is_ai_message(trace):
+            """检查轨迹的最后一个步骤是否是 AI 消息"""
+            if not trace:
+                return False
+            # 获取最后一个步骤
+            last_step = trace[-1]
+            # 检查是否是 AI 消息类型
+            return last_step.get("type") == "ai_message"
+
+        # 检查最后一个步骤是否是 AI 消息，如果不是则判断为 system_error
+        if not _check_last_step_is_ai_message(action_trace):
+            completion_json = {
+                "result": "未完成",
+                "reason": "Agent行为轨迹最后一个步骤不是AI输出的信息",
+                "failure_type": "system_error"
+            }
+        else:
+            behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
+            is_task_completed, _, completion_json = await judge_task_completion(
+                agent_behavior=behavior_text,
+                task_description=task_desc,
+                expected_tools=expected_tools,
+                api_key=llm.openai_api_key,
+                api_base=llm.openai_api_base,
+            )
 
     total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
     mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in all_mytool_names)
@@ -583,103 +601,143 @@ class RealExecutor:
 
     def execute_task_without_attack(self, task: Dict) -> Dict:
         """在不注入攻击工具的情况下执行任务并返回反馈"""
-        # 重置annotated_data文件夹
-        self._reset_annotated_data()
+        max_retries = 5
+        for attempt in range(max_retries):
+            # 重置annotated_data文件夹
+            self._reset_annotated_data()
 
-        try:
-            report = asyncio.run(run_tasks_as_function(
-                dataset=[{
-                    "id": task.get("id", task.get("task_id", "")),
-                    "description": task.get("description") or task.get("Question", ""),
-                    "input": task.get("input") or task.get("Question", ""),
-                    "expected_tools": task.get("expected_tools", [])
-                }],
-                attack=False,
-                attack_dataset=None,
-                model=self.execution_model,
-                api_key=self.api_key,
-            ))
-            detail = report["task_details"][0] if report["task_details"] else {}
-            status = detail.get("completion_reason", {}).get("failure_type", "unknown")
+            try:
+                report = asyncio.run(run_tasks_as_function(
+                    dataset=[{
+                        "id": task.get("id", task.get("task_id", "")),
+                        "description": task.get("description") or task.get("Question", ""),
+                        "input": task.get("input") or task.get("Question", ""),
+                        "expected_tools": task.get("expected_tools", [])
+                    }],
+                    attack=False,
+                    attack_dataset=None,
+                    model=self.execution_model,
+                    api_key=self.api_key,
+                ))
+                detail = report["task_details"][0] if report["task_details"] else {}
+                status = detail.get("completion_reason", {}).get("failure_type", "unknown")
 
-            action_trace = detail.get("action_trace", [])
-            tool_calls = [step for step in action_trace if step.get("type") == "tool_call"]
+                # 如果是system_error且不是最后一次尝试，则重试
+                if status == "system_error" and attempt < max_retries - 1:
+                    print(f"[基线任务执行] 第 {attempt + 1} 次尝试遇到 system_error，正在重试...")
+                    continue
 
-            total_tool_calls = detail.get("total_tool_calls", 0)
-            mytool_calls = detail.get("mytool_calls", 0)
-            token_usage = detail.get("token_usage", {})
-            execution_time = detail.get("execution_time_seconds", 0)
+                action_trace = detail.get("action_trace", [])
+                tool_calls = [step for step in action_trace if step.get("type") == "tool_call"]
 
-            return {
-                "task_id": detail.get("task_id", task.get("id", task.get("task_id", ""))),
-                "status": status,
-                "result": detail.get("agent_final_response", ""),
-                "action_trace": action_trace,
-                "tool_calls": tool_calls,
-                "mytool_calls": mytool_calls,
-                "total_tool_calls": total_tool_calls,
-                "execution_time_seconds": execution_time,
-                "token_usage": token_usage,
-                "needed_info": ["工具名称", "工具描述", "返回值"]
-            }
-        except Exception as e:
-            return {
-                "task_id": task.get("id", task.get("task_id", "")),
-                "status": "error",
-                "result": f"执行错误: {str(e)}",
-                "needed_info": ["工具名称", "工具描述", "返回值"]
-            }
+                total_tool_calls = detail.get("total_tool_calls", 0)
+                mytool_calls = detail.get("mytool_calls", 0)
+                token_usage = detail.get("token_usage", {})
+                execution_time = detail.get("execution_time_seconds", 0)
+
+                return {
+                    "task_id": detail.get("task_id", task.get("id", task.get("task_id", ""))),
+                    "status": status,
+                    "result": detail.get("agent_final_response", ""),
+                    "action_trace": action_trace,
+                    "tool_calls": tool_calls,
+                    "mytool_calls": mytool_calls,
+                    "total_tool_calls": total_tool_calls,
+                    "execution_time_seconds": execution_time,
+                    "token_usage": token_usage,
+                    "needed_info": ["工具名称", "工具描述", "返回值"]
+                }
+            except Exception as e:
+                # 如果不是最后一次尝试，则重试
+                if attempt < max_retries - 1:
+                    print(f"[基线任务执行] 第 {attempt + 1} 次尝试遇到异常: {str(e)}，正在重试...")
+                    continue
+                else:
+                    return {
+                        "task_id": task.get("id", task.get("task_id", "")),
+                        "status": "error",
+                        "result": f"执行错误: {str(e)}",
+                        "needed_info": ["工具名称", "工具描述", "返回值"]
+                    }
+
+        # 如果所有重试都失败了，返回最后一次的结果
+        return {
+            "task_id": task.get("id", task.get("task_id", "")),
+            "status": "error",
+            "result": "所有重试都失败了",
+            "needed_info": ["工具名称", "工具描述", "返回值"]
+        }
 
     def execute_task_with_attack(self, task: Dict, attack_tool: Dict) -> Dict:
         """在注入攻击工具的情况下执行任务并返回反馈"""
-        # 重置annotated_data文件夹
-        self._reset_annotated_data()
+        max_retries = 5
+        for attempt in range(max_retries):
+            # 重置annotated_data文件夹
+            self._reset_annotated_data()
 
-        try:
-            attack_dataset = [{
-                "task_id": task.get("id", task.get("task_id", "")),
-                "attack_tools": [attack_tool]
-            }]
+            try:
+                attack_dataset = [{
+                    "task_id": task.get("id", task.get("task_id", "")),
+                    "attack_tools": [attack_tool]
+                }]
 
-            report = asyncio.run(run_tasks_as_function(
-                dataset=[{
-                    "id": task.get("id", task.get("task_id", "")),
-                    "description": task.get("description") or task.get("Question", ""),
-                    "input": task.get("input") or task.get("Question", ""),
-                    "expected_tools": task.get("expected_tools", [])
-                }],
-                attack=self.attack,
-                attack_dataset=attack_dataset,
-                model=self.execution_model,
-                api_key=self.api_key,
-            ))
-            detail = report["task_details"][0] if report["task_details"] else {}
-            status = detail.get("completion_reason", {}).get("failure_type", "unknown")
+                report = asyncio.run(run_tasks_as_function(
+                    dataset=[{
+                        "id": task.get("id", task.get("task_id", "")),
+                        "description": task.get("description") or task.get("Question", ""),
+                        "input": task.get("input") or task.get("Question", ""),
+                        "expected_tools": task.get("expected_tools", [])
+                    }],
+                    attack=self.attack,
+                    attack_dataset=attack_dataset,
+                    model=self.execution_model,
+                    api_key=self.api_key,
+                ))
+                detail = report["task_details"][0] if report["task_details"] else {}
+                status = detail.get("completion_reason", {}).get("failure_type", "unknown")
 
-            action_trace = detail.get("action_trace", [])
-            tool_calls = [step for step in action_trace if step.get("type") == "tool_call"]
+                # 如果是system_error且不是最后一次尝试，则重试
+                if status == "system_error" and attempt < max_retries - 1:
+                    print(f"[攻击任务执行] 第 {attempt + 1} 次尝试遇到 system_error，正在重试...")
+                    continue
 
-            total_tool_calls = detail.get("total_tool_calls", 0)
-            mytool_calls = detail.get("mytool_calls", 0)
-            token_usage = detail.get("token_usage", {})
-            execution_time = detail.get("execution_time_seconds", 0)
+                action_trace = detail.get("action_trace", [])
+                tool_calls = [step for step in action_trace if step.get("type") == "tool_call"]
 
-            return {
-                "task_id": detail.get("task_id", task.get("id", task.get("task_id", ""))),
-                "status": status,
-                "result": detail.get("agent_final_response", ""),
-                "action_trace": action_trace,
-                "tool_calls": tool_calls,
-                "mytool_calls": mytool_calls,
-                "total_tool_calls": total_tool_calls,
-                "execution_time_seconds": execution_time,
-                "token_usage": token_usage,
-                "needed_info": ["工具名称", "工具描述", "返回值"]
-            }
-        except Exception as e:
-            return {
-                "task_id": task.get("id", task.get("task_id", "")),
-                "status": "error",
-                "result": f"执行错误: {str(e)}",
-                "needed_info": ["工具名称", "工具描述", "返回值"]
-            }
+                total_tool_calls = detail.get("total_tool_calls", 0)
+                mytool_calls = detail.get("mytool_calls", 0)
+                token_usage = detail.get("token_usage", {})
+                execution_time = detail.get("execution_time_seconds", 0)
+
+                return {
+                    "task_id": detail.get("task_id", task.get("id", task.get("task_id", ""))),
+                    "status": status,
+                    "result": detail.get("agent_final_response", ""),
+                    "action_trace": action_trace,
+                    "tool_calls": tool_calls,
+                    "mytool_calls": mytool_calls,
+                    "total_tool_calls": total_tool_calls,
+                    "execution_time_seconds": execution_time,
+                    "token_usage": token_usage,
+                    "needed_info": ["工具名称", "工具描述", "返回值"]
+                }
+            except Exception as e:
+                # 如果不是最后一次尝试，则重试
+                if attempt < max_retries - 1:
+                    print(f"[攻击任务执行] 第 {attempt + 1} 次尝试遇到异常: {str(e)}，正在重试...")
+                    continue
+                else:
+                    return {
+                        "task_id": task.get("id", task.get("task_id", "")),
+                        "status": "error",
+                        "result": f"执行错误: {str(e)}",
+                        "needed_info": ["工具名称", "工具描述", "返回值"]
+                    }
+
+        # 如果所有重试都失败了，返回最后一次的结果
+        return {
+            "task_id": task.get("id", task.get("task_id", "")),
+            "status": "error",
+            "result": "所有重试都失败了",
+            "needed_info": ["工具名称", "工具描述", "返回值"]
+        }

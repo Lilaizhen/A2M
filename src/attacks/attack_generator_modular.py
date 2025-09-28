@@ -156,7 +156,7 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "glm-4.5", mutation_model: str = "glm-4.5", mutation_strategy: str = "crossover", top_k: int = 10):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "glm-4.5", mutation_model: str = "glm-4.5", mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10):
         print("使用函数化真实执行器")
         self.api_key = api_key
         self.attack_type = attack_type
@@ -166,6 +166,7 @@ class AttackGenerator:
         self.generation_model = generation_model
         self.mutation_model = mutation_model
         self.mutation_strategy = mutation_strategy
+        self.parent_selection_strategy = parent_selection_strategy
         self.top_k = top_k
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
         self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key)
@@ -1233,50 +1234,8 @@ class AttackGenerator:
             print(f"\n[交叉变异迭代 {it+1}/{iterations}] 当前工具集合大小: {len(tool_collection)}，最高分数: {tool_collection[0].get('score', 0.0):.2f}")
 
             # 从工具集合中选择2个父代进行交叉变异
-            # 首先尝试使用语义分析的结果选择父代
-            # 获取当前最优工具
-            current_best_tool = tool_collection[0] if tool_collection else None
-
-            # 尝试找到与最优工具语义差异最大的工具
-            parent1, parent2 = None, None
-            if current_best_tool and len(tool_collection) >= 2:
-                # 计算最优工具与其它工具的语义相似度
-                best_tool_desc = f"{current_best_tool['name']} {current_best_tool['description']}"
-                max_diff = -1
-                most_diverse_tool = None
-
-                # 从top-k工具中查找与最优工具差异最大的工具
-                top_k_count = min(self.top_k, len(tool_collection))
-                for tool in tool_collection[1:top_k_count]:  # 从第二个工具开始比较
-                    tool_desc = f"{tool['name']} {tool['description']}"
-                    try:
-                        # 获取两个工具的嵌入向量
-                        embeddings = self.embedding_calculator.get_embeddings([best_tool_desc, tool_desc])
-                        # 计算相似度
-                        similarity = self.embedding_calculator.calculate_similarity(embeddings[0], embeddings[1])
-                        diff = 1 - similarity  # 差异度
-                        print(f"  - 工具'{tool['name']}' 与最优工具的相似度: {similarity:.3f}, 差异度: {diff:.3f}")
-
-                        if diff > max_diff:
-                            max_diff = diff
-                            most_diverse_tool = tool
-                    except Exception as e:
-                        print(f"  - 工具'{tool['name']}' 语义分析失败: {e}")
-                        # 即使分析失败也打印默认的相似度和差异度
-                        print(f"  - 工具'{tool['name']}' 与最优工具的相似度: 0.500, 差异度: 0.500")
-
-                # 如果找到了差异最大的工具，则使用这两个工具作为父代
-                if most_diverse_tool:
-                    parent1 = current_best_tool
-                    parent2 = most_diverse_tool
-                    print(f"[交叉变异迭代 {it+1}] 基于语义分析选择父代: {parent1.get('name', 'unknown')} (分数: {parent1.get('score', 0.0):.2f}) 和 {parent2.get('name', 'unknown')} (分数: {parent2.get('score', 0.0):.2f}), 相似度: {1-max_diff:.3f}, 差异度: {max_diff:.3f}")
-
-            # 如果没有找到合适的父代对，则使用原来的方法随机选择
-            if not parent1 or not parent2:
-                top_k = min(5, len(tool_collection))  # 从前5个中选择，如果不足5个则选择所有
-                selected_parents = random.sample(tool_collection[:top_k], min(2, len(tool_collection[:top_k])))
-                parent1, parent2 = selected_parents[0], selected_parents[1]
-                print(f"[交叉变异迭代 {it+1}] 随机选择父代: {parent1.get('name', 'unknown')} (分数: {parent1.get('score', 0.0):.2f}) 和 {parent2.get('name', 'unknown')} (分数: {parent2.get('score', 0.0):.2f})")
+            # 根据策略选择父代
+            parent1, parent2 = self._select_parents(tool_collection, it+1)
 
             # 生成交叉变异的子代工具
             crossover_temperature = 0.5 + (it / iterations) * 0.5  # 递增温度
@@ -1509,6 +1468,108 @@ class AttackGenerator:
 
         # 如果工具数量超过最大限制，使用简单的截断方法
         return unique_tools[:max_size]
+
+    def _select_parents(self, tool_collection: List[Dict], iteration: int) -> tuple[Dict, Dict]:
+        """
+        根据不同的策略选择两个父代工具进行交叉变异
+
+        Args:
+            tool_collection: 工具集合，已按分数排序
+            iteration: 当前迭代次数
+
+        Returns:
+            两个父代工具的元组 (parent1, parent2)
+        """
+        if not tool_collection or len(tool_collection) < 2:
+            raise ValueError("工具集合中至少需要两个工具才能进行交叉变异")
+
+        # 确保工具集合按分数降序排列
+        sorted_tools = sorted(tool_collection, key=lambda x: x.get('score', 0.0), reverse=True)
+
+        # 第一个父代始终是分数最高的工具
+        parent1 = sorted_tools[0]
+
+        # 根据策略选择第二个父代
+        if self.parent_selection_strategy == "random":
+            # 随机选择策略：从除最优工具外的其他工具中随机选择一个
+            if len(sorted_tools) > 1:
+                import random
+                parent2 = random.choice(sorted_tools[1:])
+            else:
+                parent2 = parent1  # 如果只有一个工具，则两个父代相同
+
+        elif self.parent_selection_strategy == "similar":
+            # 语义相似最大策略：选择与最优工具语义相似度最高的工具
+            if len(sorted_tools) >= 2:
+                try:
+                    # 获取最优工具的描述
+                    best_tool_desc = f"{parent1['name']} {parent1['description']}"
+                    max_similarity = -1
+                    most_similar_tool = sorted_tools[1]  # 默认选择第二个工具
+
+                    # 计算最优工具与其他工具的语义相似度
+                    for tool in sorted_tools[1:]:  # 从第二个工具开始比较
+                        tool_desc = f"{tool['name']} {tool['description']}"
+                        try:
+                            # 获取两个工具的嵌入向量
+                            embeddings = self.embedding_calculator.get_embeddings([best_tool_desc, tool_desc])
+                            # 计算相似度
+                            similarity = self.embedding_calculator.calculate_similarity(embeddings[0], embeddings[1])
+
+                            if similarity > max_similarity:
+                                max_similarity = similarity
+                                most_similar_tool = tool
+                        except Exception as e:
+                            print(f"计算工具'{tool['name']}'语义相似度时出错: {e}")
+                            # 如果计算出错，继续使用默认的相似度
+                            continue
+
+                    parent2 = most_similar_tool
+                except Exception as e:
+                    print(f"语义相似度计算失败，使用随机选择: {e}")
+                    # 如果语义分析失败，回退到随机选择
+                    import random
+                    parent2 = random.choice(sorted_tools[1:]) if len(sorted_tools) > 1 else parent1
+            else:
+                parent2 = parent1
+
+        else:  # 默认为 "diverse" 策略
+            # 语义差异最大策略：选择与最优工具语义差异最大的工具
+            if len(sorted_tools) >= 2:
+                try:
+                    # 获取最优工具的描述
+                    best_tool_desc = f"{parent1['name']} {parent1['description']}"
+                    max_diff = -1
+                    most_diverse_tool = sorted_tools[1]  # 默认选择第二个工具
+
+                    # 计算最优工具与其他工具的语义差异度
+                    for tool in sorted_tools[1:]:  # 从第二个工具开始比较
+                        tool_desc = f"{tool['name']} {tool['description']}"
+                        try:
+                            # 获取两个工具的嵌入向量
+                            embeddings = self.embedding_calculator.get_embeddings([best_tool_desc, tool_desc])
+                            # 计算相似度
+                            similarity = self.embedding_calculator.calculate_similarity(embeddings[0], embeddings[1])
+                            diff = 1 - similarity  # 差异度
+
+                            if diff > max_diff:
+                                max_diff = diff
+                                most_diverse_tool = tool
+                        except Exception as e:
+                            print(f"计算工具'{tool['name']}'语义差异度时出错: {e}")
+                            # 如果计算出错，继续使用默认的差异度
+                            continue
+
+                    parent2 = most_diverse_tool
+                except Exception as e:
+                    print(f"语义差异度计算失败，使用随机选择: {e}")
+                    # 如果语义分析失败，回退到随机选择
+                    import random
+                    parent2 = random.choice(sorted_tools[1:]) if len(sorted_tools) > 1 else parent1
+            else:
+                parent2 = parent1
+
+        return parent1, parent2
 
     def generate_attack_dataset(self, input_dataset: List[Dict], iterations: int = 3, output_dir: str = None) -> List[Dict]:
         attack_tools = []
@@ -2120,6 +2181,10 @@ def main():
     parser.add_argument("--mutation-strategy", dest="mutation_strategy", default="crossover",
                         choices=["crossover", "single"],
                         help="变异策略：crossover(交叉变异) 或 single(单一变异) (默认: crossover)")
+    # 新增：父代选择策略
+    parser.add_argument("--parent-selection-strategy", dest="parent_selection_strategy", default="diverse",
+                        choices=["diverse", "random", "similar"],
+                        help="父代选择策略：diverse(最优+语义差异最大)、random(最优+随机)、similar(最优+语义相似最大) (默认: diverse)")
     # 新增：top-k 参数
     parser.add_argument("--top-k", dest="top_k", type=int, default=10,
                         help="保存Top-K工具的数量 (默认: 10)")
@@ -2137,7 +2202,7 @@ def main():
         print(f"错误: 无效的攻击场景类型: {args.attack_type}")
         sys.exit(1)
 
-    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, top_k=args.top_k)
+    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k)
 
     print("正在加载输入数据集...")
     input_dataset = generator.load_dataset(args.input)
