@@ -1261,8 +1261,9 @@ class AttackGenerator:
             parent1, parent2 = self._select_parents(tool_collection, it+1)
 
             # 生成交叉变异的子代工具
-            crossover_temperature = 0.5 + (it / iterations) * 0.5  # 递增温度
+            # crossover_temperature = 0.5 + (it / iterations) * 0.5  # 递增温度
 
+            crossover_temperature = 0.5 
             # 获取父代的执行反馈信息
             feedback1 = None
             feedback2 = None
