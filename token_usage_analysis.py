@@ -150,7 +150,7 @@ if __name__ == "__main__":
     # 文件路径
     attack_files = [
 
-        "/home/llz/myMCP-Bench/similar/MCP-Bench/results/2025-10-01_15-20-12_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
+        "/home/llz/MCP-Bench/results/2025-10-02_00-26-35_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
     ]
     baseline_files = [
         "/home/llz/myMCP-Bench/baseline/MCP-Bench/results/2025-10-01_15-51-37_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
