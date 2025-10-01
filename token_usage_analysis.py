@@ -150,12 +150,10 @@ if __name__ == "__main__":
     # 文件路径
     attack_files = [
 
-        "/home/llz/MCP-Bench/results/2025-09-29_02-19-52_moonshotai/Kimi-K2-Instruct-0905_test/results.json",
-        "/home/llz/MCP-Bench/results/2025-09-29_02-18-27_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
+        "/home/llz/myMCP-Bench/similar/MCP-Bench/results/2025-10-01_15-20-12_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
     ]
     baseline_files = [
-        "/home/llz/MCP-Bench/results/2025-09-29_02-38-14_deepseek-ai/DeepSeek-V3.1_test/results.json",
-        "/home/llz/MCP-Bench/results/2025-09-29_02-38-14_deepseek-ai/DeepSeek-V3.1_test/results.json"
+        "/home/llz/myMCP-Bench/baseline/MCP-Bench/results/2025-10-01_15-51-37_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
     ]
 
     # 检查文件是否存在

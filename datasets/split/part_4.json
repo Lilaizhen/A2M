@@ -1,0 +1,158 @@
+[
+  {
+    "task_id": "4d7582c4-5013-4275-9621-1e7fbb5fb0c1",
+    "Question": "Download New York's Air Quality report from Government Data, saved at ./annotated_data/csv/NY_AIR_QUALITY.csv",
+    "answers": "file ./annotated_data/csv/NY_AIR_QUALITY.csv",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Search for datasets on Data.gov\n2. Get details for the specific dataset\n3. Download the file use wget",
+      "Number of steps": "3",
+      "Tools": "1. package_search\n2. package_show\n3. execute_command",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "83da9f72-640f-439d-861e-97b449e02da7",
+    "Question": "Analyze the visual marketing strategy from the iPhone 16 page at https://www.apple.com/iphone-16/ and save the summary as a Markdown report to ./annotated_data/markdown/iphone16_visual_strategy.md",
+    "answers": "file ./annotated_data/markdown/iphone16_visual_strategy.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Fetches the URL and get the url list in the page\n2. Extract and analyze images from web URLs. \n3. Generate a report\n4. write it to path",
+      "Number of steps": "4",
+      "Tools": "1. fetch\n2. extract_image_from_url\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
+    "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
+    "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. locate the 10th line in the file",
+      "Number of steps": "1",
+      "Tools": "1. get_text_file_contents",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "de75630e-b91e-4cc7-85b1-5d02c2455392",
+    "Question": " I'm looking at a PR and need to know if these libs are outdated. com.fasterxml.jackson.core:jackson-databind:2.13.4, org.apache.poi:poi-ooxml:5.2.0, and com.google.guava:guava:30.1-jre. What are the latest versions for each?",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the versions",
+      "Number of steps": "1",
+      "Tools": "1. get_maven_latest_version",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "cf1fca1e-8e56-4b26-ae34-dfdb1d982080",
+    "Question": "Analyze and compare echarts-for-react, react-chartjs-2, and Tremor. It's for a FinTech app, so my top priorities are a deep security scan of all dependencies and performance, especially bundle size. Give me a comparison table and a final recommendation in a markdown report in ./annotated_data/markdown/package_compare.md.",
+    "answers": "file ./annotated_data/markdown/package_compare.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. prepare all information about these package\n2. write a markdown report to compare them\n3. save it to path",
+      "Number of steps": "3",
+      "Tools": "1. npmDeps\n2. npmSize\n3. npmCompare\n4. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "1ef11556-37d6-4585-b4b2-cf2f782141e6",
+    "Question": "Read all the articles in the ./annotated_data/pdf/embodied_ai_papers directory. Compare their similarities and differences, then write a report summarizing your analysis. Save the final report as a Markdown file at ./annotated_data/markdown/embodied_ai_report.md.",
+    "answers": "file ./annotated_data/markdown/embodied_ai_report.md",
+    "category": "Office",
+    "file_name": "./annotated_data/pdf/embodied_ai_papers",
+    "Annotator Metadata": {
+      "Steps": "1. list directory\n2. read all pdf\n3. write a summary report\n4. save it to the path",
+      "Number of steps": "4",
+      "Tools": "1. list_directory\n2. read_pdf\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "fbe982c3-4142-40ec-8541-e06d7ab2e399",
+    "Question": "I need a Word document summarizing NIO. Please title it 'NIO Company Overview' and include three headed sections: a brief introduction from Wikipedia, three major news updates from the last quarter as bullet points, and a list of their main vehicle models. Finally, save it in ./annotated_data/word/nio.docx",
+    "answers": "file ./annotated_data/word/nio.docx",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the wikipedia about NIO\n2. get news about NIO\n3. create a word document\n4. write the content to the word document",
+      "Number of steps": "4",
+      "Tools": "1. search_wikipedia\n2. get-36kr-trending\n3. create_document\n4. add_paragraph",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "470f7ac1-f573-4fec-8990-97f578749f78",
+    "Question": "How are Samsung Electronics and SK Hynix doing today? I need their current stock prices, the daily percentage change for each, and can you also calculate their current market capitalization?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current time\n2. get current stock prices for both\n3. calculate the daily percentage change\n4. get market capitalization",
+      "Number of steps": "4",
+      "Tools": "1. get_current_time\n2. get_stock_ohlcv\n3. get_stock_market_cap\n4. calculate",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "a93169d7-af1f-43f4-b595-1b5db07aa7d5",
+    "Question": "Tell me about the repository details in the ./annotated_data/git directory",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the status of the repository\n2. check the log of git\n3. tell the information",
+      "Number of steps": "3",
+      "Tools": "1. git_status\n2. git_log",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "29fa007d-5caf-41a0-b107-e9388305c6c5",
+    "Question": "I just pulled Jiyan and want to build a team around him as my main DPS. Can you recommend a good starter team for me? I need a sub-DPS/buffer and a healer/survivor. Also, what's his best Echo set and main Echo, and please explain why.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information about Jiyan \n2. get the information about Echo set\n3. write a report to explain",
+      "Number of steps": "3",
+      "Tools": "1. get_character_info\n2. get_artifact_info",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "90098a9c-2a37-4655-82b1-6b58c5154660",
+    "Question": "I'm using shadcn/ui to build a 'create post' page. I have two input fields, one for the title and one for the content. I want the 'Publish' button at the bottom to be disabled if either the title or content is empty. It should only become clickable when both fields are filled. How can I achieve this? Please provide a complete React/TypeScript example using the Input and Button components from shadcn/ui and save the code to ./annotated_data/code/shadcn_ui.ts",
+    "answers": "file ./annotated_data/code/shadcn_ui.ts",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. search for shadcn/ui components by keyword\n2. get detailed information about a specific shadcn/ui component\n3. write the code\n4. save it to path",
+      "Number of steps": "4",
+      "Tools": "1. search_components\n2. get_component_details\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "17a4aef0-bb60-47b1-9b47-3686bca29db3",
+    "Question": "Generate a well-formatted PDF report  in ./annotated_data/pdf/douban_report.pdf, summarizing current douban trends.",
+    "answers": "file ./annotated_data/pdf/douban_report.pdf",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Getting the current trends in douban\n2. Create a word document.\n3. Write the word document.\n4. Convert word document to pdf.",
+      "Number of steps": "4",
+      "Tools": "1. get-douban-rank\n2. create_document\n3. add_paragraph\n4. convert_to_pdf",
+      "Number of tools": "4"
+    }
+  }
+]

@@ -1,0 +1,158 @@
+[
+  {
+    "task_id": "91cce869-ac2c-4b9c-a2ea-1d068eb5d979",
+    "Question": "Draw a flowchart of a fast sorting algorithm using Mermaid.",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. write the flowchart of a fast sorting algorithm using Mermaid\n2. validates the Mermaid diagram and returns the rendered SVG if valid",
+      "Number of steps": "2",
+      "Tools": "1. validateMermaid",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "f2a9eb67-efec-4c86-abad-efa55a72f86d",
+    "Question": "Generate a deep report of bitcoin and save it in ./annotated_data/markdown/bitcoin.md",
+    "answers": "file ./annotated_data/markdown/bitcoin.md",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. deep research the bitcoin\n2. write the report to path",
+      "Number of steps": "2",
+      "Tools": "1. research-with-keywords\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "8aaa7e7f-aff7-4735-9dc8-8bb5f474506c",
+    "Question": "Find today's top LLM-related news.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get related news related to LLM",
+      "Number of steps": "1",
+      "Tools": "1. getStories\n2. get-36kr-trending\n3. get-bbc-news\n4. get-theverge-news",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "08644b1a-ac5e-45a9-8ad1-3a3942e8d366",
+    "Question": "Help me recommend any cheap goodies worth buying recently? Save this information to ./annotated_data/excel/goods.xlsx.",
+    "answers": "edit ./annotated_data/excel/goods.xlsx",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information for cheap goodies\n2. write these information to excel in ./annotated_data/excel/goods.xlsx",
+      "Number of steps": "2",
+      "Tools": "1. get-smzdm-rank\n2. excel_write_to_sheet",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "860f7b99-23fe-41fe-9608-59717bad2a9a",
+    "Question": "Get deepwiki for vercel/ai and convert its structure to mindmap",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the deepwiki of vercel/ai \n2. create the mindmap of the deepwiki",
+      "Number of steps": "2",
+      "Tools": "1. deepwiki_fetch\n2. convert_markdown_to_mindmap",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "cda14e48-b067-48fc-94de-bb8ec090b952",
+    "Question": "draw cowboy using canvas ",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. create the canvas\n2. drawing\n3. get picture",
+      "Number of steps": "3",
+      "Tools": "1. drawing_generateCanvas\n2. drawing_fillRectangle\n3. drawing_getCanvasPng",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+    "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+    "answers": "20.76",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel\n2. caculate the bmi",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "7bda47e8-1b8b-4f1f-b67c-573a81417d36",
+    "Question": "Introduce me to the article on arxiv 2203.12277",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get detailed information about the paper\n2. fetch the full text of the paper\n3. write a introduction",
+      "Number of steps": "3",
+      "Tools": "1. get_paper_data\n2. fetch",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "2bf318d4-754d-43f3-a1b5-cb2f50a7d144",
+    "Question": "What are the emerging treatment strategies for head and neck cancer, write the report to ./annotated_data/markdown/cancer.md?",
+    "answers": "file ./annotated_data/markdown/cancer.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. gather the information\n2. generate it a report\n3. write it to path",
+      "Number of steps": "3",
+      "Tools": "1. article_searcher\n2. trial_searcher\n3. variant_searcher\n4. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "1a3ffa81-d1fe-4b97-9308-3d2ae2d0d9b1",
+    "Question": "Extract the key points of this TED talk in https://www.youtube.com/watch?v=arj7oStGLkU, organize them into a mind map, and tell me what the main content of the lecture is.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. extract transcript from the YouTube video URL\n2. write a markdown mindmap \n3. conver markdown mindmap to real mindmap\n4. summary the main content of the lecture",
+      "Number of steps": "4",
+      "Tools": "1. get_transcript\n2. convert_markdown_to_mindmap",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "7180c69a-bbf2-4912-a0ca-a6345c5fe7f1",
+    "Question": "Make a web page about the history of AI based on Wikipedia saved at ./annotated_data/html/ai.html.",
+    "answers": "file ./annotated_data/html/ai.html",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Summarize the history of artificial intelligence based on Wikipedia.\n2. Generate a web page about the history of artificial intelligence\n3. Save it to path",
+      "Number of steps": "3",
+      "Tools": "1. summarize_article_for_query\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "10b5dbf7-0bac-4b25-835f-e806967ad340",
+    "Question": "Help me arrange a three-day trip from Beijing to Tianjin tomorrow, round-trip by rail, give me a detailed timetable and include an approximate total budget.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current data\n2. check the 12306 ticks\n3. arrange the trip and find the nearby places\n4. generate the report with timetable and budget",
+      "Number of steps": "4",
+      "Tools": "1. get-current-date\n2. get-station-code-of-citys\n3. get-tickets\n4. geocode_address\n5. find_nearby_places\n6. get_route_directions\n7. reverse_geocode",
+      "Number of tools": "7"
+    }
+  }
+]
