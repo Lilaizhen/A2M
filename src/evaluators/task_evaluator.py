@@ -61,8 +61,8 @@ async def judge_task_completion(
     """
 
     # 暂时不使用传入的 api_key 和 api_base，保持原有逻辑
-    api_key = "sk-ulrlrftgwvyklbxqdvxgfkezoirtmiuegblozcsplognafaa"
-    api_base = "https://api.siliconflow.cn/v1"
+    api_key = "sk-2KYtn72eVUa8DuBeBZvTODCvKyVOT2LeCLVrNyZU9Bq2EXcD"
+    api_base = "https://api.shredder.money/v1"
 
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
