@@ -1,0 +1,184 @@
+[
+  {
+    "task_id": "83da9f72-640f-439d-861e-97b449e02da7",
+    "Question": "Analyze the visual marketing strategy from the iPhone 16 page at https://www.apple.com/iphone-16/ and save the summary as a Markdown report to ./annotated_data/markdown/iphone16_visual_strategy.md",
+    "answers": "file ./annotated_data/markdown/iphone16_visual_strategy.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Fetches the URL and get the url list in the page\n2. Extract and analyze images from web URLs. \n3. Generate a report\n4. write it to path",
+      "Number of steps": "4",
+      "Tools": "1. fetch\n2. extract_image_from_url\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
+    "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
+    "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. locate the 10th line in the file",
+      "Number of steps": "1",
+      "Tools": "1. get_text_file_contents",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "de75630e-b91e-4cc7-85b1-5d02c2455392",
+    "Question": " I'm looking at a PR and need to know if these libs are outdated. com.fasterxml.jackson.core:jackson-databind:2.13.4, org.apache.poi:poi-ooxml:5.2.0, and com.google.guava:guava:30.1-jre. What are the latest versions for each?",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the versions",
+      "Number of steps": "1",
+      "Tools": "1. get_maven_latest_version",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "1ef11556-37d6-4585-b4b2-cf2f782141e6",
+    "Question": "Read all the articles in the ./annotated_data/pdf/embodied_ai_papers directory. Compare their similarities and differences, then write a report summarizing your analysis. Save the final report as a Markdown file at ./annotated_data/markdown/embodied_ai_report.md.",
+    "answers": "file ./annotated_data/markdown/embodied_ai_report.md",
+    "category": "Office",
+    "file_name": "./annotated_data/pdf/embodied_ai_papers",
+    "Annotator Metadata": {
+      "Steps": "1. list directory\n2. read all pdf\n3. write a summary report\n4. save it to the path",
+      "Number of steps": "4",
+      "Tools": "1. list_directory\n2. read_pdf\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "fbe982c3-4142-40ec-8541-e06d7ab2e399",
+    "Question": "I need a Word document summarizing NIO. Please title it 'NIO Company Overview' and include three headed sections: a brief introduction from Wikipedia, three major news updates from the last quarter as bullet points, and a list of their main vehicle models. Finally, save it in ./annotated_data/word/nio.docx",
+    "answers": "file ./annotated_data/word/nio.docx",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the wikipedia about NIO\n2. get news about NIO\n3. create a word document\n4. write the content to the word document",
+      "Number of steps": "4",
+      "Tools": "1. search_wikipedia\n2. get-36kr-trending\n3. create_document\n4. add_paragraph",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "470f7ac1-f573-4fec-8990-97f578749f78",
+    "Question": "How are Samsung Electronics and SK Hynix doing today? I need their current stock prices, the daily percentage change for each, and can you also calculate their current market capitalization?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current time\n2. get current stock prices for both\n3. calculate the daily percentage change\n4. get market capitalization",
+      "Number of steps": "4",
+      "Tools": "1. get_current_time\n2. get_stock_ohlcv\n3. get_stock_market_cap\n4. calculate",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "a93169d7-af1f-43f4-b595-1b5db07aa7d5",
+    "Question": "Tell me about the repository details in the ./annotated_data/git directory",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the status of the repository\n2. check the log of git\n3. tell the information",
+      "Number of steps": "3",
+      "Tools": "1. git_status\n2. git_log",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "29fa007d-5caf-41a0-b107-e9388305c6c5",
+    "Question": "I just pulled Jiyan and want to build a team around him as my main DPS. Can you recommend a good starter team for me? I need a sub-DPS/buffer and a healer/survivor. Also, what's his best Echo set and main Echo, and please explain why.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information about Jiyan \n2. get the information about Echo set\n3. write a report to explain",
+      "Number of steps": "3",
+      "Tools": "1. get_character_info\n2. get_artifact_info",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "90098a9c-2a37-4655-82b1-6b58c5154660",
+    "Question": "I'm using shadcn/ui to build a 'create post' page. I have two input fields, one for the title and one for the content. I want the 'Publish' button at the bottom to be disabled if either the title or content is empty. It should only become clickable when both fields are filled. How can I achieve this? Please provide a complete React/TypeScript example using the Input and Button components from shadcn/ui and save the code to ./annotated_data/code/shadcn_ui.ts",
+    "answers": "file ./annotated_data/code/shadcn_ui.ts",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. search for shadcn/ui components by keyword\n2. get detailed information about a specific shadcn/ui component\n3. write the code\n4. save it to path",
+      "Number of steps": "4",
+      "Tools": "1. search_components\n2. get_component_details\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "6265fd4a-a790-4be1-9806-d27b69bc6468",
+    "Question": "Help me recommend some consumer electronics that are worth buying these days.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. collect the treendings in consumer electronics\n2. write a report",
+      "Number of steps": "2",
+      "Tools": "1. get-ifanr-news\n2. get-smzdm-rank",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "5c19a347-7423-47e1-b8e1-dba01860bc1a",
+    "Question": "Find the latest research paper in the web agents. Identify the best one, read the full text, and then tell me its main motivation, the methodology it employs, and its key results.",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Search for papers on arXiv\n2. Identify the best one\n3. Donwnload the best one\n4. Read the full content of the paper\n5. Generate a report",
+      "Number of steps": "5",
+      "Tools": "1. search_papers\n2. download_paper\n3. read_paper",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "2f8db365-6b8b-4188-8812-4efcf91a40bd",
+    "Question": "Recommend a gaming PC build for playing the latest Call of Duty, along with an approximate budget.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Find recommended configurations for the latest COD\n2. Check the prices at shopping sites like amazon\n3. Write a report to tell user",
+      "Number of steps": "3",
+      "Tools": "1. search_wikipedia\n2. playwright_navigate\n3. playwright_get_visible_html\n4. playwright_fill\n5. playwright_click",
+      "Number of tools": "5"
+    }
+  },
+  {
+    "task_id": "086e2393-dc1a-4c55-bf54-1e9a94951db7",
+    "Question": "Read the file ./annotated_data/word/exchange.docx, tell me who did not give a gift",
+    "answers": "Fred",
+    "category": "Leisure",
+    "file_name": "./annotated_data/word/exchange.docx",
+    "Annotator Metadata": {
+      "Steps": "1. open the word document\n2. answer the question",
+      "Number of steps": "2",
+      "Tools": "1. get_document_text",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "507f592a-f21f-45f6-bbde-dadb86441791",
+    "Question": "Read the customer information in ./annotated_data/csv/customers-100.csv and tell me Sheryl Meyers's email address",
+    "answers": "mariokhan@ryan-pope.org",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the file\n2. find the information about Sheryl Meyers",
+      "Number of steps": "2",
+      "Tools": "1. document_reader",
+      "Number of tools": "1"
+    }
+  }
+]

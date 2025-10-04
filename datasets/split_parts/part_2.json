@@ -1,0 +1,197 @@
+[
+  {
+    "task_id": "7bda47e8-1b8b-4f1f-b67c-573a81417d36",
+    "Question": "Introduce me to the article on arxiv 2203.12277",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get detailed information about the paper\n2. fetch the full text of the paper\n3. write a introduction",
+      "Number of steps": "3",
+      "Tools": "1. get_paper_data\n2. fetch",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "1a3ffa81-d1fe-4b97-9308-3d2ae2d0d9b1",
+    "Question": "Extract the key points of this TED talk in https://www.youtube.com/watch?v=arj7oStGLkU, organize them into a mind map, and tell me what the main content of the lecture is.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. extract transcript from the YouTube video URL\n2. write a markdown mindmap \n3. conver markdown mindmap to real mindmap\n4. summary the main content of the lecture",
+      "Number of steps": "4",
+      "Tools": "1. get_transcript\n2. convert_markdown_to_mindmap",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "10b5dbf7-0bac-4b25-835f-e806967ad340",
+    "Question": "Help me arrange a three-day trip from Beijing to Tianjin tomorrow, round-trip by rail, give me a detailed timetable and include an approximate total budget.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current data\n2. check the 12306 ticks\n3. arrange the trip and find the nearby places\n4. generate the report with timetable and budget",
+      "Number of steps": "4",
+      "Tools": "1. get-current-date\n2. get-station-code-of-citys\n3. get-tickets\n4. geocode_address\n5. find_nearby_places\n6. get_route_directions\n7. reverse_geocode",
+      "Number of tools": "7"
+    }
+  },
+  {
+    "task_id": "37d72d03-29ae-48d1-9a48-66c9294d82fa",
+    "Question": "Analyze the last 24h of BTC and remind me if there is anything I need to pay special attention to",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get the current time\n2. Get current price and 24h stats for a cryptocurrency\n3. Get detailed market analysis including top exchanges and volume distribution\n4. Generate a report",
+      "Number of steps": "4",
+      "Tools": "1. get_current_time\n2. get-crypto-price\n3. get-market-analysis",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
+    "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
+      "Number of steps": "1",
+      "Tools": "1. mcp_howtocook_recommendMeals",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "3c65e618-2ed0-444b-b7c7-6135d3841976",
+    "Question": "Recommend me a combination of dishes for a potluck dinner for three people and then tell me what ingredients I need to prepare in total and how each dish should be prepared",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Recommend a combination of dishes\n2. Get the detailed information about all dishes\n3. Write a report",
+      "Number of steps": "3",
+      "Tools": "1. mcp_howtocook_whatToEat\n2. mcp_howtocook_getRecipeById",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
+    "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
+      "Number of steps": "3",
+      "Tools": "1. get_current_time\n2. airbnb_search",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "5b2087e4-4c07-4e0d-9b2f-79514ce465f5",
+    "Question": "I play mid lane in League of Legends and want to improve. Provide champion recommendations with optimal item builds, runes, and summoner spells.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the the analytics of champions by positions and chose some\n2. retrieves very detailed information about specific champions",
+      "Number of steps": "2",
+      "Tools": "1. lol-champion-positions-data\n2. lol-champion-analysis",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "00e13e2e-07fa-4d0b-9863-e966190cffd6",
+    "Question": "find the painting \"Corridor in the Asylum\" and give me some background information,",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Realizes that \"Corridor in the Asylum\" is located in the Metropolitan Museum of Art Collection\n2. Search for objects in the Metropolitan Museum of Art\n3. Get the detailed information",
+      "Number of steps": "3",
+      "Tools": "1. search-museum-objects\n2. get-museum-object",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "3819a831-8e12-49e6-adb1-df40f512d774",
+    "Question": "Find the latest standard iphone prices at amazon.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. navigate to the website through broswer\n2. fill the search box\n3. click the search button\n4. find the price ",
+      "Number of steps": "4",
+      "Tools": "1. playwright_navigate\n2. playwright_screenshot\n3. playwright_get_visible_html\n4. playwright_fill\n5. playwright_click",
+      "Number of tools": "5"
+    }
+  },
+  {
+    "task_id": "fa451c3f-23c2-4b03-bcb6-60b49e3a142f",
+    "Question": "Read the paper in ./annotated_data/pdf/WebArena.pdf, and find the latest papers in this area",
+    "answers": "",
+    "category": "Office",
+    "file_name": "./annotated_data/pdf/WebArena.pdf",
+    "Annotator Metadata": {
+      "Steps": "1. read the paper in path and identify the field\n2. search the arxiv to find the latest papers",
+      "Number of steps": "2",
+      "Tools": "1. document_reader\n2. search_papers",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "ef7126b3-45ad-41ab-a191-2272c644d057",
+    "Question": "I need a daily financial brief. Fetch today's economic news, cross-reference it with relevant stock movements, and then generate a report at ./annotated_data/markdown/daily_fin.md.",
+    "answers": "file ./annotated_data/markdown/daily_fin.md",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the financial news from multiple sources\n2. check stock prices\n3. generate a daily financial brief\n4. write it to ./annotated_data/markdown/daily_fin.md",
+      "Number of steps": "4",
+      "Tools": "1. get-36kr-trending\n2. get-netease-news-trending\n3. get-nytimes-news\n4. get_news\n5. get_current_stock_price\n6. write_file",
+      "Number of tools": "6"
+    }
+  },
+  {
+    "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
+    "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current gold price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "fab605cf-d337-4ac1-beba-b3f563eaffff",
+    "Question": "What is the current effect text of 'Sky Striker Ace = Zero', and what are its ATK and DEF? Show me the picture.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the latest card information\n2. get the picture of the card",
+      "Number of steps": "2",
+      "Tools": "1. search_cards\n2. get_card_image",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "ec6f4fe5-e650-48b1-8805-285d8f52eb10",
+    "Question": "Create a Next.js middleware that checks for a valid JWT in cookies and redirects unauthenticated users to `/login` in ./annotated_data/code/middleware.ts. use context7",
+    "answers": "file ./annotated_data/code/middleware.ts",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Resolves the package name to a Context7-compatible library ID\n2. Fetches up-to-date documentation for a library using the library ID\n3. create the middleware \n4. write it to ./annotated_data/code/middleware.ts",
+      "Number of steps": "4",
+      "Tools": "1. resolve-library-id\n2. get-library-docs\n3. write_file",
+      "Number of tools": "4"
+    }
+  }
+]

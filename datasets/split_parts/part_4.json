@@ -1,0 +1,184 @@
+[
+  {
+    "task_id": "b6281fad-0da4-4fd4-b669-7e4ff9083a82",
+    "Question": "I have 18.9g silver, please estimate its value based on the current price",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current silver price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "ea6e95fa-2791-4f66-b897-2244a17f9b51",
+    "Question": "Help me find the top 5 best selling gpus from amazon and tell me the links directly.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. navigate to the website through broswer\n2. fill the search box\n3. click the search button\n4. find the link",
+      "Number of steps": "4",
+      "Tools": "1. playwright_navigate\n2. playwright_screenshot\n3. playwright_get_visible_html\n4. playwright_fill\n5. playwright_click",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "71a7a42a-54af-4552-ad9b-d36f4912cc1c",
+    "Question": "Convert the reference list in ./annotated_data/txt/paper_list.bib into a Word document. Please use APA formatting and save the final file at ./annotated_data/word/paper_list.docx.",
+    "answers": "file ./annotated_data/word/paper_list.docx",
+    "category": "Office",
+    "file_name": "./annotated_data/txt/paper_list.bib",
+    "Annotator Metadata": {
+      "Steps": "1. open the ./annotated_data/txt/paper_list.bib\n2. convert them to APA format\n3. create a word document\n4. open and write to word document",
+      "Number of steps": "4",
+      "Tools": "1. read_file\n2. create_document\n3. open_document\n4. add_paragraph",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "9bc7feb8-2db9-4c5b-8ad9-44ff15748bf6",
+    "Question": "Provide a foundational overview of Convolutional Neural Networks (CNNs), referencing Wikipedia. Generate a simple CNN example as a Python script and save it to ./annotated_data/code/cnn_example.py.",
+    "answers": "file ./annotated_data/code/cnn_example.py",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information from wiki about cnn\n2. write a code example of cnn\n3. write it to path",
+      "Number of steps": "3",
+      "Tools": "1. search_wikipedia\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "b84fbf2e-2e19-4cc4-ab86-8a32bd0d33ed",
+    "Question": "I'm considering relocating to New York City and need a comprehensive understanding of a potential neighborhood's livability. Please generate a detailed analysis for the area surrounding 72nd Street and 5th Avenue, Manhattan. Focus on a 1000-meter radius to assess the quality of life. I'm particularly interested in the availability of amenities, public transportation accessibility, green spaces and recreational areas, and proximity to education and healthcare facilities. The output should provide counts and proximity scores for these categories to help me evaluate the overall convenience and quality of the residential area.\"",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Convert an address or place name to geographic coordinates with detailed location information.\n2. Generate a comprehensive neighborhood analysis focused on livability factors.",
+      "Number of steps": "2",
+      "Tools": "1. geocode_address\n2. analyze_neighborhood",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "41899b5b-b6db-48b1-9899-334452904a12",
+    "Question": " I'm considering doing some initial research on a potential investment in the Korean market. Could you help me gather comprehensive data for Hyundai Motor Company.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get  official ticker symbol and full name on KOSPI/KOSDAQ.\n2. get key fundamental ratios: P/E Ratio (PER), P/B Ratio (PBR), and Dividend Yield.\n3. write a report",
+      "Number of steps": "3",
+      "Tools": "1. load_all_tickers\n2. get_stock_fundamental",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "e28e8dcb-3ccb-406d-a2c7-f5670d649979",
+    "Question": "Help me view recent finance-related news, categorize financial news by sentiment, and extract key entities (companies, people, products) and important financial events.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get finance-related news\n2. categorize financial news\n3. extract key entities and events",
+      "Number of steps": "3",
+      "Tools": "1. get-36kr-trending\n2. get-bbc-news\n3. get-nytimes-news",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "c4d6c051-e2d4-4f52-b897-e945f402b858",
+    "Question": "Based on the current Fear & Greed Index and recent news, do you think it's a good time to take the plunge?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current Fear & Greed Index\n2. get news\n3. write a answer",
+      "Number of steps": "3",
+      "Tools": "1. get_cnn_fear_greed_index\n2. get-bbc-news",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "ab11def3-6727-4521-ae9b-2ffc6ae5b938",
+    "Question": "Any recent negative news about Bitcoin? Also, tell me how the Crypto Fear & Greed Index has changed over the past three days.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get recent news about Bitcoin\n2. get Fear & Greed Index data past three days.\n3. write a report about finds",
+      "Number of steps": "3",
+      "Tools": "1. get-bbc-news\n2. get_crypto_fear_greed_index",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "1f6a6db5-05b5-4a8d-a6ef-fbb5d823ad1d",
+    "Question": "I plan to go to Shinjuku Gyoen from Tokyo Tower and then find a highly rated Japanese restaurant nearby for lunch. Give me restaurant recommendations and tell me how to get there.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Convert addresses to geographic coordinates.\n2. Search for restaurant within a defined geographic area.\n3. Get route directions between two geographic points.\n4. Write the report.",
+      "Number of steps": "4",
+      "Tools": "1. geocode_address\n2. search_category\n3. get_route_directions\n4. reverse_geocode",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "cab818f4-ee48-440b-a37e-564c4edf401a",
+    "Question": "What's the weather like in Beijing in the last few days? Give me some advice on what to wear!",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get current weather and forecast for Beijing\n2. write the answer",
+      "Number of steps": "2",
+      "Tools": "1. get_weather",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "31086c2d-e183-42c3-9ee7-7c1278c4317f",
+    "Question": "What files are in my ./annotated_data/music folder?",
+    "answers": "mixkit-retro-game-emergency-alarm-1000.wav",
+    "category": "Lifestyle",
+    "file_name": "./annotated_data/music",
+    "Annotator Metadata": {
+      "Steps": "1. list the dir",
+      "Number of steps": "1",
+      "Tools": "1. list_directory",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "cf6ea2ca-5011-46ec-96a6-a15c46178de9",
+    "Question": "Tell me what's the big news in AI today.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get news about ai",
+      "Number of steps": "1",
+      "Tools": "1. get-juejin-article-rank\n2. getStories\n3. get-infoq-news",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "84326f9f-d4b7-4dc8-b9e0-3c8868a3f79f",
+    "Question": "Read the comments on hacker news story 44490510 and help me summarize the views in the comments.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the comments in story 44490510 \n2. summarize the comments",
+      "Number of steps": "2",
+      "Tools": "1. getStoryWithComments",
+      "Number of tools": "1"
+    }
+  }
+]

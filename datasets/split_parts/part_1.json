@@ -1,0 +1,197 @@
+[
+  {
+    "task_id": "dda8ea55-629c-4ae8-ab87-0c81477ae615",
+    "Question": "I'm planning a trip to the Forbidden City in Beijing, show me where to park and what's interesting to do within 1km distance?",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. convert the address of Location into precise geographic coordinates.\n2. find parking facilities within a 1-kilometer radius of Location, filtering for both surface and multi-storey parking options, and provide details such as capacity, fee structure, and access restrictions. \n3. discover nearby points of interest and amenities within the same radius, focusing on categories such as restaurants, shops, and tourist attractions.\n4. convert the coordinates of each identified parking facility and point of interest back into human-readable addresses to facilitate easy navigation and planning. ",
+      "Number of steps": "4",
+      "Tools": "1. geocode_address\n2. find_parking_facilities\n3. find_nearby_places\n4. reverse_geocode",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "629106a5-9508-4ac9-97c3-f22f6069ee7f",
+    "Question": "My goal is to reach Radiant in Valorant, what should I focus on to improve and start climbing?",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Retrieve character statistics data for Valorant\n2. Generate an enhancement program\n",
+      "Number of steps": "2",
+      "Tools": "1. valorant-characters-statistics",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "0180954e-dc60-4df6-be68-63562fcafee2",
+    "Question": "Show me today's trending topics in the gaming world across all platforms.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. find the information in different website",
+      "Number of steps": "1",
+      "Tools": "1. get-bilibili-rank\n2. get-gcores-new\n3. get-weibo-trending\n4. get-douyin-trending",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "e9df60b1-37a6-4b10-aff0-d432fa79d400",
+    "Question": "Please help me find the latest articles about 'MCP' on arXiv. Identify the potentially most influential papers among them and analyze the current trends in this field.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Search for papers on arXiv and find some may important papers\n2. Get abstract of  these papers and identify the potentially most influential paper\n3. Analyze the current trends in this field",
+      "Number of steps": "3",
+      "Tools": "1. search_papers\n2. get_paper_data",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "2b96c022-a2db-47a5-981a-03cc6ad8f95e",
+    "Question": "Run a full reconnaissance on www.baidu.com. Give me a markdown report on ./annotated_data/markdown/baidu_report.md with whois information and sitemap.",
+    "answers": "file ./annotated_data/markdown/baidu_report.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Looksup whois information about the domain\n2. Fetch and parse the sitemap tree from the website URL\n3. Create and write a markdown report on ./annotated_data/markdown/baidu_report.md",
+      "Number of steps": "3",
+      "Tools": "1. whois_domain\n2. get_sitemap_tree\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "be3f2275-15a4-4e05-b3cb-b0eeb9109d3a",
+    "Question": "Help me check the high-speed train tickets from Beijing to Shanghai on next Wednesday.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get current time and calculate next Wednesday's date\n2. Query the station_code of a city by its Chinese name\n3. Check 12306 remaining ticket information.",
+      "Number of steps": "3",
+      "Tools": "1. get_current_time\n2. get-station-code-of-citys\n3. get-tickets",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "0b21b741-440b-460e-8bad-fa70f99dd01c",
+    "Question": "What are the 八字 of a boy born on August 8, 2008 at 11:00 am?",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get information about 八字 based on time and gender.",
+      "Number of steps": "1",
+      "Tools": "1. getBaziDetail",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "230fb273-b316-4a8f-9297-89ce5558bc6c",
+    "Question": "Find today's LeetCode Daily Challenge and generate a detailed markdown document in ./annotated_data/markdown/leetcode_daily.md that provides a comprehensive walkthrough of the problem. ",
+    "answers": "file ./annotated_data/markdown/leetcode_daily.md",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get leetcode daily challenge\n2. generate a comprehensive walkthrough of the problem\n3. write it to the path",
+      "Number of steps": "3",
+      "Tools": "1. get-daily-challenge\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "567c79c3-3afb-4979-90cf-88ca49cb701d",
+    "Question": "Help me write a quick start tutorial for Ant Design in markdown at ./annotated_data/markdown/antd_tutorial.md.",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. list all the components in Ant Design.\n2. chose the proper components to introduce to the beginer.\n3. get the detailed information for these compoents.\n4. generate a quick start tutorial\n5. write it to the path",
+      "Number of steps": "5",
+      "Tools": "1. list-components\n2. list-component-examples\n3. get-component-docs\n4. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "4de2e9f7-f3ea-4d02-8532-0a1b0b530609",
+    "Question": "Read the sales data under ./annotated_data/excel/Local_Electronic_Sales.xlsx, plot it as a bar chart by month and save it in ./annotated_data/figs/sale.png",
+    "answers": "file ./annotated_data/figs/sale.png",
+    "category": "Office",
+    "file_name": "./annotated_data/excel/Local_Electronic_Sales.xlsx",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel file to get the data\n2. draw the bar chart",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. generate_bar_chart",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "56d7fbdb-ebd6-41fe-a5d6-cd21dbc59fd8",
+    "Question": "Find the trending GitHub repositories. For the top one, read its Deepwiki. Then, draft a Markdown intro document for it in ./annotated_data/markdown/github_trends.md.",
+    "answers": "file ./annotated_data/markdown/github_trends.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. find the trending repositories\n2. read the deepwiki of the top repository\n3. draft a Markdown intro\n4. write it to the path",
+      "Number of steps": "4",
+      "Tools": "1. get_github_trending_repositories\n2. deepwiki_fetch\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "8aaa7e7f-aff7-4735-9dc8-8bb5f474506c",
+    "Question": "Find today's top LLM-related news.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get related news related to LLM",
+      "Number of steps": "1",
+      "Tools": "1. getStories\n2. get-36kr-trending\n3. get-bbc-news\n4. get-theverge-news",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "08644b1a-ac5e-45a9-8ad1-3a3942e8d366",
+    "Question": "Help me recommend any cheap goodies worth buying recently? Save this information to ./annotated_data/excel/goods.xlsx.",
+    "answers": "edit ./annotated_data/excel/goods.xlsx",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information for cheap goodies\n2. write these information to excel in ./annotated_data/excel/goods.xlsx",
+      "Number of steps": "2",
+      "Tools": "1. get-smzdm-rank\n2. excel_write_to_sheet",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "860f7b99-23fe-41fe-9608-59717bad2a9a",
+    "Question": "Get deepwiki for vercel/ai and convert its structure to mindmap",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the deepwiki of vercel/ai \n2. create the mindmap of the deepwiki",
+      "Number of steps": "2",
+      "Tools": "1. deepwiki_fetch\n2. convert_markdown_to_mindmap",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+    "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+    "answers": "20.76",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel\n2. caculate the bmi",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. calculate",
+      "Number of tools": "2"
+    }
+  }
+]
