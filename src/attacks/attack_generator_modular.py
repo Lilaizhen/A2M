@@ -1085,68 +1085,57 @@ class AttackGenerator:
                         first_score = self._score(run_first, baseline_ok)
                         print(f"[初始候选生成] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
 
-                        # 只有当第一次分数超过baseline时，才进行额外两次测试
-                        if first_score > baseline_score:
-                            print(f"[初始候选生成] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
-                            # 再测两次，取三次平均值
-                            total_score = first_score
-                            valid_runs = 1
+                        # 进行额外两次测试以获取更稳定的分数
+                        print(f"[初始候选生成] 工具 {c['name']} 进行多次测试以获取稳定分数")
+                        # 再测两次，取三次平均值
+                        total_score = first_score
+                        valid_runs = 1
 
-                            test_success = True
-                            for test_num in range(2):
-                                test_run_success = False
-                                test_run_attempts = 0
+                        test_success = True
+                        for test_num in range(2):
+                            test_run_success = False
+                            test_run_attempts = 0
 
-                                while test_run_attempts < max_retries:
-                                    run = self.executor.execute_task_with_attack(task, c)
+                            while test_run_attempts < max_retries:
+                                run = self.executor.execute_task_with_attack(task, c)
 
-                                    # 检查是否为mcp_error
-                                    if run.get("status") == "mcp_error":
-                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
-                                        test_run_attempts += 1
-                                        if test_run_attempts >= max_retries:
-                                            print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
-                                            test_success = False
-                                            break
-                                        continue
-
-                                    if run.get("status") != "error":
-                                        score = self._score(run, baseline_ok)
-                                        total_score += score
-                                        valid_runs += 1
-                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
-                                        test_run_success = True
-                                        break
-                                    else:
-                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
+                                # 检查是否为mcp_error
+                                if run.get("status") == "mcp_error":
+                                    print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
+                                    test_run_attempts += 1
+                                    if test_run_attempts >= max_retries:
+                                        print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
                                         test_success = False
                                         break
+                                    continue
 
-                                if not test_run_success:
+                                if run.get("status") != "error":
+                                    score = self._score(run, baseline_ok)
+                                    total_score += score
+                                    valid_runs += 1
+                                    print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
+                                    test_run_success = True
+                                    break
+                                else:
+                                    print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
                                     test_success = False
-
-                                if not test_success:
                                     break
 
-                            if test_success and valid_runs > 0:
-                                average_score = total_score / valid_runs
-                                # 只有当平均分数大于baseline时才保留
-                                if average_score > baseline_score:
-                                    # 保存分数信息到候选工具中
-                                    c['score'] = average_score
-                                    candidates.append(c)
-                                    print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(candidates)}个)")
-                                else:
-                                    # 保存被丢弃的候选及其分数
-                                    c['score'] = average_score
-                                    discarded_candidates.append(c)
-                                    print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
-                                run_success = True
-                            else:
-                                print(f"[初始候选生成] 工具 {c['name']} 测试过程中失败，丢弃")
-                                run_success = True
+                            if not test_run_success:
+                                test_success = False
+
+                            if not test_success:
+                                break
+
+                        if test_success and valid_runs > 0:
+                            average_score = total_score / valid_runs
+                            # 保存分数信息到候选工具中
+                            c['score'] = average_score
+                            candidates.append(c)
+                            print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f}，保留 (第{len(candidates)}个)")
+                            run_success = True
                         else:
-                            print(f"[初始候选生成] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
+                            print(f"[初始候选生成] 工具 {c['name']} 测试过程中失败，丢弃")
                             run_success = True
                     else:
                         print(f"[初始候选生成] 工具 {c['name']} 第一次运行失败，丢弃")
@@ -1323,95 +1312,78 @@ class AttackGenerator:
                             else:
                                 print(f"[总结指导策略] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
 
-                            # 只有当第一次分数超过baseline时，才进行额外两次测试
-                            if first_score > baseline_score:
-                                if self.parent_selection_strategy == "guided":
-                                    print(f"[引导增强策略] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
-                                else:
-                                    print(f"[总结指导策略] 工具 {c['name']} 第一次分数超过baseline，进行额外两次测试")
-                                # 再测两次，取三次平均值
-                                total_score = first_score
-                                valid_runs = 1
+                            # 进行额外两次测试以获取更稳定的分数
+                            if self.parent_selection_strategy == "guided":
+                                print(f"[引导增强策略] 工具 {c['name']} 进行多次测试以获取稳定分数")
+                            else:
+                                print(f"[总结指导策略] 工具 {c['name']} 进行多次测试以获取稳定分数")
+                            # 再测两次，取三次平均值
+                            total_score = first_score
+                            valid_runs = 1
 
-                                test_success = True
-                                for test_num in range(2):
-                                    test_run_success = False
-                                    test_run_attempts = 0
+                            test_success = True
+                            for test_num in range(2):
+                                test_run_success = False
+                                test_run_attempts = 0
 
-                                    while test_run_attempts < max_retries:
-                                        run = self.executor.execute_task_with_attack(task, c)
+                                while test_run_attempts < max_retries:
+                                    run = self.executor.execute_task_with_attack(task, c)
 
-                                        # 检查是否为mcp_error
-                                        if run.get("status") == "mcp_error":
-                                            if self.parent_selection_strategy == "guided":
-                                                print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
-                                            else:
-                                                print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
-                                            test_run_attempts += 1
-                                            if test_run_attempts >= max_retries:
-                                                if self.parent_selection_strategy == "guided":
-                                                    print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
-                                                else:
-                                                    print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
-                                                test_success = False
-                                                break
-                                            continue
-
-                                        if run.get("status") != "error":
-                                            score = self._score(run, baseline_ok)
-                                            total_score += score
-                                            valid_runs += 1
-                                            if self.parent_selection_strategy == "guided":
-                                                print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
-                                            else:
-                                                print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
-                                            test_run_success = True
-                                            break
+                                    # 检查是否为mcp_error
+                                    if run.get("status") == "mcp_error":
+                                        if self.parent_selection_strategy == "guided":
+                                            print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
                                         else:
+                                            print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
+                                        test_run_attempts += 1
+                                        if test_run_attempts >= max_retries:
                                             if self.parent_selection_strategy == "guided":
-                                                print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
+                                                print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
                                             else:
-                                                print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
+                                                print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
                                             test_success = False
                                             break
+                                        continue
 
-                                    if not test_run_success:
+                                    if run.get("status") != "error":
+                                        score = self._score(run, baseline_ok)
+                                        total_score += score
+                                        valid_runs += 1
+                                        if self.parent_selection_strategy == "guided":
+                                            print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
+                                        else:
+                                            print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
+                                        test_run_success = True
+                                        break
+                                    else:
+                                        if self.parent_selection_strategy == "guided":
+                                            print(f"[引导增强策略] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
+                                        else:
+                                            print(f"[总结指导策略] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
                                         test_success = False
-
-                                    if not test_success:
                                         break
 
-                                if test_success and valid_runs > 0:
-                                    average_score = total_score / valid_runs
-                                    # 只有当平均分数大于baseline时才保留
-                                    if average_score > baseline_score:
-                                        # 保存分数信息到候选工具中
-                                        c['score'] = average_score
-                                        second_round_candidates.append(c)
-                                        if self.parent_selection_strategy == "guided":
-                                            print(f"[引导增强策略] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(second_round_candidates)}个)")
-                                        else:
-                                            print(f"[总结指导策略] 工具 {c['name']} 三次平均分数 {average_score:.2f} > baseline {baseline_score:.2f}，保留 (第{len(second_round_candidates)}个)")
-                                    else:
-                                        # 保存被丢弃的候选及其分数
-                                        c['score'] = average_score
-                                        second_round_discarded.append(c)
-                                        if self.parent_selection_strategy == "guided":
-                                            print(f"[引导增强策略] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
-                                        else:
-                                            print(f"[总结指导策略] 工具 {c['name']} 三次平均分数 {average_score:.2f} <= baseline {baseline_score:.2f}，丢弃")
-                                    run_success = True
+                                if not test_run_success:
+                                    test_success = False
+
+                                if not test_success:
+                                    break
+
+                            if test_success and valid_runs > 0:
+                                average_score = total_score / valid_runs
+                                # 保存分数信息到候选工具中
+                                c['score'] = average_score
+                                second_round_candidates.append(c)
+                                if self.parent_selection_strategy == "guided":
+                                    print(f"[引导增强策略] 工具 {c['name']} 三次平均分数 {average_score:.2f}，保留 (第{len(second_round_candidates)}个)")
                                 else:
-                                    if self.parent_selection_strategy == "guided":
-                                        print(f"[引导增强策略] 工具 {c['name']} 测试过程中失败，丢弃")
-                                    else:
-                                        print(f"[总结指导策略] 工具 {c['name']} 测试过程中失败，丢弃")
-                                    run_success = True
+                                    print(f"[总结指导策略] 工具 {c['name']} 三次平均分数 {average_score:.2f}，保留 (第{len(second_round_candidates)}个)")
+                                run_success = True
                             else:
                                 if self.parent_selection_strategy == "guided":
-                                    print(f"[引导增强策略] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
+                                    print(f"[引导增强策略] 工具 {c['name']} 测试过程中失败，丢弃")
                                 else:
-                                    print(f"[总结指导策略] 工具 {c['name']} 第一次分数 {first_score:.2f} <= baseline {baseline_score:.2f}，直接丢弃")
+                                    print(f"[总结指导策略] 工具 {c['name']} 测试过程中失败，丢弃")
                                 run_success = True
                         else:
                             if self.parent_selection_strategy == "guided":
@@ -1667,46 +1639,39 @@ class AttackGenerator:
                 score_child = self._score(run_child, baseline_ok)
                 print(f"[交叉变异迭代 {it+1}] 子代单次分数: {score_child:.2f}")
 
-                # 如果单次得分比当前最高分高，进行多次验证
-                if score_child > best_score + self.score_threshold:
-                    print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 超过当前最优 {best_score:.2f} + {self.score_threshold}，进行多次验证")
-                    average_score_child = self._score_average(task, child_tool, baseline_ok, num_runs=3)
-                    child_tool['score'] = average_score_child  # 添加分数信息
-                    print(f"[交叉变异迭代 {it+1}] 子代平均分数: {average_score_child:.2f}")
+                # 进行多次验证以获取更稳定的分数
+                print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f}，进行多次验证")
+                average_score_child = self._score_average(task, child_tool, baseline_ok, num_runs=3)
+                child_tool['score'] = average_score_child  # 添加分数信息
+                print(f"[交叉变异迭代 {it+1}] 子代平均分数: {average_score_child:.2f}")
 
-                    if average_score_child > best_score:
-                        print(f"[交叉变异迭代 {it+1}] 发现更优工具! 新的最高分数: {average_score_child:.2f}")
-                        best_score = average_score_child
-                        best_tool = child_tool
+                if average_score_child > best_score:
+                    print(f"[交叉变异迭代 {it+1}] 发现更优工具! 新的最高分数: {average_score_child:.2f}")
+                    best_score = average_score_child
+                    best_tool = child_tool
 
-                        # 重新运行以获取详细反馈 - 添加重试机制
-                        run_attempts = 0
-                        while run_attempts < max_retries:
-                            run_child = self.executor.execute_task_with_attack(task, child_tool)
+                    # 重新运行以获取详细反馈 - 添加重试机制
+                    run_attempts = 0
+                    while run_attempts < max_retries:
+                        run_child = self.executor.execute_task_with_attack(task, child_tool)
 
-                            # 检查是否为mcp_error
-                            if run_child.get("status") == "mcp_error":
-                                print(f"[交叉变异迭代 {it+1}] 重新运行更优工具遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
-                                run_attempts += 1
-                                if run_attempts >= max_retries:
-                                    print(f"[交叉变异迭代 {it+1}] 重新运行更优工具重试次数已达上限")
-                                    break
-                                continue
-                            else:
+                        # 检查是否为mcp_error
+                        if run_child.get("status") == "mcp_error":
+                            print(f"[交叉变异迭代 {it+1}] 重新运行更优工具遇到mcp_error，正在重试... (尝试 {run_attempts+1}/{max_retries})")
+                            run_attempts += 1
+                            if run_attempts >= max_retries:
+                                print(f"[交叉变异迭代 {it+1}] 重新运行更优工具重试次数已达上限")
                                 break
-
-                        if run_child and run_child.get("status") != "mcp_error":
-                            child_tool['feedback'] = run_child  # 添加反馈信息
+                            continue
                         else:
-                            print(f"[交叉变异迭代 {it+1}] 无法获取更优工具的反馈信息")
+                            break
+
+                    if run_child and run_child.get("status") != "mcp_error":
+                        child_tool['feedback'] = run_child  # 添加反馈信息
                     else:
-                        print(f"[交叉变异迭代 {it+1}] 子代平均分数 {average_score_child:.2f} 未超过当前最优 {best_score:.2f}")
+                        print(f"[交叉变异迭代 {it+1}] 无法获取更优工具的反馈信息")
                 else:
-                    child_tool['score'] = score_child  # 添加分数信息
-                    if score_child > best_score:
-                        print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 超过当前最优 {best_score:.2f} 但未超过{self.score_threshold}分阈值")
-                    else:
-                        print(f"[交叉变异迭代 {it+1}] 子代单次分数 {score_child:.2f} 未超过当前最优 {best_score:.2f}")
+                    print(f"[交叉变异迭代 {it+1}] 子代平均分数 {average_score_child:.2f} 未超过当前最优 {best_score:.2f}")
             else:
                 print(f"[交叉变异迭代 {it+1}] 子代工具运行完全失败，跳过此工具")
                 # 跳过这个子代工具，继续下一次迭代
