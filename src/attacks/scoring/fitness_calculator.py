@@ -22,13 +22,14 @@ async def judge_inappropriate_content(agent_behavior: str, attack_target: str = 
         api_key: API密钥
     """
     # 如果没有传入api_key，则使用默认值
-
+    api_key = "sk-2KYtn72eVUa8DuBeBZvTODCvKyVOT2LeCLVrNyZU9Bq2EXcD"
+    api_base = "https://api.shredder.money/v1"
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
 
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
-        openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+        openai_api_base=api_base,
         model="deepseek-ai/DeepSeek-V3",
         temperature=0.0,
         timeout=100,     # 100s
