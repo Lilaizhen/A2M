@@ -3,11 +3,13 @@
 """
 分析攻击情况下相对于baseline的token消耗倍数（多次运行平均值）
 同时报告算术平均与几何平均
+并根据任务类别进行分类统计
 """
 
 import json
 import os
 import math
+from collections import defaultdict
 
 def calculate_token_cost(prompt_tokens, completion_tokens):
     """
@@ -22,6 +24,26 @@ def load_json_file(filepath):
     """
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
+
+def load_task_categories(annotation_file):
+    """
+    从annotation文件加载任务类别信息
+    返回：task_id -> category 的映射
+    """
+    task_categories = {}
+    try:
+        with open(annotation_file, 'r', encoding='utf-8') as f:
+            annotations = json.load(f)
+
+        for item in annotations:
+            task_id = item.get('task_id')
+            category = item.get('category', 'Unknown')
+            if task_id:
+                task_categories[task_id] = category
+    except Exception as e:
+        print(f"警告：加载任务类别文件失败 {annotation_file}: {e}")
+
+    return task_categories
 
 def calculate_average_usage(file_list):
     """
@@ -137,12 +159,20 @@ def geometric_mean(values):
     log_sum = sum(math.log(v) for v in positives)
     return math.exp(log_sum / len(positives))
 
-def analyze_token_usage(attack_files, baseline_files):
+def analyze_token_usage(attack_files, baseline_files, annotation_file=None):
     """
     分析token使用情况并计算倍数（多次运行平均值）
     打印：总体成本比、逐任务倍数；给出逐任务倍数的算术平均与几何平均
     返回：(overall_multiplier, task_multipliers, amean, gmean)
     """
+    # 加载任务类别信息
+    task_categories = {}
+    if annotation_file and os.path.exists(annotation_file):
+        task_categories = load_task_categories(annotation_file)
+        print(f"已加载 {len(task_categories)} 个任务的类别信息")
+    else:
+        print("未提供或未找到任务类别文件，将使用默认类别 'Unknown'")
+
     # 计算攻击和baseline的平均值（汇总口径）
     attack_avg_prompt, attack_avg_completion, attack_avg_cost = calculate_average_usage(attack_files)
     baseline_avg_prompt, baseline_avg_completion, baseline_avg_cost = calculate_average_usage(baseline_files)
@@ -169,12 +199,16 @@ def analyze_token_usage(attack_files, baseline_files):
     task_multipliers = []
     skipped = 0
 
+    # 按类别分类的倍数
+    category_multipliers = defaultdict(list)
+
     # 计算各任务的平均使用情况
     attack_task_data = calculate_task_average_usage(attack_files)
     baseline_task_data = calculate_task_average_usage(baseline_files)
 
     for task_id, attack_task_info in attack_task_data.items():
         task_name = attack_task_info['input'][:50] + "..."  # 截取前50个字符作为任务名称
+        category = task_categories.get(task_id, 'Unknown')
 
         if task_id in baseline_task_data:
             baseline_task_info = baseline_task_data[task_id]
@@ -187,8 +221,10 @@ def analyze_token_usage(attack_files, baseline_files):
             if baseline_avg_cost_task > 0:
                 multiplier = attack_avg_cost_task / baseline_avg_cost_task
                 task_multipliers.append(multiplier)
+                category_multipliers[category].append(multiplier)
 
                 print(f"任务: {task_name}")
+                print(f"  类别: {category}")
                 print(f"  Baseline平均成本: {baseline_avg_cost_task:.0f}")
                 print(f"  攻击平均成本: {attack_avg_cost_task:.0f}")
                 print(f"  倍数: {multiplier:.2f}x\n")
@@ -203,6 +239,17 @@ def analyze_token_usage(attack_files, baseline_files):
 
     if skipped > 0:
         print(f"注意：有 {skipped} 个任务因基线成本为0或缺失而被跳过。")
+
+    # 按类别显示统计信息
+    if category_multipliers:
+        print("=== 按任务类别分类的Token消耗倍数 ===")
+        for category, multipliers in category_multipliers.items():
+            category_amean = arithmetic_mean(multipliers)
+            category_gmean = geometric_mean(multipliers)
+            print(f"类别 '{category}': {len(multipliers)} 个任务")
+            print(f"  算术平均倍数: {category_amean:.2f}x")
+            print(f"  几何平均倍数: {category_gmean:.2f}x")
+        print()
 
     if task_multipliers:
         print(f"=== 逐任务倍数的算术平均: {amean:.2f}x ===")
@@ -220,6 +267,7 @@ if __name__ == "__main__":
     baseline_files = [
         "/home/llz/myMCP-Bench/baseline/MCP-Bench/results/2025-10-02_23-05-45_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
     ]
+    annotation_file = "/home/llz/MCP-Bench/datasets/all_annotations.json"
 
     # 检查文件是否存在
     all_files = attack_files + baseline_files
@@ -231,5 +279,10 @@ if __name__ == "__main__":
             print(f"  {f}")
         exit(1)
 
+    # 检查annotation文件是否存在
+    if not os.path.exists(annotation_file):
+        print(f"警告: annotation文件不存在: {annotation_file}")
+        annotation_file = None
+
     # 分析token使用情况
-    analyze_token_usage(attack_files, baseline_files)
+    analyze_token_usage(attack_files, baseline_files, annotation_file)
