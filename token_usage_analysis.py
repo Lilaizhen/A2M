@@ -262,10 +262,10 @@ def analyze_token_usage(attack_files, baseline_files, annotation_file=None):
 if __name__ == "__main__":
     # 文件路径
     attack_files = [
-        "/home/llz/myMCP-Bench/diverse/MCP-Bench/results/2025-10-02_22-59-47_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
+        "/Users/lilaizhen/myMCP-Bench/3/MCP-Bench/results/2025-10-07_03-38-45_deepseek-v3.1_all/results.json"
     ]
     baseline_files = [
-        "/home/llz/myMCP-Bench/baseline/MCP-Bench/results/2025-10-02_23-05-45_moonshotai/Kimi-K2-Instruct-0905_test/results.json"
+        "/Users/lilaizhen/myMCP-Bench/4/MCP-Bench/results/2025-10-07_03-39-20_deepseek-v3.1_all/results.json"
     ]
     annotation_file = "/home/llz/MCP-Bench/datasets/all_annotations.json"
 
