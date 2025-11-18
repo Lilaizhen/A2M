@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import re
 from typing import Tuple, Dict, Any
 from langchain_openai import ChatOpenAI
@@ -61,16 +62,17 @@ async def judge_task_completion(
     """
 
     # 暂时不使用传入的 api_key 和 api_base，保持原有逻辑
-    api_key = "sk-2KYtn72eVUa8DuBeBZvTODCvKyVOT2LeCLVrNyZU9Bq2EXcD"
-    api_base = "https://api.shredder.money/v1"
-
+    # api_key = "sk-2KYtn72eVUa8DuBeBZvTODCvKyVOT2LeCLVrNyZU9Bq2EXcD"
+    # api_base = "https://api.shredder.money/v1"
+    api_key = os.getenv("OPENAI_API_KEY")
+    api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
 
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=api_base,
-        model="deepseek-ai/DeepSeek-V3",
+        model="deepseek-v3",
         temperature=0.0,
         timeout=100,     # 单次请求上限100s
         max_retries=0    # 关闭 LangChain 内部重试，使用外层重试

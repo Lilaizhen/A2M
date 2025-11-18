@@ -2576,11 +2576,11 @@ def main():
                         choices=["per_task", "cross_task"],
                         help="优化模式：per_task(每个任务单独优化) 或 cross_task(跨任务整体优化) (默认: per_task)")
     # 新增：score_threshold参数
-    parser.add_argument("--score-threshold", dest="score_threshold", type=int, default=1,
-                        help="更新最优工具所需的最小分数差距 (默认: 5000)")
+    parser.add_argument("--score-threshold", dest="score_threshold", type=int, default=1000,
+                        help="更新最优工具所需的最小分数差距 (默认: 1)")
     # 新增：候选数量参数
-    parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=4,
-                        help="生成的候选工具数量 (默认: 4)")
+    parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=5,
+                        help="生成的候选工具数量 (默认: 5)")
     # 新增：模型参数
     parser.add_argument("--execution-model", dest="execution_model", default="moonshotai/Kimi-K2-Instruct-0905",
                         help="执行任务的模型 (默认: deepseek-v3.1)")
