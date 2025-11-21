@@ -1,54 +1,40 @@
 [
-
     {
-        "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
-        "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
-        "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
-        "category": "Office",
+        "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+        "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+        "answers": "20.76",
+        "category": "Lifestyle",
         "file_name": "",
         "Annotator Metadata": {
-            "Steps": "1. locate the 10th line in the file",
-            "Number of steps": "1",
-            "Tools": "1. get_text_file_contents",
-            "Number of tools": "1"
-        }
-    },
-    {
-    "task_id": "423f89ba-be77-4f93-99d7-936548513eef",
-    "Question": "Help me create an example word that needs to have headings, tables, body, footnotes and insert clock.png under ./annotated_data/picture and save it in ./annotated_data/word/example.docx",
-    "answers": "file ./annotated_data/word/example.docx",
-    "category": "Office",
-    "file_name": "./annotated_data/picture/clock.png",
-    "Annotator Metadata": {
-      "Steps": "1. create the word document\n2. Add a heading, a table, a paragraph and a footnote \n3. Insert the image",
-      "Number of steps": "3",
-      "Tools": "1. create_document\n2. add_heading\n3. add_table\n4. add_paragraph\n5. add_footnote_to_document\n6. add_picture",
-      "Number of tools": "6"
-    }
-    },
-    {
-        "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
-        "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
-        "answers": "",
-        "category": "Shopping",
-        "file_name": "",
-        "Annotator Metadata": {
-            "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
-            "Number of steps": "1",
-            "Tools": "1. mcp_howtocook_recommendMeals",
-            "Number of tools": "1"
-        }
-    },
-    {
-        "task_id": "2e190c2a-8aab-44e1-896d-671cb3fcc495",
-        "Question": "What are the changes in my log files ./annotated_data/txt/log_today.txt and ./annotated_data/txt/log_yesterday.txt, help me to find out all the different lines which contain 'ERROR' ?",
-        "answers": "[ERROR] Database connection failed.",
-        "category": "Office",
-        "file_name": "./annotated_data/txt/log_today.txt, ./annotated_data/txt/log_yesterday.txt",
-        "Annotator Metadata": {
-            "Steps": "1. Compare two text files and show differences\n2. Find different lines which contain 'ERROR'",
+            "Steps": "1. read the excel\n2. caculate the bmi",
             "Number of steps": "2",
-            "Tools": "1. text_diff",
+            "Tools": "1. excel_read_sheet\n2. calculate",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
+        "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+        "answers": "",
+        "category": "Travel",
+        "file_name": "",
+        "Annotator Metadata": {
+            "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
+            "Number of steps": "3",
+            "Tools": "1. get_current_time\n2. airbnb_search",
+            "Number of tools": "2"
+        }
+    },
+    {
+        "task_id": "086e2393-dc1a-4c55-bf54-1e9a94951db7",
+        "Question": "Read the file ./annotated_data/word/exchange.docx, tell me who did not give a gift",
+        "answers": "Fred",
+        "category": "Leisure",
+        "file_name": "./annotated_data/word/exchange.docx",
+        "Annotator Metadata": {
+            "Steps": "1. open the word document\n2. answer the question",
+            "Number of steps": "2",
+            "Tools": "1. get_document_text",
             "Number of tools": "1"
         }
     }
