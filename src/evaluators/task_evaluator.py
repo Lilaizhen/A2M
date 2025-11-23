@@ -72,7 +72,7 @@ async def judge_task_completion(
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=api_base,
-        model="deepseek-v3",
+        model="deepseek-ai/DeepSeek-V3",
         temperature=0.0,
         timeout=100,     # 单次请求上限100s
         max_retries=0    # 关闭 LangChain 内部重试，使用外层重试

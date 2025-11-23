@@ -33,7 +33,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--attack", action="store_true", help="启用攻击模式 (mytool MCP server)")
     parser.add_argument("--attack-dataset", type=str, help="attack数据集路径")
-    parser.add_argument("--model", type=str, default="ZhipuAI/GLM-4.5", help="指定使用的模型名称")
+    parser.add_argument("--model", type=str, default="ZhipuAI/GLM-4.6", help="指定使用的模型名称")
     args = parser.parse_args()
 
     # 路径映射

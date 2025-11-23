@@ -66,7 +66,7 @@ sys.path.append('.')
 class PromptGenerator:
     """专门用于生成完整大段攻击场景prompt的类"""
 
-    def __init__(self, api_key: Optional[str] = None, generation_model: str = "glm-4.6"):
+    def __init__(self, api_key: Optional[str] = None, generation_model: str = "ZhipuAI/GLM-4.6"):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
         self.generation_model = generation_model
         # 初始化各个场景处理器
@@ -156,7 +156,7 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "glm-4.6", mutation_model: str = "glm-4.6", mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "ZhipuAI/GLM-4.6", mutation_model: str = "ZhipuAI/GLM-4.6", mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10):
         print("使用函数化真实执行器")
         self.api_key = api_key
         self.attack_type = attack_type
@@ -201,7 +201,7 @@ class AttackGenerator:
         guidance_summary: str = None,
         retries: int = 100,
         retry_delay: float = 0.8,
-        model: str = "glm-4.6",
+        model: str = "ZhipuAI/GLM-4.6",
     ) -> List[Dict]:
         if not IMPORTS_AVAILABLE:
             # 返回模拟数据用于测试
@@ -419,7 +419,7 @@ class AttackGenerator:
         execution_feedback1: Dict = None,
         execution_feedback2: Dict = None,
         temperature: float = 0.8,
-        model: str = "glm-4.6"
+        model: str = "ZhipuAI/GLM-4.6"
     ) -> Dict:
         """
         交叉变异两个父代工具，生成新的子代工具
@@ -534,7 +534,7 @@ class AttackGenerator:
         attack_tool: Dict,
         execution_feedback: Dict,
         temperature: float = 0.8,
-        model: str = "glm-4.6"
+        model: str = "ZhipuAI/GLM-4.6"
     ) -> Dict:
         """
         专门用于变异攻击工具的函数
@@ -1739,12 +1739,12 @@ def main():
     parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=5,
                         help="生成的候选工具数量 (默认: 5)")
     # 新增：模型参数
-    parser.add_argument("--execution-model", dest="execution_model", default="glm-4.6",
+    parser.add_argument("--execution-model", dest="execution_model", default="ZhipuAI/GLM-4.6",
                         help="执行任务的模型 (默认: deepseek-v3.1)")
-    parser.add_argument("--generation-model", dest="generation_model", default="glm-4.6",
-                        help="生成候选工具的模型 (默认: glm-4.6)")
-    parser.add_argument("--mutation-model", dest="mutation_model", default="glm-4.6",
-                        help="变异工具的模型 (默认: glm-4.6)")
+    parser.add_argument("--generation-model", dest="generation_model", default="ZhipuAI/GLM-4.6",
+                        help="生成候选工具的模型 (默认: ZhipuAI/GLM-4.6)")
+    parser.add_argument("--mutation-model", dest="mutation_model", default="ZhipuAI/GLM-4.6",
+                        help="变异工具的模型 (默认: ZhipuAI/GLM-4.6)")
     # 新增：变异策略选择
     parser.add_argument("--mutation-strategy", dest="mutation_strategy", default="crossover",
                         choices=["crossover", "single"],
