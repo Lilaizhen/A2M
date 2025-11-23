@@ -25,6 +25,7 @@ from src.data_loaders.data_loader import (
     fetch_server_tool_names,
 )
 from src.evaluators.task_evaluator import judge_task_completion
+from src.utils.task_isolation import TaskIsolationManager
 
 
 MAX_TOOL_OUTPUT_CHARS = 8000
@@ -54,6 +55,7 @@ async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name=
     对异步操作做指数退避 + 抖动的重试。
     op: 零参可调用，返回 coroutine。
     """
+    import random  # 确保random已导入
     last = None
     for i in range(tries):
         try:
@@ -282,13 +284,20 @@ def _build_filtered_mcp_config(expected_tools, attack, tool_to_mcp, mcp_configs,
     return filtered
 
 
-async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map):
-    """运行单个任务，返回结果字典。"""
+async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map, isolation_manager=None):
+    """运行单个任务，返回结果字典。支持任务隔离。"""
     task_id = task["id"]
     task_desc = task["description"]
     user_prompt = task["input"]
     expected_tools = task.get("expected_tools", [])
     t0 = time.time()
+
+    # 创建任务隔离管理器（如果没有提供）
+    if isolation_manager is None:
+        isolation_manager = TaskIsolationManager()
+
+    # 为当前任务创建隔离的文件系统
+    task_dir, task_annotated_data_path = isolation_manager.create_task_isolation_dir(task_id)
 
     # 仅为该task构建MCP配置
     filtered_config = _build_filtered_mcp_config(
@@ -299,6 +308,13 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
         attack_tools_for_task=attack_map.get(task_id),
     )
 
+    # 生成任务专属的MCP配置（文件系统路径已隔离）
+    isolated_config, _ = isolation_manager.generate_mcp_config_for_task(
+        filtered_config,
+        task_annotated_data_path,
+        task_id
+    )
+
     # 获取当前任务的攻击工具名称，用于统计
     attack_tool_names = set()
     attack_tools_for_task = attack_map.get(task_id, [])
@@ -307,10 +323,10 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
 
     # 尝试枚举mytool的工具名集合，便于统计
     mytool_names = set()
-    if attack and "mytool" in filtered_config:
+    if attack and "mytool" in isolated_config:
         try:
             mytool_names = await retry_async(
-                lambda: fetch_server_tool_names("mytool", filtered_config["mytool"]),
+                lambda: fetch_server_tool_names("mytool", isolated_config["mytool"]),
                 tries=3, base=0.5, factor=2.0, max_delay=6.0, name="fetch_server_tool_names",
             )
 
@@ -320,10 +336,10 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
     # 合并mytool服务器本身的工具名称和攻击工具名称
     all_mytool_names = mytool_names.union(attack_tool_names)
 
-    # 加载MCP工具
+    # 加载MCP工具（使用隔离配置）
     try:
         limited = LimitedMCPClient(
-            filtered_config,
+            isolated_config,
             max_response_length=5000,
             max_list_length=100,
             max_category_items=20,
@@ -334,6 +350,8 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
             tries=4, base=0.8, factor=2.0, max_delay=8.0, name="limited.get_tools",
         )
     except Exception as e:
+        # 清理隔离目录
+        isolation_manager.cleanup_task_isolation_dir(task_id)
         return {
             "task_id": task_id,
             "input": user_prompt,
@@ -542,10 +560,21 @@ async def run_tasks_as_function(
 
     attack_map = _sanitize_attack_map(attack_dataset)
 
-    results_summary = []
-    for task in dataset:
-        res = await _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map)
-        results_summary.append(res)
+    # 创建任务隔离管理器
+    isolation_manager = TaskIsolationManager()
+
+    # 异步并发执行任务（限制最大并发数）
+    semaphore = asyncio.Semaphore(3)  # 限制同时运行的任务数为3
+
+    async def run_task_with_semaphore(task):
+        async with semaphore:
+            return await _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map, isolation_manager)
+
+    # 并发执行所有任务
+    results_summary = await asyncio.gather(*[run_task_with_semaphore(task) for task in dataset])
+
+    # 最后清理所有隔离目录（可选，保留用于调试）
+    # isolation_manager.cleanup_all_isolation_dirs()
 
     total_tasks = len(results_summary)
     completed_tasks = sum(1 for r in results_summary if r["task_completed"])
