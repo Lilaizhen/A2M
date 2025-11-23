@@ -285,7 +285,7 @@ def _build_filtered_mcp_config(expected_tools, attack, tool_to_mcp, mcp_configs,
 
 
 async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_map, isolation_manager=None):
-    """运行单个任务，返回结果字典。支持任务隔离。"""
+    """运行单个任务，返回结果字典。支持进程级隔离。"""
     task_id = task["id"]
     task_desc = task["description"]
     user_prompt = task["input"]
@@ -296,8 +296,8 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
     if isolation_manager is None:
         isolation_manager = TaskIsolationManager()
 
-    # 为当前任务创建隔离的文件系统
-    task_dir, task_annotated_data_path = isolation_manager.create_task_isolation_dir(task_id)
+    # 为当前进程创建隔离的文件系统（进程级隔离）
+    process_id, task_dir, task_annotated_data_path = isolation_manager.create_process_isolation_dir(task_id)
 
     # 仅为该task构建MCP配置
     filtered_config = _build_filtered_mcp_config(
@@ -308,11 +308,11 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
         attack_tools_for_task=attack_map.get(task_id),
     )
 
-    # 生成任务专属的MCP配置（文件系统路径已隔离）
-    isolated_config, _ = isolation_manager.generate_mcp_config_for_task(
+    # 生成进程专属的MCP配置（文件系统路径已隔离）
+    isolated_config, _ = isolation_manager.generate_mcp_config_for_process(
         filtered_config,
         task_annotated_data_path,
-        task_id
+        process_id
     )
 
     # 获取当前任务的攻击工具名称，用于统计
@@ -351,7 +351,7 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
         )
     except Exception as e:
         # 清理隔离目录
-        isolation_manager.cleanup_task_isolation_dir(task_id)
+        isolation_manager.cleanup_process_isolation_dir(process_id)
         return {
             "task_id": task_id,
             "input": user_prompt,
@@ -461,6 +461,7 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
 
     return {
         "task_id": task_id,
+        "process_id": process_id,  # 添加进程ID用于调试
         "input": user_prompt,
         "expected_tools": expected_tools,
         "agent_final_response": final_response,

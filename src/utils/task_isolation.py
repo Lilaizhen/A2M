@@ -34,18 +34,22 @@ class TaskIsolationManager:
         if not os.path.exists(self.backup_dir):
             raise FileNotFoundError(f"备份目录不存在: {self.backup_dir}")
 
-    def create_task_isolation_dir(self, task_id: str) -> Tuple[str, str]:
+    def create_process_isolation_dir(self, task_id: str = None) -> Tuple[str, str, str]:
         """
-        为指定任务创建隔离目录
+        为进程创建隔离目录（进程级隔离）
 
         Args:
-            task_id: 任务ID
+            task_id: 任务ID（可选，仅用于日志记录，不参与隔离目录命名）
 
         Returns:
-            Tuple[隔离目录路径, 隔离的annotated_data路径]
+            Tuple[进程ID, 隔离目录路径, 隔离的annotated_data路径]
         """
-        # 创建任务专属目录
-        task_dir = os.path.join(self.base_cache_dir, task_id)
+        # 生成进程唯一标识
+        import uuid
+        process_id = f"process_{uuid.uuid4().hex[:12]}"
+
+        # 创建进程专属目录
+        task_dir = os.path.join(self.base_cache_dir, process_id)
         annotated_data_dir = os.path.join(task_dir, "annotated_data")
 
         # 如果已经存在，先清理
@@ -62,16 +66,16 @@ class TaskIsolationManager:
             # 如果备份不存在，创建空的目录结构
             os.makedirs(annotated_data_dir, exist_ok=True)
 
-        return task_dir, annotated_data_dir
+        return process_id, task_dir, annotated_data_dir
 
-    def cleanup_task_isolation_dir(self, task_id: str) -> None:
+    def cleanup_process_isolation_dir(self, process_id: str) -> None:
         """
-        清理任务的隔离目录
+        清理进程的隔离目录
 
         Args:
-            task_id: 任务ID
+            process_id: 进程ID
         """
-        task_dir = os.path.join(self.base_cache_dir, task_id)
+        task_dir = os.path.join(self.base_cache_dir, process_id)
         if os.path.exists(task_dir):
             shutil.rmtree(task_dir)
 
@@ -81,22 +85,22 @@ class TaskIsolationManager:
             shutil.rmtree(self.base_cache_dir)
             os.makedirs(self.base_cache_dir, exist_ok=True)
 
-    def generate_mcp_config_for_task(
+    def generate_mcp_config_for_process(
         self,
         base_config: Dict,
         task_annotated_data_path: str,
-        task_id: str
+        process_id: str
     ) -> Tuple[Dict, str]:
         """
-        为指定任务生成专用的MCP配置文件
+        为指定进程生成专用的MCP配置文件
 
         Args:
             base_config: 基础MCP配置
             task_annotated_data_path: 任务的annotated_data路径
-            task_id: 任务ID
+            process_id: 进程ID
 
         Returns:
-            Tuple[任务专属MCP配置, 配置文件路径]
+            Tuple[进程专属MCP配置, 配置文件路径]
         """
         # 深拷贝基础配置
         import copy
@@ -131,11 +135,11 @@ class TaskIsolationManager:
                         new_args.append(arg)
                 server_config["args"] = new_args
 
-        # 保存任务专属配置到文件
+        # 保存进程专属配置到文件
         config_file_path = os.path.join(
             self.base_cache_dir,
-            task_id,
-            f"mcp_config_{task_id}.json"
+            process_id,
+            f"mcp_config_{process_id}.json"
         )
 
         # 确保目录存在
@@ -146,31 +150,29 @@ class TaskIsolationManager:
 
         return task_config, config_file_path
 
-    def get_isolated_mcp_config(
+    def get_isolated_mcp_config_for_process(
         self,
         base_config: Dict,
-        task_id: str,
         server_name_filter: Optional[str] = None
-    ) -> Tuple[Dict, str]:
+    ) -> Tuple[Dict, str, str]:
         """
-        为指定任务获取隔离的MCP配置（函数式接口）
+        为进程获取隔离的MCP配置（函数式接口）
 
         Args:
             base_config: 基础MCP配置
-            task_id: 任务ID
             server_name_filter: 可选的服务器名称过滤器
 
         Returns:
-            Tuple[隔离的MCP配置, annotated_data路径]
+            Tuple[进程专属MCP配置, annotated_data路径, 进程ID]
         """
         # 创建隔离目录
-        task_dir, annotated_data_dir = self.create_task_isolation_dir(task_id)
+        process_id, task_dir, annotated_data_dir = self.create_process_isolation_dir()
 
-        # 生成任务专属配置
-        isolated_config, config_path = self.generate_mcp_config_for_task(
+        # 生成进程专属配置
+        isolated_config, config_path = self.generate_mcp_config_for_process(
             base_config,
             annotated_data_dir,
-            task_id
+            process_id
         )
 
         # 如果有服务器名称过滤器，只返回指定的服务器配置
@@ -179,46 +181,43 @@ class TaskIsolationManager:
                 server_name_filter: isolated_config[server_name_filter]
             }
 
-        return isolated_config, annotated_data_dir
+        return isolated_config, annotated_data_dir, process_id
 
 
-def create_task_mcp_config(
-    task_id: str,
+def create_process_mcp_config(
     base_mcp_configs: Dict,
     backup_path: str = None
-) -> Tuple[Dict, str]:
+) -> Tuple[Dict, str, str]:
     """
-    快速创建任务的MCP配置（简化接口）
+    快速创建进程的MCP配置（简化接口）
 
     Args:
-        task_id: 任务ID
         base_mcp_configs: 基础MCP配置字典
         backup_path: 备份路径，默认为./annotated_data_backup
 
     Returns:
-        Tuple[任务专属MCP配置, 配置文件路径]
+        Tuple[进程专属MCP配置, annotated_data路径, 进程ID]
     """
     if backup_path is None:
         backup_path = os.path.join(os.getcwd(), "annotated_data_backup")
 
     manager = TaskIsolationManager()
-    isolated_config, annotated_data_path = manager.get_isolated_mcp_config(
-        base_mcp_configs,
-        task_id
+    isolated_config, annotated_data_path, process_id = manager.get_isolated_mcp_config_for_process(
+        base_mcp_configs
     )
 
-    return isolated_config, annotated_data_path
+    return isolated_config, annotated_data_path, process_id
 
 
-def cleanup_isolation_for_task(task_id: str) -> None:
+def cleanup_isolation_for_process(process_id: str) -> None:
     """
-    清理指定任务的隔离资源
+    清理指定进程的隔离资源
 
     Args:
-        task_id: 任务ID
+        process_id: 进程ID
     """
     manager = TaskIsolationManager()
-    manager.cleanup_task_isolation_dir(task_id)
+    manager.cleanup_process_isolation_dir(process_id)
 
 
 def cleanup_all_isolation() -> None:
@@ -231,10 +230,7 @@ def cleanup_all_isolation() -> None:
 if __name__ == "__main__":
     import sys
 
-    # 测试创建隔离目录
-    test_task_id = f"test_task_{uuid.uuid4().hex[:8]}"
-    print(f"测试任务ID: {test_task_id}")
-
+    # 测试创建进程隔离目录
     manager = TaskIsolationManager()
 
     # 创建模拟的MCP配置
@@ -250,14 +246,14 @@ if __name__ == "__main__":
     }
 
     # 创建隔离配置
-    isolated_config, annotated_data_path = manager.get_isolated_mcp_config(
-        test_config,
-        test_task_id
+    isolated_config, annotated_data_path, process_id = manager.get_isolated_mcp_config_for_process(
+        test_config
     )
 
-    print(f"隔离目录: {manager.base_cache_dir}/{test_task_id}")
+    print(f"进程ID: {process_id}")
+    print(f"隔离目录: {manager.base_cache_dir}/{process_id}")
     print(f"annotated_data路径: {annotated_data_path}")
-    print(f"MCP配置文件: {manager.base_cache_dir}/{test_task_id}/mcp_config_{test_task_id}.json")
+    print(f"MCP配置文件: {manager.base_cache_dir}/{process_id}/mcp_config_{process_id}.json")
     print("\n生成的MCP配置:")
     print(json.dumps(isolated_config, indent=2, ensure_ascii=False))
 
@@ -269,7 +265,13 @@ if __name__ == "__main__":
                 if "annotated_data" in str(arg):
                     print(f"✓ 路径已隔离: {arg}")
 
+    # 测试多次调用，验证每次的进程ID都不同
+    print("\n\n测试多次调用进程隔离:")
+    for i in range(3):
+        _, _, process_id_test = manager.get_isolated_mcp_config_for_process(test_config)
+        print(f"  第{i+1}次调用 - 进程ID: {process_id_test}")
+
     # 清理测试资源
     print("\n清理测试资源...")
-    # manager.cleanup_task_isolation_dir(test_task_id)
+    # manager.cleanup_process_isolation_dir(process_id)
     print("测试完成！")
