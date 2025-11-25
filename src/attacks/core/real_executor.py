@@ -630,14 +630,18 @@ class RealExecutor:
             os.makedirs(self.annotated_data_path, exist_ok=True)
 
     def execute_task_without_attack(self, task: Dict) -> Dict:
-        """在不注入攻击工具的情况下执行任务并返回反馈"""
+        """在不注入攻击工具的情况下执行任务并返回反馈（同步版本）"""
+        return asyncio.run(self.execute_task_without_attack_async(task))
+
+    async def execute_task_without_attack_async(self, task: Dict) -> Dict:
+        """在不注入攻击工具的情况下执行任务并返回反馈（异步版本）"""
         max_retries = 5
         for attempt in range(max_retries):
             # 重置annotated_data文件夹
             self._reset_annotated_data()
 
             try:
-                report = asyncio.run(run_tasks_as_function(
+                report = await run_tasks_as_function(
                     dataset=[{
                         "id": task.get("id", task.get("task_id", "")),
                         "description": task.get("description") or task.get("Question", ""),
@@ -648,13 +652,14 @@ class RealExecutor:
                     attack_dataset=None,
                     model=self.execution_model,
                     api_key=self.api_key,
-                ))
+                )
                 detail = report["task_details"][0] if report["task_details"] else {}
                 status = detail.get("completion_reason", {}).get("failure_type", "unknown")
 
                 # 如果是system_error且不是最后一次尝试，则重试
                 if status == "system_error" and attempt < max_retries - 1:
                     print(f"[基线任务执行] 第 {attempt + 1} 次尝试遇到 system_error，正在重试...")
+                    await asyncio.sleep(1)  # 添加短暂延迟后重试
                     continue
 
                 action_trace = detail.get("action_trace", [])
@@ -681,6 +686,7 @@ class RealExecutor:
                 # 如果不是最后一次尝试，则重试
                 if attempt < max_retries - 1:
                     print(f"[基线任务执行] 第 {attempt + 1} 次尝试遇到异常: {str(e)}，正在重试...")
+                    await asyncio.sleep(1)  # 添加短暂延迟后重试
                     continue
                 else:
                     return {
@@ -699,7 +705,11 @@ class RealExecutor:
         }
 
     def execute_task_with_attack(self, task: Dict, attack_tool: Dict) -> Dict:
-        """在注入攻击工具的情况下执行任务并返回反馈"""
+        """在注入攻击工具的情况下执行任务并返回反馈（同步版本）"""
+        return asyncio.run(self.execute_task_with_attack_async(task, attack_tool))
+
+    async def execute_task_with_attack_async(self, task: Dict, attack_tool: Dict) -> Dict:
+        """在注入攻击工具的情况下执行任务并返回反馈（异步版本）"""
         max_retries = 5
         for attempt in range(max_retries):
             # 重置annotated_data文件夹
@@ -711,7 +721,7 @@ class RealExecutor:
                     "attack_tools": [attack_tool]
                 }]
 
-                report = asyncio.run(run_tasks_as_function(
+                report = await run_tasks_as_function(
                     dataset=[{
                         "id": task.get("id", task.get("task_id", "")),
                         "description": task.get("description") or task.get("Question", ""),
@@ -722,13 +732,14 @@ class RealExecutor:
                     attack_dataset=attack_dataset,
                     model=self.execution_model,
                     api_key=self.api_key,
-                ))
+                )
                 detail = report["task_details"][0] if report["task_details"] else {}
                 status = detail.get("completion_reason", {}).get("failure_type", "unknown")
 
                 # 如果是system_error且不是最后一次尝试，则重试
                 if status == "system_error" and attempt < max_retries - 1:
                     print(f"[攻击任务执行] 第 {attempt + 1} 次尝试遇到 system_error，正在重试...")
+                    await asyncio.sleep(1)  # 添加短暂延迟后重试
                     continue
 
                 action_trace = detail.get("action_trace", [])
@@ -755,6 +766,7 @@ class RealExecutor:
                 # 如果不是最后一次尝试，则重试
                 if attempt < max_retries - 1:
                     print(f"[攻击任务执行] 第 {attempt + 1} 次尝试遇到异常: {str(e)}，正在重试...")
+                    await asyncio.sleep(1)  # 添加短暂延迟后重试
                     continue
                 else:
                     return {

@@ -6,6 +6,7 @@ MCP-Bench 攻击工具生成器 (模块化版本)
 """
 
 import argparse
+import asyncio  # 添加 asyncio 支持
 import json
 import os
 import sys
@@ -156,7 +157,7 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "ZhipuAI/GLM-4.6", mutation_model: str = "ZhipuAI/GLM-4.6", mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "ZhipuAI/GLM-4.6", mutation_model: str = "ZhipuAI/GLM-4.6", mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True):
         print("使用函数化真实执行器")
         self.api_key = api_key
         self.attack_type = attack_type
@@ -168,6 +169,7 @@ class AttackGenerator:
         self.mutation_strategy = mutation_strategy
         self.parent_selection_strategy = parent_selection_strategy
         self.top_k = top_k
+        self.use_parallel_scoring = use_parallel_scoring  # 保存并行评分配置
         self.elite_rate = 0.2
         self.crossover_rate = 0.5
         self.mutation_rate = 0.3
@@ -638,6 +640,10 @@ class AttackGenerator:
             return random.random() * 1000
         return self.fitness_calculator.score(run_detail, baseline_ok)
 
+    def _score_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
+        """并行运行多次任务并计算平均得分的同步包装器"""
+        return asyncio.run(self._score_average_parallel(task, attack_tool, baseline_ok, num_runs))
+
     def _score_average(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
         """运行多次任务并计算平均得分"""
         if not IMPORTS_AVAILABLE:
@@ -682,12 +688,69 @@ class AttackGenerator:
         else:
             return 0
 
+    async def _score_average_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
+        """并行运行多次任务并计算平均得分（异步版本）"""
+        if not IMPORTS_AVAILABLE:
+            # 返回模拟分数用于测试
+            return random.random() * 1000
+
+        semaphore = asyncio.Semaphore(3)  # 限制并发任务数
+
+        async def run_single_test(i):
+            """运行单次测试"""
+            async with semaphore:
+                max_retries = 3
+                for attempt in range(max_retries):
+                    print(f"[平均评分-并行] 第 {i+1}/{num_runs} 次运行任务 (尝试 {attempt+1}/{max_retries})")
+                    run = await self.executor.execute_task_with_attack_async(task, attack_tool)
+
+                    # 检查是否为mcp_error
+                    if run.get("status") == "mcp_error":
+                        print(f"[平均评分-并行] 第 {i+1} 次运行遇到mcp_error，正在重试...")
+                        if attempt < max_retries - 1:
+                            await asyncio.sleep(1)  # 短暂延迟后重试
+                            continue
+                        else:
+                            print(f"[平均评分-并行] 第 {i+1} 次运行重试次数已达上限，跳过此运行")
+                            return None
+
+                    # 异步评分
+                    score = await self.fitness_calculator.score_async(run, baseline_ok)
+                    print(f"[平均评分-并行] 第 {i+1} 次运行得分: {score:.2f}")
+                    return score
+
+                return None
+
+        # 并发运行所有测试
+        tasks = [run_single_test(i) for i in range(num_runs)]
+        scores = await asyncio.gather(*tasks)
+
+        # 过滤掉失败的运行
+        valid_scores = [s for s in scores if s is not None]
+
+        if valid_scores:
+            average_score = sum(valid_scores) / len(valid_scores)
+            print(f"[平均评分-并行] {len(valid_scores)}/{num_runs} 次运行成功，平均得分: {average_score:.2f}")
+            return average_score
+        else:
+            print(f"[平均评分-并行] 所有运行都失败，返回0")
+            return 0
+
     def _baseline_assessment(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
-        """运行多次无攻击任务并同时计算成功率和平均分数"""
+        """运行多次无攻击任务并同时计算成功率和平均分数（同步版本）"""
         if not IMPORTS_AVAILABLE:
             # 返回模拟数据用于测试
             return True, random.random() * 100
 
+        # 根据配置选择使用串行或并行版本
+        if hasattr(self, 'use_parallel_scoring') and self.use_parallel_scoring:
+            coroutine = self._baseline_assessment_parallel(task, num_runs, max_retries)
+            return asyncio.run(coroutine)
+        else:
+            return self._baseline_assessment_serial(task, num_runs, max_retries)
+
+    def _baseline_assessment_serial(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
+        """运行多次无攻击任务并同时计算成功率和平均分数（串行版本）"""
         success_count = 0
         scores = []
         total_attempts = 0
@@ -752,6 +815,85 @@ class AttackGenerator:
         # 如果所有运行都失败了，返回特殊标记
         if success_count == 0 and len(scores) == 0:
             print(f"[基线评估] 所有运行都失败，标记任务为跳过")
+            return None, 0  # 返回None表示应该跳过任务
+
+        return baseline_ok, average_score
+
+    async def _baseline_assessment_parallel(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
+        """运行多次无攻击任务并同时计算成功率和平均分数（并行版本）"""
+        semaphore = asyncio.Semaphore(3)  # 限制并发数
+
+        async def run_single_baseline(i):
+            """运行单次基线评估"""
+            async with semaphore:
+                for attempt in range(max_retries):
+                    print(f"[基线评估-并行] 第 {i+1}/{num_runs} 次运行无攻击任务 (尝试 {attempt+1}/{max_retries})")
+                    base = await self.executor.execute_task_without_attack_async(task)
+
+                    # 检查是否为mcp_error
+                    if base.get("status") == "mcp_error":
+                        print(f"[基线评估-并行] 第 {i+1} 次运行遇到mcp_error，正在重试...")
+                        if attempt < max_retries - 1:
+                            await asyncio.sleep(1)  # 短暂延迟后重试
+                            continue
+                        else:
+                            print(f"[基线评估-并行] 第 {i+1} 次运行重试次数已达上限，跳过此运行")
+                            return None
+
+                    # 计算分数（临时使用baseline_ok=True来计算分数）
+                    score = await self.fitness_calculator.score_async(base, True)
+
+                    # 返回结果和状态
+                    return {
+                        "status": base.get("status"),
+                        "score": score
+                    }
+
+                return None
+
+        # 并发运行所有基线评估
+        tasks = [run_single_baseline(i) for i in range(num_runs)]
+        results = await asyncio.gather(*tasks)
+
+        # 处理结果
+        success_count = 0
+        scores = []
+        valid_results = 0
+
+        for i, result in enumerate(results):
+            if result is None:
+                print(f"[基线评估-并行] 第 {i+1} 次运行完全失败")
+                continue
+
+            valid_results += 1
+
+            # 计算成功率
+            if result["status"] == "success":
+                success_count += 1
+                print(f"[基线评估-并行] 第 {i+1} 次运行成功")
+            else:
+                print(f"[基线评估-并行] 第 {i+1} 次运行失败")
+
+            # 收集分数
+            scores.append(result["score"])
+            print(f"[基线评分-并行] 第 {i+1} 次运行得分: {result['score']:.2f}")
+
+        # 计算成功率
+        success_rate = success_count / num_runs if num_runs > 0 else 0
+        print(f"[基线评估-并行] {success_count}/{num_runs} 次运行成功，成功率为: {success_rate:.2f}")
+        baseline_ok = success_rate >= 0.5  # 如果成功率大于等于0.5，认为baseline是成功的
+
+        # 计算平均分数
+        if scores:
+            average_score = sum(scores) / len(scores)
+            print(f"[基线评分-并行] {len(scores)} 次运行平均得分: {average_score:.2f}")
+        else:
+            average_score = 0
+            print(f"[基线评分-并行] 没有成功运行，平均得分为: {average_score:.2f}")
+
+        # 如果所有运行都失败了，返回特殊标记
+        if success_count == 0 and len(scores) == 0:
+            print(f"[基线评估-并行] 所有运行都失败，标记任务为跳过")
             return None, 0  # 返回None表示应该跳过任务
 
         return baseline_ok, average_score
@@ -1313,8 +1455,11 @@ class AttackGenerator:
                 child_tool_name = child_tool.get('name', f'child_cx_{i}')
                 print(f"[GA迭代 {it+1}] 交叉子代 {i+1}/{crossover_count}: {child_tool_name}")
 
-                # 评分：直接用平均分函数
-                avg_score = self._score_average(task, child_tool, baseline_ok, num_runs=3)
+                # 根据配置选择使用串行或并行评分
+                if self.use_parallel_scoring:
+                    avg_score = self._score_parallel(task, child_tool, baseline_ok, num_runs=3)
+                else:
+                    avg_score = self._score_average(task, child_tool, baseline_ok, num_runs=3)
                 child_tool['score'] = avg_score
                 print(f"[GA迭代 {it+1}] 交叉子代 {child_tool_name} 平均分: {avg_score:.2f}")
 
@@ -1347,7 +1492,11 @@ class AttackGenerator:
                 mutated_name = mutated_tool.get('name', f'child_mut_{i}')
                 print(f"[GA迭代 {it+1}] 变异子代 {i+1}/{mutation_count}: {mutated_name}")
 
-                avg_score = self._score_average(task, mutated_tool, baseline_ok, num_runs=3)
+                # 根据配置选择使用串行或并行评分
+                if self.use_parallel_scoring:
+                    avg_score = self._score_parallel(task, mutated_tool, baseline_ok, num_runs=3)
+                else:
+                    avg_score = self._score_average(task, mutated_tool, baseline_ok, num_runs=3)
                 mutated_tool['score'] = avg_score
                 print(f"[GA迭代 {it+1}] 变异子代 {mutated_name} 平均分: {avg_score:.2f}")
 

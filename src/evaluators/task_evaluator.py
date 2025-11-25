@@ -61,9 +61,7 @@ async def judge_task_completion(
     失败会固定等待 retry_delay 秒后重试
     """
 
-    # 暂时不使用传入的 api_key 和 api_base，保持原有逻辑
-    # api_key = "sk-2KYtn72eVUa8DuBeBZvTODCvKyVOT2LeCLVrNyZU9Bq2EXcD"
-    # api_base = "https://api.shredder.money/v1"
+
     api_key = os.getenv("OPENAI_API_KEY")
     api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
     if not api_key:
