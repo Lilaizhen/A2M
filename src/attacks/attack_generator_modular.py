@@ -171,7 +171,6 @@ class AttackGenerator:
         self.top_k = top_k
         self.use_parallel_scoring = use_parallel_scoring  # 保存并行评分配置
         self.llm_concurrent_limit = llm_concurrent_limit  # LLM 最大并发数（API速率限制）
-        self.llm_semaphore = asyncio.Semaphore(llm_concurrent_limit)  # LLM 并发控制器
         self.elite_rate = 0.2
         self.crossover_rate = 0.5
         self.mutation_rate = 0.3
@@ -241,10 +240,19 @@ class AttackGenerator:
             # 为每个候选工具单独生成prompt并调用API
             candidates = []
             candidate_count = self.candidate_count if k == 4 else k  # 如果k是默认值4，则使用self.candidate_count
+            llm_semaphore = asyncio.Semaphore(self.llm_concurrent_limit)  # 创建 LLM 并发控制器（所有候选共享）
 
             async def generate_single_candidate(i):
                 """生成单个候选"""
-                async with self.llm_semaphore:  # 使用 LLM 并发控制器
+                import time
+                start_time = time.time()
+                print(f"[并发生成] 候选 {i+1}/{candidate_count} 等待信号量... ({time.strftime('%H:%M:%S')})")
+
+                async with llm_semaphore:  # 使用共享的并发控制器
+                    acquire_time = time.time()
+                    wait_time = acquire_time - start_time
+                    print(f"[并发生成] 候选 {i+1} 获取信号量成功 (等待{wait_time:.2f}s)，开始调用LLM...")
+
                     prompt = self.prompt_generator.generate_initial_prompt(task, self.attack_type)
 
                     # 如果提供了top_k_examples，将其作为参考示例加入prompt中
@@ -280,7 +288,7 @@ class AttackGenerator:
                                 max_retries=3,
                             )
                             txt = llm.invoke(prompt).content.strip()
-
+                            print("debug:"+txt)
                             # 处理可能的 markdown 代码块格式
                             if txt.startswith("```json"):
                                 txt = txt[7:]
@@ -304,6 +312,10 @@ class AttackGenerator:
                             if not candidate['name'] or not candidate['description']:
                                 raise ValueError("生成的候选缺少 name 或 description")
 
+                            end_time = time.time()
+                            total_time = end_time - start_time
+                            print(f"[并发生成] 候选 {i+1} 生成完成: {candidate['name']} (总耗时{total_time:.2f}s)")
+
                             return candidate
 
                         except Exception as e:
@@ -316,11 +328,23 @@ class AttackGenerator:
                     return None
 
             # 并发生成所有候选
+            print(f"[并发生成] 启动 {candidate_count} 个并发任务 (最大并发数: {self.llm_concurrent_limit})")
+            batch_start_time = time.time()
+
             tasks = [generate_single_candidate(i) for i in range(candidate_count)]
             results = await asyncio.gather(*tasks)
 
+            batch_end_time = time.time()
+            batch_duration = batch_end_time - batch_start_time
+
             # 过滤掉失败的生成
             candidates = [c for c in results if c is not None]
+
+            print(f"[并发生成] 批量生成完成: {len(candidates)}/{candidate_count} 个成功 (总耗时: {batch_duration:.2f}s)")
+            if len(candidates) > 0:
+                avg_time_per_candidate = batch_duration / len(candidates)
+                print(f"[并发生成] 平均每个耗时: {avg_time_per_candidate:.2f}s (预期串行耗时: {avg_time_per_candidate * candidate_count:.2f}s，节省: {(1 - batch_duration/(avg_time_per_candidate * candidate_count))*100:.1f}%)")
+
             return candidates
 
 
@@ -400,7 +424,8 @@ class AttackGenerator:
                 "return_value": {"result": "crossover_result"}
             }
 
-        async with self.llm_semaphore:  # 使用 LLM 并发控制器
+        llm_semaphore = asyncio.Semaphore(self.llm_concurrent_limit)  # 创建 LLM 并发控制器
+        async with llm_semaphore:  # 使用 LLM 并发控制器
             # 生成专门用于交叉变异的提示
             crossover_prompt = self.prompt_generator.generate_crossover_prompt(
                 task, parent1, parent2, execution_feedback1, execution_feedback2, self.attack_type
@@ -537,7 +562,8 @@ class AttackGenerator:
                 "return_value": {"result": "mutated_result"}
             }
 
-        async with self.llm_semaphore:  # 使用 LLM 并发控制器
+        llm_semaphore = asyncio.Semaphore(self.llm_concurrent_limit)  # 创建 LLM 并发控制器
+        async with llm_semaphore:  # 使用 LLM 并发控制器
             # 使用PromptGenerator生成针对特定攻击类型的完整变异prompt
             mutate_prompt = self.prompt_generator.generate_mutate_prompt(task, attack_tool, execution_feedback, self.attack_type)
 
