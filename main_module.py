@@ -650,7 +650,7 @@ async def main(
         openai_api_key=api_key,
         openai_api_base=api_base,
         model=model_name,
-        streaming=True,
+        streaming=False,
         temperature=0.0,
         timeout=100,  # 业务 LLM 100s
         max_retries=1,

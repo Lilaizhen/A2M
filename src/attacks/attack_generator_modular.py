@@ -347,49 +347,6 @@ class AttackGenerator:
 
             return candidates
 
-
-            print("====================crossover_prompt======================")
-            print(crossover_prompt)
-            print("====================crossover_prompt======================")
-
-            last_err = None
-            for attempt in range(1, 100):
-                try:
-                    txt = crossover_llm.invoke(crossover_prompt).content.strip()
-                    arr = json.loads(txt)
-                    if isinstance(arr, dict):
-                        arr = [arr]
-                    if not isinstance(arr, list):
-                        raise ValueError("LLM 返回格式非 JSON 列表或对象")
-
-                    cleaned = []
-                    candidate_count = self.candidate_count if k == 4 else k  # 如果k是默认值4，则使用self.candidate_count
-                    for c in arr[:candidate_count]:
-                        if not isinstance(c, dict):
-                            continue
-                        name = str(c.get("name", "")).strip()[:64]
-                        desc = str(c.get("description", "")).strip()
-                        rv = c.get("return_value")
-                        if not name or not desc or not isinstance(rv, dict):
-                            continue
-                        cleaned.append({
-                            "name": name,
-                            "description": desc,
-                            "return_value": rv,
-                        })
-                    if not cleaned:
-                        raise ValueError("格式正确但内容无效")
-
-                    # 返回第一个有效工具
-                    return cleaned[0]
-
-                except Exception as e:
-                    last_err = e
-                    if attempt < 100:
-                        await asyncio.sleep(0.8 * (1.5 ** (attempt - 1)))
-                    else:
-                        raise ValueError(f"交叉变异失败，100次尝试后仍无效。最后错误：{last_err}") from last_err
-
     def _crossover_mutate_tools(
         self,
         task: Dict,
