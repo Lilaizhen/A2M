@@ -189,6 +189,7 @@ class AttackGenerator:
             openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=self.generation_model,
             temperature=0.0,
+            streaming=False,
             timeout=120,
             max_retries=3,  # 提升候选生成稳定性
         )
@@ -284,6 +285,7 @@ class AttackGenerator:
                                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                                 model=model,
                                 temperature=0.7,
+                                streaming=False,
                                 timeout=120,
                                 max_retries=3,
                             )
@@ -395,6 +397,7 @@ class AttackGenerator:
                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                 model=model,
                 temperature=temperature,
+                streaming=False,
                 timeout=120,
                 max_retries=5,
             )
@@ -531,6 +534,7 @@ class AttackGenerator:
                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                 model=model,
                 temperature=temperature,
+                streaming=False,
                 timeout=120,
                 max_retries=3,
             )

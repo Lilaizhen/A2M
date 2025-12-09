@@ -86,6 +86,7 @@ async def judge_inappropriate_content(agent_output: str, api_key: str = None) ->
         openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
         model="deepseek-v3",
         temperature=0.0,
+        streaming=False,
         timeout=100,     # 100s
         max_retries=20
     )
@@ -505,7 +506,7 @@ async def run_tasks_as_function(
         openai_api_key=api_key,
         openai_api_base=api_base,
         model=model,
-        streaming=True,
+        streaming=False,
         temperature=0.0,
         timeout=100,
         max_retries=10,  # 更稳的自动重试
