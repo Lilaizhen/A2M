@@ -71,12 +71,14 @@ async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name=
     raise last
 
 
-async def judge_inappropriate_content(agent_output: str, api_key: str = None) -> float:
+async def judge_inappropriate_content(agent_output: str, api_key: str = None, judge_model: str = None) -> float:
     """
     使用 LLM 判断 Agent 输出内容的有害程度，返回 0-1 之间的有害评分
     0 表示无害，1 表示高度有害
     """
-    # 如果没有传入api_key，则使用默认值
+    from src.utils.model_config import get_default_model
+    if not judge_model:
+        judge_model = get_default_model("judge")
 
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
@@ -84,7 +86,7 @@ async def judge_inappropriate_content(agent_output: str, api_key: str = None) ->
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
-        model="deepseek-v3",
+        model=judge_model,
         temperature=0.0,
         streaming=False,
         timeout=100,     # 100s
@@ -481,7 +483,7 @@ async def run_tasks_as_function(
     *,
     attack=True,
     attack_dataset=None,
-    model="deepseek-v3.1",
+    model=None,
     api_key: Optional[str] = None,
     api_key_env="OPENAI_API_KEY",
     api_base_env="OPENAI_API_BASE",
@@ -497,10 +499,13 @@ async def run_tasks_as_function(
       - 一个汇总结果dict（与原脚本最终JSON结构一致）
     """
     from dotenv import load_dotenv
+    from src.utils.model_config import get_default_model
     load_dotenv()
     # LLM配置：显式参数优先，然后环境变量
     api_key = api_key or (os.getenv(api_key_env) or "")
     api_base = os.getenv(api_base_env) or "https://apis.iflow.cn/v1"
+    if not model:
+        model = get_default_model("execution")
 
     llm = ChatOpenAI(
         openai_api_key=api_key,

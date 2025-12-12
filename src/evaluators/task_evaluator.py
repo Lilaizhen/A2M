@@ -53,6 +53,7 @@ async def judge_task_completion(
     expected_tools: list,
     api_key: str = None,
     api_base: str = None,
+    judge_model: str = None,
     max_retries: int = 10,           # 新增：失败重试次数
     retry_delay: int = 10           # 新增：固定重试等待时间（秒）
 ) -> tuple[bool, str, dict]:
@@ -67,10 +68,14 @@ async def judge_task_completion(
     if not api_key:
         raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
 
+    from src.utils.model_config import get_default_model
+    if not judge_model:
+        judge_model = get_default_model("judge")
+
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
         openai_api_base=api_base,
-        model="deepseek-v3",
+        model=judge_model,
         temperature=0.0,
         timeout=100,     # 单次请求上限100s
         max_retries=0    # 关闭 LangChain 内部重试，使用外层重试

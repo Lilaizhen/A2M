@@ -4,6 +4,7 @@ import os
 import shutil
 from main_module import main as main_function
 from src.data_loaders.data_loader import load_dataset
+from src.utils.model_config import resolve_model, get_default_model
 
 def reset_annotated_data():
     """重置annotated_data文件夹到备份状态"""
@@ -33,7 +34,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--attack", action="store_true", help="启用攻击模式 (mytool MCP server)")
     parser.add_argument("--attack-dataset", type=str, help="attack数据集路径")
-    parser.add_argument("--model", type=str, default="ZhipuAI/GLM-4.6", help="指定使用的模型名称")
+    parser.add_argument("--model", type=str, default=None, help="指定使用的模型名称(支持别名)")
+    parser.add_argument("--judge-model", type=str, default=None, help="裁判模型名称")
     args = parser.parse_args()
 
     # 路径映射
@@ -47,8 +49,19 @@ if __name__ == "__main__":
     dataset = load_dataset(data_path)
     
     if dataset:
+        # 解析模型名称
+        model_name = resolve_model(args.model) if args.model else get_default_model("agent")
+        judge_model = resolve_model(args.judge_model) if args.judge_model else get_default_model("judge")
+
         # 重置annotated_data文件夹
         reset_annotated_data()
-        asyncio.run(main_function(dataset, attack=args.attack, attack_dataset_path=args.attack_dataset, model_name=args.model, dataset_type=args.dataset))
+        asyncio.run(main_function(
+            dataset,
+            attack=args.attack,
+            attack_dataset_path=args.attack_dataset,
+            model_name=model_name,
+            judge_model=judge_model,
+            dataset_type=args.dataset
+        ))
     else:
         print("错误: 没有找到任何有效的数据集文件")

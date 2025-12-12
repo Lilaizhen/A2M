@@ -67,9 +67,10 @@ sys.path.append('.')
 class PromptGenerator:
     """专门用于生成完整大段攻击场景prompt的类"""
 
-    def __init__(self, api_key: Optional[str] = None, generation_model: str = "glm-4.6"):
+    def __init__(self, api_key: Optional[str] = None, generation_model: str = None):
+        from src.utils.model_config import get_default_model
         self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self.generation_model = generation_model
+        self.generation_model = generation_model or get_default_model("generation")
         # 初始化各个场景处理器
         self.resource_waste_scenario = ResourceWasteScenario()
         self.task_failure_scenario = TaskFailureScenario()
@@ -157,15 +158,16 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = "deepseek-v3.1", generation_model: str = "glm-4.6", mutation_model: str = "glm-4.6", mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2):
+        from src.utils.model_config import get_default_model
         print("使用函数化真实执行器")
         self.api_key = api_key
         self.attack_type = attack_type
         self.score_threshold = score_threshold
         self.candidate_count = candidate_count
-        self.execution_model = execution_model
-        self.generation_model = generation_model
-        self.mutation_model = mutation_model
+        self.execution_model = execution_model or get_default_model("execution")
+        self.generation_model = generation_model or get_default_model("generation")
+        self.mutation_model = mutation_model or get_default_model("mutation")
         self.mutation_strategy = mutation_strategy
         self.parent_selection_strategy = parent_selection_strategy
         self.top_k = top_k
@@ -2098,13 +2100,13 @@ def main():
     # 新增：候选数量参数
     parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=5,
                         help="生成的候选工具数量 (默认: 5)")
-    # 新增：模型参数
-    parser.add_argument("--execution-model", dest="execution_model", default="glm-4.6",
-                        help="执行任务的模型 (默认: deepseek-v3.1)")
-    parser.add_argument("--generation-model", dest="generation_model", default="glm-4.6",
-                        help="生成候选工具的模型 (默认: glm-4.6)")
-    parser.add_argument("--mutation-model", dest="mutation_model", default="glm-4.6",
-                        help="变异工具的模型 (默认: glm-4.6)")
+    # 新增：模型参数 (默认从configs/models.json读取)
+    parser.add_argument("--execution-model", dest="execution_model", default=None,
+                        help="执行任务的模型")
+    parser.add_argument("--generation-model", dest="generation_model", default=None,
+                        help="生成候选工具的模型")
+    parser.add_argument("--mutation-model", dest="mutation_model", default=None,
+                        help="变异工具的模型")
     # 新增：变异策略选择
     parser.add_argument("--mutation-strategy", dest="mutation_strategy", default="crossover",
                         choices=["crossover", "single"],

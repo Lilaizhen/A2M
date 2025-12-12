@@ -131,7 +131,8 @@ async def main(
     dataset,
     attack: bool = True,
     attack_dataset_path: str = None,
-    model_name: str = "glm-4.5",
+    model_name: str = None,
+    judge_model: str = None,
     dataset_type: str = "all",
 ):
     # 重试执行单个任务的函数
@@ -530,6 +531,7 @@ async def main(
                             agent_behavior=behavior_text,
                             task_description=task_desc,
                             expected_tools=expected_tools,
+                            judge_model=judge_model,
                         )
                 else:
                     log_and_echo("⚠️  跳过任务完成度判断（缺少必要信息）")
