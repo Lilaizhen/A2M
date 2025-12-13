@@ -1015,8 +1015,8 @@ class AttackGenerator:
                 else:
                     print(f"[基线评估] 第 {i+1} 次运行失败")
 
-                # 计算分数（临时使用baseline_ok=True来计算分数）
-                score = self._score(base, True)
+                # 计算分数（baseline评估不考虑任务成功）
+                score = self.fitness_calculator.score(base, True, is_baseline=True)
                 scores.append(score)
                 print(f"[基线评分] 第 {i+1} 次运行得分: {score:.2f}")
                 run_success = True
@@ -1072,8 +1072,8 @@ class AttackGenerator:
                             print(f"[基线评估-并行] 第 {i+1} 次运行重试次数已达上限，跳过此运行")
                             return None
 
-                    # 计算分数（临时使用baseline_ok=True来计算分数）
-                    score = await self.fitness_calculator.score_async(base, True)
+                    # 计算分数（baseline评估不考虑任务成功）
+                    score = await self.fitness_calculator.score_async(base, True, is_baseline=True)
 
                     # 返回结果和状态
                     return {
