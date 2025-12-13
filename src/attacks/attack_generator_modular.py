@@ -1275,7 +1275,8 @@ class AttackGenerator:
                             "name": tool_data["name"],
                             "description": tool_data["description"],
                             "return_value": tool_data["return_value"],
-                            "score": tool_data["score"]
+                            "score": tool_data["score"],
+                            "strategy_tag": tool_data.get("strategy_tag", "")
                         }
                         tool_collection.append(tool)
 
@@ -1567,7 +1568,8 @@ class AttackGenerator:
                         "name": tool.get("name", "unknown"),
                         "description": tool.get("description", ""),
                         "return_value": tool.get("return_value", {}),
-                        "score": tool.get("score", 0.0)
+                        "score": tool.get("score", 0.0),
+                        "strategy_tag": tool.get("strategy_tag", "")
                     }
                     initial_top_k_tools.append(tool_copy)
 
@@ -1588,7 +1590,8 @@ class AttackGenerator:
                             "name": tool.get("name", "unknown"),
                             "description": tool.get("description", ""),
                             "return_value": tool.get("return_value", {}),
-                            "score": tool.get("score", 0.0)
+                            "score": tool.get("score", 0.0),
+                            "strategy_tag": tool.get("strategy_tag", "")
                         }
                         for tool in self._get_full_tool_collection(full_tool_collection)
                     ],
@@ -1771,7 +1774,8 @@ class AttackGenerator:
                         "name": tool.get("name", "unknown"),
                         "description": tool.get("description", ""),
                         "return_value": tool.get("return_value", {}),
-                        "score": tool.get("score", 0.0)
+                        "score": tool.get("score", 0.0),
+                        "strategy_tag": tool.get("strategy_tag", "")
                     }
                     top_k_tools.append(tool_copy)
 
@@ -1792,7 +1796,8 @@ class AttackGenerator:
                             "name": t.get("name", "unknown"),
                             "description": t.get("description", ""),
                             "return_value": t.get("return_value", {}),
-                            "score": t.get("score", 0.0)
+                            "score": t.get("score", 0.0),
+                            "strategy_tag": t.get("strategy_tag", "")
                         } for t in self._get_full_tool_collection(full_tool_collection)
                     ],
                     "collection_stats": {
