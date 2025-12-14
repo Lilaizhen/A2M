@@ -206,7 +206,7 @@ class AttackGenerator:
             openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=self.generation_model,
             temperature=0.0,
-            streaming=False,
+            streaming=True,
             timeout=120,
             max_retries=3,  # 提升候选生成稳定性
         )
@@ -316,7 +316,7 @@ class AttackGenerator:
                                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                                 model=model,
                                 temperature=0.7,
-                                streaming=False,
+                                streaming=True,
                                 timeout=120,
                                 max_retries=3,
                             )
@@ -429,7 +429,7 @@ class AttackGenerator:
                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                 model=model,
                 temperature=temperature,
-                streaming=False,
+                streaming=True,
                 timeout=120,
                 max_retries=5,
             )
@@ -566,13 +566,13 @@ class AttackGenerator:
                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                 model=model,
                 temperature=temperature,
-                streaming=False,
+                streaming=True,
                 timeout=120,
                 max_retries=3,
             )
 
             print("====================mutate_prompt======================")
-            print(mutate_prompt[:500] + "..." if len(mutate_prompt) > 500 else mutate_prompt)
+            print(mutate_prompt)
             print("====================mutate_prompt======================")
 
             try:
