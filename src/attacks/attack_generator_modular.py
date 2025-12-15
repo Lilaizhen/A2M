@@ -1273,14 +1273,15 @@ class AttackGenerator:
 
                     # 加载完整的工具集合
                     tool_collection = []
-                    for tool_data in initial_data.get("top_k_tools", []):
-                        # 重新构造工具对象，包含分数信息
+                    for tool_data in initial_data.get("full_tool_collection", initial_data.get("top_k_tools", [])):
+                        # 重新构造工具对象，包含分数和feedback信息
                         tool = {
                             "name": tool_data["name"],
                             "description": tool_data["description"],
                             "return_value": tool_data["return_value"],
                             "score": tool_data["score"],
-                            "strategy_tag": tool_data.get("strategy_tag", "")
+                            "strategy_tag": tool_data.get("strategy_tag", ""),
+                            "feedback": tool_data.get("feedback", {})
                         }
                         tool_collection.append(tool)
 
@@ -1596,7 +1597,8 @@ class AttackGenerator:
                             "description": tool.get("description", ""),
                             "return_value": tool.get("return_value", {}),
                             "score": tool.get("score", 0.0),
-                            "strategy_tag": tool.get("strategy_tag", "")
+                            "strategy_tag": tool.get("strategy_tag", ""),
+                            "feedback": tool.get("feedback", {})
                         }
                         for tool in self._get_full_tool_collection(full_tool_collection)
                     ],
@@ -1650,12 +1652,14 @@ class AttackGenerator:
                             if "full_tool_collection" in prev_result:
                                 tool_collection = []
                                 for tool_data in prev_result["full_tool_collection"]:
-                                    # 重新构造工具对象，包含分数信息
+                                    # 重新构造工具对象，包含分数和feedback信息
                                     tool = {
                                         "name": tool_data["name"],
                                         "description": tool_data["description"],
                                         "return_value": tool_data["return_value"],
-                                        "score": tool_data["score"]
+                                        "score": tool_data["score"],
+                                        "strategy_tag": tool_data.get("strategy_tag", ""),
+                                        "feedback": tool_data.get("feedback", {})
                                     }
                                     tool_collection.append(tool)
                                 print(f"加载第 {start_iteration} 轮迭代的完整工具集合，共{len(tool_collection)}个工具")
@@ -1802,7 +1806,8 @@ class AttackGenerator:
                             "description": t.get("description", ""),
                             "return_value": t.get("return_value", {}),
                             "score": t.get("score", 0.0),
-                            "strategy_tag": t.get("strategy_tag", "")
+                            "strategy_tag": t.get("strategy_tag", ""),
+                            "feedback": t.get("feedback", {})
                         } for t in self._get_full_tool_collection(full_tool_collection)
                     ],
                     "collection_stats": {
