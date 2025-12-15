@@ -172,7 +172,7 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2, use_strategy_tags: bool = False):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2, use_strategy_tags: bool = False, use_execution_trace: bool = False):
         from src.utils.model_config import get_default_model
         print("使用函数化真实执行器")
         self.api_key = api_key
@@ -183,14 +183,15 @@ class AttackGenerator:
         self.generation_model = generation_model or get_default_model("generation")
         self.mutation_model = mutation_model or get_default_model("mutation")
         self.use_strategy_tags = use_strategy_tags
+        self.use_execution_trace = use_execution_trace
         self.mutation_strategy = mutation_strategy
         self.parent_selection_strategy = parent_selection_strategy
         self.top_k = top_k
         self.use_parallel_scoring = use_parallel_scoring  # 保存并行评分配置
         self.llm_concurrent_limit = llm_concurrent_limit  # LLM 最大并发数（API速率限制）
-        self.elite_rate = 0.2
-        self.crossover_rate = 0.5
-        self.mutation_rate = 0.3
+        self.elite_rate = 0.3
+        self.crossover_rate = 0.0
+        self.mutation_rate = 0.7
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
         self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key)
         self.prompt_generator = PromptGenerator(api_key=api_key, generation_model=generation_model)
@@ -206,7 +207,7 @@ class AttackGenerator:
             openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
             model=self.generation_model,
             temperature=0.0,
-            streaming=True,
+            streaming=False,
             timeout=120,
             max_retries=3,  # 提升候选生成稳定性
         )
@@ -316,7 +317,7 @@ class AttackGenerator:
                                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                                 model=model,
                                 temperature=0.7,
-                                streaming=True,
+                                streaming=False,
                                 timeout=120,
                                 max_retries=3,
                             )
@@ -429,7 +430,7 @@ class AttackGenerator:
                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                 model=model,
                 temperature=temperature,
-                streaming=True,
+                streaming=False,
                 timeout=120,
                 max_retries=5,
             )
@@ -566,7 +567,7 @@ class AttackGenerator:
                 openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
                 model=model,
                 temperature=temperature,
-                streaming=True,
+                streaming=False,
                 timeout=120,
                 max_retries=3,
             )
@@ -654,8 +655,9 @@ class AttackGenerator:
         crossover_tasks = []
         for i in range(crossover_count):
             parent1, parent2 = self._select_parents(tool_collection, i + 1)
-            feedback1 = parent1.get('feedback')
-            feedback2 = parent2.get('feedback')
+            # 根据配置决定是否使用执行轨迹
+            feedback1 = parent1.get('feedback') if self.use_execution_trace else None
+            feedback2 = parent2.get('feedback') if self.use_execution_trace else None
 
             # 创建交叉任务
             task_coro = self._crossover_mutate_tools_async(
@@ -712,7 +714,8 @@ class AttackGenerator:
         mutation_tasks = []
         for i in range(mutation_count):
             parent_elite = elites[i % len(elites)]
-            elite_feedback = parent_elite.get('feedback', {})
+            # 根据配置决定是否使用执行轨迹
+            elite_feedback = parent_elite.get('feedback', {}) if self.use_execution_trace else {}
 
             # 创建变异任务
             task_coro = self._mutate_attack_tool_async(
@@ -938,6 +941,7 @@ class AttackGenerator:
                         if test_success and valid_runs > 0:
                             average_score = total_score / valid_runs
                             candidate['score'] = average_score
+                            candidate['feedback'] = run_first  # 保存执行反馈用于变异
                             print(f"[初始候选-并行评估] 候选 {candidate_name} 三次平均分数 {average_score:.2f}，有效")
                             return candidate, True
                         else:
@@ -1420,6 +1424,7 @@ class AttackGenerator:
                                 if test_success and valid_runs > 0:
                                     average_score = total_score / valid_runs
                                     c['score'] = average_score
+                                    c['feedback'] = run_first  # 保存执行反馈用于变异
                                     candidates.append(c)
                                     print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f}，保留 (第{len(candidates)}个)")
                                     run_success = True
@@ -2156,6 +2161,9 @@ def main():
     # 新增：策略标签参数
     parser.add_argument("--use-strategy-tags", dest="use_strategy_tags", action="store_true",
                         help="启用策略标签，将种子分为权威性/急迫性/综合性/相关性四类")
+    # 新增：执行轨迹参数
+    parser.add_argument("--use-execution-trace", dest="use_execution_trace", action="store_true",
+                        help="启用执行轨迹，变异时使用执行结果和详细信息")
 
     args = parser.parse_args()
 
@@ -2170,7 +2178,7 @@ def main():
         print(f"错误: 无效的攻击场景类型: {args.attack_type}")
         sys.exit(1)
 
-    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags)
+    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace)
 
     print("正在加载输入数据集...")
     input_dataset = generator.load_dataset(args.input)
