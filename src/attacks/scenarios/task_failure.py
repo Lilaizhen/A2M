@@ -72,6 +72,7 @@ class TaskFailureScenario:
 执行时间: {execution_feedback.get('execution_time_seconds', 0)}秒
 任务完成状态: {execution_feedback.get('status', 'unknown')}
 任务完成率: {execution_feedback.get('task_completion_rate', 'unknown')}
+攻击失败原因: {execution_feedback.get('failure_reason', '无')}
 
 真实的执行链路：
 {formatted_trace}
