@@ -748,12 +748,12 @@ class AttackGenerator:
 
         return mutation_children, current_best_score, current_best_tool
 
-    def _score(self, run_detail: Dict, baseline_ok: bool) -> float:
+    def _score(self, run_detail: Dict, baseline_ok: bool, attack_tool: Dict = None) -> tuple:
         """使用模块化的适应度计算器计算分数"""
         if not IMPORTS_AVAILABLE:
             # 返回模拟分数用于测试
-            return random.random() * 1000
-        return self.fitness_calculator.score(run_detail, baseline_ok)
+            return random.random() * 1000, ""
+        return self.fitness_calculator.score(run_detail, baseline_ok, attack_tool=attack_tool)
 
     def _score_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
         """并行运行多次任务并计算平均得分的同步包装器"""
@@ -830,7 +830,7 @@ class AttackGenerator:
                             return None
 
                     # 异步评分
-                    score = await self.fitness_calculator.score_async(run, baseline_ok)
+                    score, _ = await self.fitness_calculator.score_async(run, baseline_ok, attack_tool=attack_tool)
                     print(f"[平均评分-并行] 第 {i+1} 次运行得分: {score:.2f}")
                     return score
 
@@ -896,7 +896,7 @@ class AttackGenerator:
 
                     # 如果第一次运行成功，进行额外两次测试
                     if run_first.get("status") != "error":
-                        first_score = await self.fitness_calculator.score_async(run_first, baseline_ok)
+                        first_score, first_reason = await self.fitness_calculator.score_async(run_first, baseline_ok, attack_tool=candidate)
                         print(f"[初始候选-并行评估] 候选 {candidate_name} 第1次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
 
                         # 进行额外两次测试以获取更稳定的分数
@@ -921,7 +921,7 @@ class AttackGenerator:
                                         break
 
                                 if run.get("status") != "error":
-                                    score = await self.fitness_calculator.score_async(run, baseline_ok)
+                                    score, _ = await self.fitness_calculator.score_async(run, baseline_ok, attack_tool=candidate)
                                     total_score += score
                                     valid_runs += 1
                                     print(f"[初始候选-并行评估] 候选 {candidate_name} 第{test_num+2}次分数: {score:.2f}")
@@ -941,6 +941,7 @@ class AttackGenerator:
                         if test_success and valid_runs > 0:
                             average_score = total_score / valid_runs
                             candidate['score'] = average_score
+                            run_first['failure_reason'] = first_reason  # 保存攻击失败原因
                             candidate['feedback'] = run_first  # 保存执行反馈用于变异
                             print(f"[初始候选-并行评估] 候选 {candidate_name} 三次平均分数 {average_score:.2f}，有效")
                             return candidate, True
@@ -1020,7 +1021,7 @@ class AttackGenerator:
                     print(f"[基线评估] 第 {i+1} 次运行失败")
 
                 # 计算分数（baseline评估不考虑任务成功）
-                score = self.fitness_calculator.score(base, True, is_baseline=True)
+                score, _ = self.fitness_calculator.score(base, True, is_baseline=True)
                 scores.append(score)
                 print(f"[基线评分] 第 {i+1} 次运行得分: {score:.2f}")
                 run_success = True
@@ -1077,7 +1078,7 @@ class AttackGenerator:
                             return None
 
                     # 计算分数（baseline评估不考虑任务成功）
-                    score = await self.fitness_calculator.score_async(base, True, is_baseline=True)
+                    score, _ = await self.fitness_calculator.score_async(base, True, is_baseline=True)
 
                     # 返回结果和状态
                     return {
