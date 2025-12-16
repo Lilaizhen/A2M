@@ -172,7 +172,7 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2, use_strategy_tags: bool = False, use_execution_trace: bool = False):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2, use_strategy_tags: bool = False, use_execution_trace: bool = False, require_task_success: bool = True):
         from src.utils.model_config import get_default_model
         print("使用函数化真实执行器")
         self.api_key = api_key
@@ -184,6 +184,7 @@ class AttackGenerator:
         self.mutation_model = mutation_model or get_default_model("mutation")
         self.use_strategy_tags = use_strategy_tags
         self.use_execution_trace = use_execution_trace
+        self.require_task_success = require_task_success
         self.mutation_strategy = mutation_strategy
         self.parent_selection_strategy = parent_selection_strategy
         self.top_k = top_k
@@ -193,7 +194,7 @@ class AttackGenerator:
         self.crossover_rate = 0.0
         self.mutation_rate = 0.7
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
-        self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key)
+        self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key, require_task_success=require_task_success)
         self.prompt_generator = PromptGenerator(api_key=api_key, generation_model=generation_model)
         self.embedding_calculator = EmbeddingCalculator()
 
@@ -2170,6 +2171,8 @@ def main():
     # 新增：执行轨迹参数
     parser.add_argument("--use-execution-trace", dest="use_execution_trace", action="store_true",
                         help="启用执行轨迹，变异时使用执行结果和详细信息")
+    parser.add_argument("--no-require-task-success", dest="require_task_success", action="store_false",
+                        help="不要求原始任务成功，默认要求任务成功")
 
     args = parser.parse_args()
 
@@ -2184,7 +2187,7 @@ def main():
         print(f"错误: 无效的攻击场景类型: {args.attack_type}")
         sys.exit(1)
 
-    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace)
+    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace, require_task_success=args.require_task_success)
 
     print("正在加载输入数据集...")
     input_dataset = generator.load_dataset(args.input)
