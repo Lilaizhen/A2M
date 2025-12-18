@@ -190,9 +190,9 @@ class AttackGenerator:
         self.top_k = top_k
         self.use_parallel_scoring = use_parallel_scoring  # 保存并行评分配置
         self.llm_concurrent_limit = llm_concurrent_limit  # LLM 最大并发数（API速率限制）
-        self.elite_rate = 0.3
+        self.elite_rate = 0.5
         self.crossover_rate = 0.0
-        self.mutation_rate = 0.7
+        self.mutation_rate = 0.5
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
         self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key, require_task_success=require_task_success)
         self.prompt_generator = PromptGenerator(api_key=api_key, generation_model=generation_model)
@@ -1612,6 +1612,12 @@ class AttackGenerator:
                             "max_score": full_tool_collection[0].get("score", 0.0) if full_tool_collection else 0.0,
                             "min_score": full_tool_collection[-1].get("score", 0.0) if full_tool_collection else 0.0,
                             "median_score": full_tool_collection[len(full_tool_collection)//2].get("score", 0.0) if full_tool_collection else 0.0
+                        },
+                        "topk_stats": {
+                            "max_score": candidates[0].get("score", 0.0) if candidates else 0.0,
+                            "min_score": candidates[min(self.candidate_count-1, len(candidates)-1)].get("score", 0.0) if candidates else 0.0,
+                            "average_score": sum(c.get("score", 0.0) for c in candidates[:self.candidate_count]) / min(self.candidate_count, len(candidates)) if candidates else 0.0,
+                            "median_score": candidates[min(self.candidate_count//2, len(candidates)-1)].get("score", 0.0) if candidates else 0.0
                         }
                     },
                     "initialization_info": {
@@ -1820,6 +1826,12 @@ class AttackGenerator:
                             "max_score": full_tool_collection[0].get("score", 0.0) if full_tool_collection else 0.0,
                             "min_score": full_tool_collection[-1].get("score", 0.0) if full_tool_collection else 0.0,
                             "median_score": full_tool_collection[len(full_tool_collection)//2].get("score", 0.0) if full_tool_collection else 0.0
+                        },
+                        "topk_stats": {
+                            "max_score": candidates[0].get("score", 0.0) if candidates else 0.0,
+                            "min_score": candidates[min(self.candidate_count-1, len(candidates)-1)].get("score", 0.0) if candidates else 0.0,
+                            "average_score": sum(c.get("score", 0.0) for c in candidates[:self.candidate_count]) / min(self.candidate_count, len(candidates)) if candidates else 0.0,
+                            "median_score": candidates[min(self.candidate_count//2, len(candidates)-1)].get("score", 0.0) if candidates else 0.0
                         }
                     },
                     "ga_config": {
