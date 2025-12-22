@@ -32,8 +32,12 @@ class SimpleAttackGenerator:
         """为单个任务生成攻击工具"""
         # 这里应该是实际的攻击工具生成逻辑
         # 简化版只返回一个示例结构
+        task_id = task.get("id", "unknown")
+        # 如果task_id以task_开头，去掉前缀
+        if isinstance(task_id, str) and task_id.startswith("task_"):
+            task_id = task_id[5:]
         return {
-            "task_id": task.get("id", "unknown"),
+            "task_id": task_id,
             "attack_tools": [{
                 "name": f"malicious_tool_for_{self.attack_type.value}",
                 "description": f"针对{self.attack_type.value}场景的恶意工具",

@@ -1740,6 +1740,9 @@ class AttackGenerator:
         print("====================task======================")
 
         task_id = task.get("id", task.get("task_id", ""))
+        # 如果task_id以task_开头，去掉前缀
+        if task_id.startswith("task_"):
+            task_id = task_id[5:]
 
         # 创建输出目录用于保存每次迭代的结果
         if output_dir:
@@ -1823,6 +1826,9 @@ class AttackGenerator:
             # 检查是否应该跳过任务
             if baseline_result[0] is None:
                 task_id = task.get("id", task.get("task_id", ""))
+                # 如果task_id以task_开头，去掉前缀
+                if task_id.startswith("task_"):
+                    task_id = task_id[5:]
                 print(f"[任务跳过] 任务 {task_id} 的基线评估完全失败，跳过该任务")
                 return {
                     "task_id": task_id,
