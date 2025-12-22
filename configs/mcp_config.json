@@ -2,9 +2,5 @@
   "filesystem": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-filesystem", "./annotated_data"]
-  },
-  "fetch": {
-    "command": "uvx",
-    "args": ["mcp-server-fetch"]
   }
 }
