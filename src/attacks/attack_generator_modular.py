@@ -2154,7 +2154,7 @@ def main():
                         help="攻击场景类型 (默认: resource_waste)")
 
     # 新增：score_threshold参数
-    parser.add_argument("--score-threshold", dest="score_threshold", type=int, default=1000,
+    parser.add_argument("--score-threshold", dest="score_threshold", type=int, default=0,
                         help="更新最优工具所需的最小分数差距 (默认: 1)")
     # 新增：候选数量参数
     parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=5,
