@@ -29,6 +29,7 @@ from src.data_loaders.data_loader import (
 )
 from src.core.executor import TaskExecutor
 import shutil
+from src.attacks.scoring.fitness_calculator import FitnessCalculator, AttackType
 
 load_dotenv()  # 加载 .env 文件中的环境变量
 
@@ -131,6 +132,7 @@ async def main(
     dataset,
     attack: bool = True,
     attack_dataset_path: str = None,
+    attack_scenario: str = "resource_waste",
     model_name: str = None,
     judge_model: str = None,
     dataset_type: str = "all",
@@ -664,7 +666,19 @@ async def main(
     mytool_tool_names: set[str] = set()
     mytool_server_key = "mytool"
     mytool_server_path = "./tools/myTool.py"
+
+    # 初始化适应度计算器
+    fitness_calculator = None
     if attack:
+        # 根据攻击场景类型创建适应度计算器
+        try:
+            attack_type = AttackType(attack_scenario)
+            fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key)
+            log_and_echo(f"初始化适应度计算器: {attack_scenario}")
+        except ValueError:
+            log_and_echo(f"⚠️ 无效的攻击场景类型: {attack_scenario}，使用默认 resource_waste")
+            fitness_calculator = FitnessCalculator(attack_type=AttackType.RESOURCE_WASTE, api_key=api_key)
+
         mytool_config = {
             "command": "python",
             "args": [os.path.abspath(mytool_server_path)],
@@ -704,6 +718,10 @@ async def main(
                     mytool_tool_names = set()
 
     # 执行所有任务
+    log_and_echo(f"开始执行 {len(dataset)} 个任务")
+    if attack and attack_dataset_path:
+        log_and_echo(f"启用了攻击模式，将使用攻击数据集: {attack_dataset_path}")
+
     for task in dataset:
         task_id = task["id"]
         task_desc = task["description"]
@@ -716,6 +734,35 @@ async def main(
             attack_tool_mapping, mcp_configs, tool_to_mcp, proxy_settings, extra_mcp_configs,
             llm, mytool_tool_names
         )
+
+        # 如果启用了攻击模式，使用适应度计算器计算得分
+        if attack and fitness_calculator and attack_dataset_path:
+            try:
+                # 获取当前任务的攻击工具
+                attack_tools = attack_tool_mapping.get(task_id, [])
+                if attack_tools:
+                    # 使用第一个攻击工具进行评分
+                    attack_tool = attack_tools[0]
+                    # 计算分数
+                    score, reason = await fitness_calculator.score_async(task_result, baseline_ok=True, attack_tool=attack_tool)
+
+                    # 将得分添加到任务结果中
+                    task_result["attack_score"] = {
+                        "score": score,
+                        "reason": reason,
+                        "attack_scenario": attack_scenario
+                    }
+
+                    log_and_echo(f"任务 {task_id} 攻击评分: {score:.2f} - {reason}")
+                else:
+                    log_and_echo(f"任务 {task_id} 没有找到攻击工具，跳过评分")
+            except Exception as e:
+                log_and_echo(f"⚠️ 任务 {task_id} 评分失败: {e}")
+                task_result["attack_score"] = {
+                    "score": 0,
+                    "reason": f"评分失败: {str(e)}",
+                    "attack_scenario": attack_scenario
+                }
 
         results_summary.append(task_result)
 
@@ -732,6 +779,64 @@ async def main(
         "completion_tokens": sum(r.get("token_usage", {}).get("completion_tokens", 0) for r in results_summary),
     }
 
+    # 计算攻击评分统计
+    attack_scores = []
+    avg_attack_score = 0
+    max_attack_score = 0
+    min_attack_score = 0
+    score_ge_2_count = 0
+    score_ge_2_percentage = 0
+    score_eq_4_count = 0
+    score_eq_4_percentage = 0
+
+    if attack:
+        for r in results_summary:
+            if "attack_score" in r:
+                attack_scores.append(r["attack_score"]["score"])
+
+        if attack_scores:
+            avg_attack_score = sum(attack_scores) / len(attack_scores)
+            max_attack_score = max(attack_scores)
+            min_attack_score = min(attack_scores)
+
+            # 计算大于等于2的数量和百分比
+            score_ge_2_count = sum(1 for score in attack_scores if score >= 2)
+            score_ge_2_percentage = (score_ge_2_count / len(attack_scores)) * 100 if attack_scores else 0
+
+            # 计算等于4的数量和百分比
+            score_eq_4_count = sum(1 for score in attack_scores if score == 4)
+            score_eq_4_percentage = (score_eq_4_count / len(attack_scores)) * 100 if attack_scores else 0
+
+            attack_score_stats = {
+                "average_score": avg_attack_score,
+                "max_score": max_attack_score,
+                "min_score": min_attack_score,
+                "scenario": attack_scenario,
+                "score_ge_2": {
+                    "count": score_ge_2_count,
+                    "percentage": score_ge_2_percentage
+                },
+                "score_eq_4": {
+                    "count": score_eq_4_count,
+                    "percentage": score_eq_4_percentage
+                }
+            }
+        else:
+            attack_score_stats = {
+                "average_score": 0,
+                "max_score": 0,
+                "min_score": 0,
+                "scenario": attack_scenario,
+                "score_ge_2": {
+                    "count": 0,
+                    "percentage": 0
+                },
+                "score_eq_4": {
+                    "count": 0,
+                    "percentage": 0
+                }
+            }
+
     final_report = {
         "run_timestamp": datetime.now().isoformat(),
         "overall_statistics": {
@@ -741,6 +846,8 @@ async def main(
             "total_tool_calls": overall_total_tool_calls,
             "mytool_calls": overall_mytool_calls,
             "token_usage": overall_token_usage,
+            "attack_scenario": attack_scenario if attack else None,
+            "attack_score_statistics": attack_score_stats if attack else None,
         },
         "task_details": results_summary,
     }
@@ -755,6 +862,15 @@ async def main(
         f"📊 总token使用量: {overall_token_usage['total_tokens']} "
         f"(提示: {overall_token_usage['prompt_tokens']}, 完成: {overall_token_usage['completion_tokens']})"
     )
+
+    # 显示攻击评分统计
+    if attack and attack_scores:
+        print(f"🎯 攻击场景: {attack_scenario}")
+        print(f"🎯 攻击评分统计 - 平均分: {avg_attack_score:.2f}, 最高分: {max_attack_score:.2f}, 最低分: {min_attack_score:.2f}")
+        if attack_scores:
+            print(f"📈 评分≥2: {score_ge_2_count}个 ({score_ge_2_percentage:.1f}%)")
+            print(f"⭐ 评分=4: {score_eq_4_count}个 ({score_eq_4_percentage:.1f}%)")
+
     print(f"📄 结果 JSON 路径: {RESULT_JSON_FILE}")
     print(f"📝 运行日志路径: {RUN_LOG_FILE}")
 
@@ -775,6 +891,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--use-mytool", action="store_true", help="启用 mytool MCP server")
     parser.add_argument("--attack-dataset", type=str, help="attack数据集路径")
+    parser.add_argument("--attack-scenario", type=str, choices=["resource_waste", "task_failure", "information_leakage", "backdoor_injection", "resource_waste_no_success"], default="resource_waste", help="攻击场景类型 (默认: resource_waste)")
     args = parser.parse_args()
 
     # 路径映射
@@ -795,6 +912,6 @@ if __name__ == "__main__":
             if "input" in task:
                 task["input"] = _convert_relative_paths_in_text(task["input"])
 
-        asyncio.run(main(dataset, attack=args.use_mytool, attack_dataset_path=args.attack_dataset))
+        asyncio.run(main(dataset, attack=args.use_mytool, attack_dataset_path=args.attack_dataset, attack_scenario=args.attack_scenario))
     else:
         print("错误: 没有找到任何有效的数据集文件")
