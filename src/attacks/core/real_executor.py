@@ -462,9 +462,6 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
     total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
     mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in all_mytool_names)
 
-    # 清理隔离目录
-    isolation_manager.cleanup_process_isolation_dir(process_id)
-
     return {
         "task_id": task_id,
         "process_id": process_id,  # 添加进程ID用于调试
