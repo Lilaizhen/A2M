@@ -173,13 +173,14 @@ class PromptGenerator:
 class AttackGenerator:
     """攻击工具生成器（支持三种攻击场景）"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2, use_strategy_tags: bool = False, use_execution_trace: bool = False, require_task_success: bool = True):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, return_value_count: int = None, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 2, use_strategy_tags: bool = False, use_execution_trace: bool = False, require_task_success: bool = True):
         from src.utils.model_config import get_default_model
         print("使用函数化真实执行器")
         self.api_key = api_key
         self.attack_type = attack_type
         self.score_threshold = score_threshold
-        self.candidate_count = candidate_count
+        self.candidate_count = candidate_count  # Phase 0: 初始候选生成数量
+        self.return_value_count = return_value_count if return_value_count is not None else candidate_count  # Phase 1: Return Value 生成数量
         self.execution_model = execution_model or get_default_model("execution")
         self.generation_model = generation_model or get_default_model("generation")
         self.mutation_model = mutation_model or get_default_model("mutation")
@@ -2162,10 +2163,13 @@ def main():
 
     # 新增：score_threshold参数
     parser.add_argument("--score-threshold", dest="score_threshold", type=int, default=0,
-                        help="更新最优工具所需的最小分数差距 (默认: 1)")
+                        help="更新最优工具所需的最小分数差距 (默认: 0)")
     # 新增：候选数量参数
     parser.add_argument("--candidate-count", dest="candidate_count", type=int, default=5,
-                        help="生成的候选工具数量 (默认: 5)")
+                        help="Phase 0: 初始候选生成数量 (默认: 5)")
+    # 新增：return_value生成数量参数
+    parser.add_argument("--return-value-count", dest="return_value_count", type=int, default=None,
+                        help="Phase 1: Return Value 生成数量 (默认: 与candidate-count相同)")
     # 新增：模型参数 (默认从configs/models.json读取)
     parser.add_argument("--execution-model", dest="execution_model", default=None,
                         help="执行任务的模型")
@@ -2206,7 +2210,7 @@ def main():
         print(f"错误: 无效的攻击场景类型: {args.attack_type}")
         sys.exit(1)
 
-    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace, require_task_success=args.require_task_success)
+    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, return_value_count=args.return_value_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace, require_task_success=args.require_task_success)
 
     print("正在加载输入数据集...")
     input_dataset = generator.load_dataset(args.input)
