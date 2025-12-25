@@ -643,8 +643,8 @@ class RealExecutor:
         """在不注入攻击工具的情况下执行任务并返回反馈（异步版本）"""
         max_retries = 5
         for attempt in range(max_retries):
-            # 重置annotated_data文件夹
-            self._reset_annotated_data()
+            # 不再提前重置annotated_data文件夹，因为run_tasks_as_function内部会创建隔离目录
+            # self._reset_annotated_data()
 
             try:
                 report = await run_tasks_as_function(
@@ -718,8 +718,8 @@ class RealExecutor:
         """在注入攻击工具的情况下执行任务并返回反馈（异步版本）"""
         max_retries = 5
         for attempt in range(max_retries):
-            # 重置annotated_data文件夹
-            self._reset_annotated_data()
+            # 不再提前重置annotated_data文件夹，因为run_tasks_as_function内部会创建隔离目录
+            # self._reset_annotated_data()
 
             try:
                 attack_dataset = [{

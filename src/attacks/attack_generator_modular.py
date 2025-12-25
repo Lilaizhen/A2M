@@ -459,9 +459,9 @@ class AttackGenerator:
         self.top_k = top_k
         self.use_parallel_scoring = use_parallel_scoring  # 保存并行评分配置
         self.llm_concurrent_limit = llm_concurrent_limit  # LLM 最大并发数（API速率限制）
-        self.elite_rate = 0.5
-        self.crossover_rate = 0.0
-        self.mutation_rate = 0.5
+        self.elite_rate = 0.2
+        self.crossover_rate = 0.8
+        self.mutation_rate = 0.1
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
         self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key, require_task_success=require_task_success)
         self.prompt_generator = PromptGenerator(api_key=api_key, generation_model=generation_model)
@@ -1025,11 +1025,11 @@ class AttackGenerator:
             return random.random() * 1000, ""
         return self.fitness_calculator.score(run_detail, baseline_ok, attack_tool=attack_tool)
 
-    def _score_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
+    def _score_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 1) -> float:
         """并行运行多次任务并计算平均得分的同步包装器"""
         return asyncio.run(self._score_average_parallel(task, attack_tool, baseline_ok, num_runs))
 
-    def _score_average(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
+    def _score_average(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 1) -> float:
         """运行多次任务并计算平均得分"""
         if not IMPORTS_AVAILABLE:
             # 返回模拟分数用于测试
@@ -1073,7 +1073,7 @@ class AttackGenerator:
         else:
             return 0
 
-    async def _score_average_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 3) -> float:
+    async def _score_average_parallel(self, task: Dict, attack_tool: Dict, baseline_ok: bool, num_runs: int = 1) -> float:
         """并行运行多次任务并计算平均得分（异步版本）"""
         if not IMPORTS_AVAILABLE:
             # 返回模拟分数用于测试
@@ -1164,61 +1164,17 @@ class AttackGenerator:
                             print(f"[初始候选-并行评估] 候选 {candidate_name} 重试次数已达上限，跳过此候选")
                             return None, False
 
-                    # 如果第一次运行成功，进行额外两次测试
+                    # 如果第一次运行成功，直接保存分数（不再进行额外测试）
                     if run_first.get("status") != "error":
                         first_score, first_reason = await self.fitness_calculator.score_async(run_first, baseline_ok, attack_tool=candidate)
-                        print(f"[初始候选-并行评估] 候选 {candidate_name} 第1次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
+                        print(f"[初始候选-并行评估] 候选 {candidate_name} 分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
 
-                        # 进行额外两次测试以获取更稳定的分数
-                        total_score = first_score
-                        valid_runs = 1
-                        test_success = True
-
-                        for test_num in range(2):
-                            test_run_success = False
-
-                            for test_attempt in range(max_retries):
-                                run = await self.executor.execute_task_with_attack_async(task, candidate)
-
-                                if run.get("status") == "mcp_error":
-                                    print(f"[初始候选- 并行评估] 候选 {candidate_name} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_attempt+1}/{max_retries})")
-                                    if test_attempt < max_retries - 1:
-                                        await asyncio.sleep(1)
-                                        continue
-                                    else:
-                                        print(f"[初始候选-并行评估] 候选 {candidate_name} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
-                                        test_success = False
-                                        break
-
-                                if run.get("status") != "error":
-                                    score, _ = await self.fitness_calculator.score_async(run, baseline_ok, attack_tool=candidate)
-                                    total_score += score
-                                    valid_runs += 1
-                                    print(f"[初始候选-并行评估] 候选 {candidate_name} 第{test_num+2}次分数: {score:.2f}")
-                                    test_run_success = True
-                                    break
-                                else:
-                                    print(f"[初始候选-并行评估] 候选 {candidate_name} 第{test_num+2}次运行失败")
-                                    test_success = False
-                                    break
-
-                            if not test_run_success:
-                                test_success = False
-
-                            if not test_success:
-                                break
-
-                        if test_success and valid_runs > 0:
-                            average_score = total_score / valid_runs
-                            candidate['score'] = average_score
-                            run_first['failure_reason'] = first_reason  # 保存攻击失败原因
-                            candidate['feedback'] = run_first  # 保存执行反馈用于变异
-                            print(f"[初始候选-并行评估] 候选 {candidate_name} 三次平均分数 {average_score:.2f}，有效")
-                            return candidate, True
-                        else:
-                            print(f"[初始候选-并行评估] 候选 {candidate_name} 测试过程中失败")
-                            candidate['score'] = first_score  # 至少保存第一次的分数
-                            return candidate, False
+                        # 直接使用第一次的分数
+                        candidate['score'] = first_score
+                        run_first['failure_reason'] = first_reason  # 保存攻击失败原因
+                        candidate['feedback'] = run_first  # 保存执行反馈用于变异
+                        print(f"[初始候选-并行评估] 候选 {candidate_name} 有效")
+                        return candidate, True
                     else:
                         print(f"[初始候选-并行评估] 候选 {candidate_name} 第一次运行失败")
                         return None, False
@@ -1243,7 +1199,7 @@ class AttackGenerator:
         print(f"[初始候选-并行评估] 完成，{len(valid_candidates)}个有效，{len(discarded_candidates)}个被丢弃")
         return valid_candidates, discarded_candidates
 
-    def _baseline_assessment(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
+    def _baseline_assessment(self, task: Dict, num_runs: int = 1, max_retries: int = 3) -> tuple[bool, float]:
         """运行多次无攻击任务并同时计算成功率和平均分数（同步版本）"""
         if not IMPORTS_AVAILABLE:
             # 返回模拟数据用于测试
@@ -1256,7 +1212,7 @@ class AttackGenerator:
         else:
             return self._baseline_assessment_serial(task, num_runs, max_retries)
 
-    def _baseline_assessment_serial(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
+    def _baseline_assessment_serial(self, task: Dict, num_runs: int = 1, max_retries: int = 3) -> tuple[bool, float]:
         """运行多次无攻击任务并同时计算成功率和平均分数（串行版本）"""
         success_count = 0
         scores = []
@@ -1326,7 +1282,7 @@ class AttackGenerator:
 
         return baseline_ok, average_score
 
-    async def _baseline_assessment_parallel(self, task: Dict, num_runs: int = 3, max_retries: int = 3) -> tuple[bool, float]:
+    async def _baseline_assessment_parallel(self, task: Dict, num_runs: int = 1, max_retries: int = 3) -> tuple[bool, float]:
         """运行多次无攻击任务并同时计算成功率和平均分数（并行版本）"""
         semaphore = asyncio.Semaphore(3)  # 限制并发数
 
@@ -1571,7 +1527,7 @@ class AttackGenerator:
         # 如果没有加载到初始结果，则执行初始阶段
         if not initial_result_loaded:
             # 1) 无攻击基线，决定是否强制完成度 - 使用3次运行的平均值判断
-            baseline_result = self._baseline_assessment(task, num_runs=3)
+            baseline_result = self._baseline_assessment(task, num_runs=1)
 
             # 检查是否应该跳过任务
             if baseline_result[0] is None:
@@ -1659,62 +1615,20 @@ class AttackGenerator:
 
                             if run_first.get("status") != "error":
                                 first_score = self._score(run_first, baseline_ok)
-                                print(f"[初始候选生成] 工具 {c['name']} 第一次分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
+                                print(f"[初始候选生成] 工具 {c['name']} 分数: {first_score:.2f}, baseline: {baseline_score:.2f}")
 
-                                total_score = first_score
-                                valid_runs = 1
-                                test_success = True
-
-                                for test_num in range(2):
-                                    test_run_success = False
-                                    test_run_attempts = 0
-
-                                    while test_run_attempts < max_retries:
-                                        run = self.executor.execute_task_with_attack(task, c)
-
-                                        if run.get("status") == "mcp_error":
-                                            print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行遇到mcp_error，正在重试... (尝试 {test_run_attempts+1}/{max_retries})")
-                                            test_run_attempts += 1
-                                            if test_run_attempts >= max_retries:
-                                                print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行重试次数已达上限，跳过此测试")
-                                                test_success = False
-                                                break
-                                            continue
-
-                                        if run.get("status") != "error":
-                                            score = self._score(run, baseline_ok)
-                                            total_score += score
-                                            valid_runs += 1
-                                            print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次分数: {score:.2f}")
-                                            test_run_success = True
-                                            break
-                                        else:
-                                            print(f"[初始候选生成] 工具 {c['name']} 第{test_num+2}次运行失败，跳过此测试")
-                                            test_success = False
-                                            break
-
-                                    if not test_run_success:
-                                        test_success = False
-
-                                    if not test_success:
-                                        break
-
-                                if test_success and valid_runs > 0:
-                                    average_score = total_score / valid_runs
-                                    c['score'] = average_score
-                                    c['feedback'] = run_first  # 保存执行反馈用于变异
-                                    candidates.append(c)
-                                    print(f"[初始候选生成] 工具 {c['name']} 三次平均分数 {average_score:.2f}，保留 (第{len(candidates)}个)")
-                                    run_success = True
-                                else:
-                                    print(f"[初始候选生成] 工具 {c['name']} 测试过程中失败，丢弃")
-                                    discarded_candidates.append(c)
-                                    run_success = True
+                                # 直接使用第一次的分数
+                                c['score'] = first_score
+                                c['feedback'] = run_first  # 保存执行反馈用于变异
+                                candidates.append(c)
+                                print(f"[初始候选生成] 工具 {c['name']} 分数 {first_score:.2f}，保留 (第{len(candidates)}个)")
+                                run_success = True
+                                break
                             else:
                                 print(f"[初始候选生成] 工具 {c['name']} 第一次运行失败，丢弃")
                                 discarded_candidates.append(c)
                                 run_success = True
-                            break
+                                break
 
                         if not run_success:
                             print(f"[初始候选生成] 工具 {c['name']} 完全失败，跳过此工具")
