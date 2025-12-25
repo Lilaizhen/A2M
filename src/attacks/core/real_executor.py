@@ -302,180 +302,184 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
     # 为当前进程创建隔离的文件系统（进程级隔离）
     process_id, task_dir, task_annotated_data_path = isolation_manager.create_process_isolation_dir(task_id)
 
-    # 仅为该task构建MCP配置
-    filtered_config = _build_filtered_mcp_config(
-        expected_tools=expected_tools,
-        attack=attack,
-        tool_to_mcp=tool_to_mcp,
-        mcp_configs=mcp_configs,
-        attack_tools_for_task=attack_map.get(task_id),
-    )
-
-    # 生成进程专属的MCP配置（文件系统路径已隔离）
-    isolated_config, _ = isolation_manager.generate_mcp_config_for_process(
-        filtered_config,
-        task_annotated_data_path,
-        process_id
-    )
-
-    # 获取当前任务的攻击工具名称，用于统计
-    attack_tool_names = set()
-    attack_tools_for_task = attack_map.get(task_id, [])
-    if attack and attack_tools_for_task:
-        attack_tool_names = {tool.get("name") for tool in attack_tools_for_task if tool.get("name")}
-
-    # 尝试枚举mytool的工具名集合，便于统计
-    mytool_names = set()
-    if attack and "mytool" in isolated_config:
-        try:
-            mytool_names = await retry_async(
-                lambda: fetch_server_tool_names("mytool", isolated_config["mytool"]),
-                tries=3, base=0.5, factor=2.0, max_delay=6.0, name="fetch_server_tool_names",
-            )
-
-        except Exception:
-            mytool_names = set()
-
-    # 合并mytool服务器本身的工具名称和攻击工具名称
-    all_mytool_names = mytool_names.union(attack_tool_names)
-
-    # 加载MCP工具（使用隔离配置）
+    # 使用 try-finally 确保任务执行完后清理隔离目录
     try:
-        limited = LimitedMCPClient(
-            isolated_config,
-            max_response_length=5000,
-            max_list_length=100,
-            max_category_items=20,
-            timeout=30,
+        # 仅为该task构建MCP配置
+        filtered_config = _build_filtered_mcp_config(
+            expected_tools=expected_tools,
+            attack=attack,
+            tool_to_mcp=tool_to_mcp,
+            mcp_configs=mcp_configs,
+            attack_tools_for_task=attack_map.get(task_id),
         )
-        tools = await retry_async(
-            lambda: limited.get_tools(),
-            tries=4, base=0.8, factor=2.0, max_delay=8.0, name="limited.get_tools",
+
+        # 生成进程专属的MCP配置（文件系统路径已隔离）
+        isolated_config, _ = isolation_manager.generate_mcp_config_for_process(
+            filtered_config,
+            task_annotated_data_path,
+            process_id
         )
-    except Exception as e:
-        # 清理隔离目录
-        isolation_manager.cleanup_process_isolation_dir(process_id)
+
+        # 获取当前任务的攻击工具名称，用于统计
+        attack_tool_names = set()
+        attack_tools_for_task = attack_map.get(task_id, [])
+        if attack and attack_tools_for_task:
+            attack_tool_names = {tool.get("name") for tool in attack_tools_for_task if tool.get("name")}
+
+        # 尝试枚举mytool的工具名集合，便于统计
+        mytool_names = set()
+        if attack and "mytool" in isolated_config:
+            try:
+                mytool_names = await retry_async(
+                    lambda: fetch_server_tool_names("mytool", isolated_config["mytool"]),
+                    tries=3, base=0.5, factor=2.0, max_delay=6.0, name="fetch_server_tool_names",
+                )
+
+            except Exception:
+                mytool_names = set()
+
+        # 合并mytool服务器本身的工具名称和攻击工具名称
+        all_mytool_names = mytool_names.union(attack_tool_names)
+
+        # 加载MCP工具（使用隔离配置）
+        try:
+            limited = LimitedMCPClient(
+                isolated_config,
+                max_response_length=5000,
+                max_list_length=100,
+                max_category_items=20,
+                timeout=30,
+            )
+            tools = await retry_async(
+                lambda: limited.get_tools(),
+                tries=4, base=0.8, factor=2.0, max_delay=8.0, name="limited.get_tools",
+            )
+        except Exception as e:
+            return {
+                "task_id": task_id,
+                "input": user_prompt,
+                "expected_tools": expected_tools,
+                "agent_final_response": "MCP 工具加载失败",
+                "task_completed": False,
+                "completion_reason": {
+                    "result": "未完成",
+                    "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
+                    "failure_type": "mcp_error",
+                },
+                "execution_time_seconds": time.time() - t0,
+                "total_tool_calls": 0,
+                "mytool_calls": 0,
+                "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                "action_trace": [{"ts": _now(), "type": "user_input", "content": user_prompt}],
+            }
+
+        # 建立Agent并流式执行
+        final_response = ""
+        action_trace = [{"ts": _now(), "type": "user_input", "content": user_prompt}]
+        token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+
+        from langgraph.prebuilt import create_react_agent
+        from langgraph.checkpoint.memory import MemorySaver
+
+        agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
+        config = {"recursion_limit": 100, "configurable": {"thread_id": f"task-{task_id}"}}
+        user_msg = {"messages": [{"role": "user", "content": user_prompt}]}
+
+        async def _drain():
+            nonlocal final_response
+            async for step in agent.astream(user_msg, config, stream_mode="values"):
+                last = step["messages"][-1]
+                if isinstance(last, ToolMessage):
+                    out = _as_text(last.content)
+                    if isinstance(out, str) and len(out) > MAX_TOOL_OUTPUT_CHARS:
+                        out = out[:MAX_TOOL_OUTPUT_CHARS] + "...(截断)"
+                    action_trace.append({"ts": _now(), "type": "tool_output", "tool": last.name, "output": out})
+                elif isinstance(last, AIMessage):
+                    txt = _as_text(last.content).strip()
+                    if txt:
+                        final_response = txt
+                        action_trace.append({"ts": _now(), "type": "ai_message", "content": txt})
+                    # 记录工具调用元信息
+                    tool_calls = getattr(last, "tool_calls", None) or last.additional_kwargs.get("tool_calls", [])
+                    if tool_calls:
+                        tc = tool_calls[0]
+                        fn = (tc.get("function") or {})
+                        name = fn.get("name") or tc.get("name", "unknown_tool")
+                        args = fn.get("arguments") or tc.get("args") or {}
+                        try:
+                            if isinstance(args, str):
+                                args = json.loads(args)
+                        except Exception:
+                            pass
+                        action_trace.append({"ts": _now(), "type": "tool_call", "tool": name, "args": args})
+
+        try:
+            with get_openai_callback() as cb:
+                await retry_async(
+                    lambda: asyncio.wait_for(_drain(), timeout=500),
+                    tries=2, base=1.0, factor=2.0, max_delay=5.0, name="agent.stream",
+                )
+
+                token_usage = {
+                    "total_tokens": cb.total_tokens,
+                    "prompt_tokens": cb.prompt_tokens,
+                    "completion_tokens": cb.completion_tokens,
+                }
+        except asyncio.TimeoutError:
+            action_trace.append({"ts": _now(), "type": "ai_message", "content": "Agent 执行超时（>500s）"})
+
+        # 任务完成度判定
+        is_task_completed = False
+        completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
+        if action_trace and task_desc:
+            # 检查 agent 行为轨迹的最后一个步骤是否是 AI 输出的信息
+            def _check_last_step_is_ai_message(trace):
+                """检查轨迹的最后一个步骤是否是 AI 消息"""
+                if not trace:
+                    return False
+                # 获取最后一个步骤
+                last_step = trace[-1]
+                # 检查是否是 AI 消息类型
+                return last_step.get("type") == "ai_message"
+
+            # 检查最后一个步骤是否是 AI 消息，如果不是则判断为 system_error
+            if not _check_last_step_is_ai_message(action_trace):
+                completion_json = {
+                    "result": "未完成",
+                    "reason": "Agent行为轨迹最后一个步骤不是AI输出的信息",
+                    "failure_type": "system_error"
+                }
+            else:
+                behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
+                is_task_completed, _, completion_json = await judge_task_completion(
+                    agent_behavior=behavior_text,
+                    task_description=task_desc,
+                    expected_tools=expected_tools,
+                    api_key=llm.openai_api_key,
+                    api_base=llm.openai_api_base,
+                )
+
+        total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
+        mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in all_mytool_names)
+
         return {
             "task_id": task_id,
+            "process_id": process_id,  # 添加进程ID用于调试
             "input": user_prompt,
             "expected_tools": expected_tools,
-            "agent_final_response": "MCP 工具加载失败",
-            "task_completed": False,
-            "completion_reason": {
-                "result": "未完成",
-                "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
-                "failure_type": "mcp_error",
-            },
+            "agent_final_response": final_response,
+            "task_completed": is_task_completed,
+            "completion_reason": completion_json,
             "execution_time_seconds": time.time() - t0,
-            "total_tool_calls": 0,
-            "mytool_calls": 0,
-            "token_usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
-            "action_trace": [{"ts": _now(), "type": "user_input", "content": user_prompt}],
+            "total_tool_calls": total_tool_calls,
+            "mytool_calls": mytool_calls,
+            "token_usage": token_usage,
+            "action_trace": action_trace,
         }
-
-    # 建立Agent并流式执行
-    final_response = ""
-    action_trace = [{"ts": _now(), "type": "user_input", "content": user_prompt}]
-    token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
-
-    from langgraph.prebuilt import create_react_agent
-    from langgraph.checkpoint.memory import MemorySaver
-
-    agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
-    config = {"recursion_limit": 100, "configurable": {"thread_id": f"task-{task_id}"}}
-    user_msg = {"messages": [{"role": "user", "content": user_prompt}]}
-
-    async def _drain():
-        nonlocal final_response
-        async for step in agent.astream(user_msg, config, stream_mode="values"):
-            last = step["messages"][-1]
-            if isinstance(last, ToolMessage):
-                out = _as_text(last.content)
-                if isinstance(out, str) and len(out) > MAX_TOOL_OUTPUT_CHARS:
-                    out = out[:MAX_TOOL_OUTPUT_CHARS] + "...(截断)"
-                action_trace.append({"ts": _now(), "type": "tool_output", "tool": last.name, "output": out})
-            elif isinstance(last, AIMessage):
-                txt = _as_text(last.content).strip()
-                if txt:
-                    final_response = txt
-                    action_trace.append({"ts": _now(), "type": "ai_message", "content": txt})
-                # 记录工具调用元信息
-                tool_calls = getattr(last, "tool_calls", None) or last.additional_kwargs.get("tool_calls", [])
-                if tool_calls:
-                    tc = tool_calls[0]
-                    fn = (tc.get("function") or {})
-                    name = fn.get("name") or tc.get("name", "unknown_tool")
-                    args = fn.get("arguments") or tc.get("args") or {}
-                    try:
-                        if isinstance(args, str):
-                            args = json.loads(args)
-                    except Exception:
-                        pass
-                    action_trace.append({"ts": _now(), "type": "tool_call", "tool": name, "args": args})
-
-    try:
-        with get_openai_callback() as cb:
-            await retry_async(
-                lambda: asyncio.wait_for(_drain(), timeout=500),
-                tries=2, base=1.0, factor=2.0, max_delay=5.0, name="agent.stream",
-            )
-
-            token_usage = {
-                "total_tokens": cb.total_tokens,
-                "prompt_tokens": cb.prompt_tokens,
-                "completion_tokens": cb.completion_tokens,
-            }
-    except asyncio.TimeoutError:
-        action_trace.append({"ts": _now(), "type": "ai_message", "content": "Agent 执行超时（>500s）"})
-
-    # 任务完成度判定
-    is_task_completed = False
-    completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
-    if action_trace and task_desc:
-        # 检查 agent 行为轨迹的最后一个步骤是否是 AI 输出的信息
-        def _check_last_step_is_ai_message(trace):
-            """检查轨迹的最后一个步骤是否是 AI 消息"""
-            if not trace:
-                return False
-            # 获取最后一个步骤
-            last_step = trace[-1]
-            # 检查是否是 AI 消息类型
-            return last_step.get("type") == "ai_message"
-
-        # 检查最后一个步骤是否是 AI 消息，如果不是则判断为 system_error
-        if not _check_last_step_is_ai_message(action_trace):
-            completion_json = {
-                "result": "未完成",
-                "reason": "Agent行为轨迹最后一个步骤不是AI输出的信息",
-                "failure_type": "system_error"
-            }
-        else:
-            behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
-            is_task_completed, _, completion_json = await judge_task_completion(
-                agent_behavior=behavior_text,
-                task_description=task_desc,
-                expected_tools=expected_tools,
-                api_key=llm.openai_api_key,
-                api_base=llm.openai_api_base,
-            )
-
-    total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
-    mytool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call" and x.get("tool") in all_mytool_names)
-
-    return {
-        "task_id": task_id,
-        "process_id": process_id,  # 添加进程ID用于调试
-        "input": user_prompt,
-        "expected_tools": expected_tools,
-        "agent_final_response": final_response,
-        "task_completed": is_task_completed,
-        "completion_reason": completion_json,
-        "execution_time_seconds": time.time() - t0,
-        "total_tool_calls": total_tool_calls,
-        "mytool_calls": mytool_calls,
-        "token_usage": token_usage,
-        "action_trace": action_trace,
-    }
+    finally:
+        # 清理当前进程的隔离目录
+        isolation_manager.cleanup_process_isolation_dir(process_id)
+        print(f"[清理] 已清理进程 {process_id} 的隔离目录")
 
 
 async def run_tasks_as_function(
@@ -580,8 +584,7 @@ async def run_tasks_as_function(
     # 并发执行所有任务
     results_summary = await asyncio.gather(*[run_task_with_semaphore(task) for task in dataset])
 
-    # 最后清理所有隔离目录（可选，保留用于调试）
-    # isolation_manager.cleanup_all_isolation_dirs()
+    # 注意：每个任务进程执行完后会自动清理自己的隔离目录（在 _run_single_task 的 finally 块中）
 
     total_tasks = len(results_summary)
     completed_tasks = sum(1 for r in results_summary if r["task_completed"])
