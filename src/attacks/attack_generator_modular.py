@@ -1486,6 +1486,9 @@ class AttackGenerator:
 
         # 初始化完整工具集合（用于保存所有生成的候选工具）
         full_tool_collection = []
+        # 初始化candidates和discarded_candidates，确保在整个函数中都可用
+        candidates = []
+        discarded_candidates = []
 
         # 检查是否已有初始结果文件（iteration_0.json），如果存在则加载而不是重新生成
         initial_result_loaded = False
@@ -1517,6 +1520,9 @@ class AttackGenerator:
 
                     # 初始化完整工具集合
                     full_tool_collection = tool_collection.copy()
+
+                    # 将加载的工具集合设置为candidates（用于后续统计）
+                    candidates = tool_collection.copy()
 
                     print(f"加载已存在的初始结果，baseline分数: {baseline_score:.2f}，当前最高分数: {best_score:.2f}")
                     initial_result_loaded = True
