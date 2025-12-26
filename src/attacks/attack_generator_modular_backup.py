@@ -469,10 +469,30 @@ class AttackGenerator:
         model: str = "glm-4.6",
     ) -> List[Dict]:
         """Generate candidate malicious tools (synchronous version)"""
-        return asyncio.run(self._propose_candidates_async(
-            task, k, previous_attack_tool, previous_trace, top_k_examples,
-            guidance_summary, retries, retry_delay, model
-        ))
+        import asyncio
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(self._propose_candidates_async(
+                    task, k, previous_attack_tool, previous_trace, top_k_examples,
+                    guidance_summary, retries, retry_delay, model
+                ))
+            finally:
+                # 确保所有任务完成
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                # 关闭事件循环前等待一小段时间，让子进程清理
+                loop.run_until_complete(asyncio.sleep(0.1))
+                loop.close()
+            return result
+        except Exception as e:
+            print(f"[生成候选工具出错] {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            # 返回空列表
+            return []
 
     async def _propose_candidates_async(
         self,
@@ -1376,7 +1396,27 @@ class AttackGenerator:
     def _evaluate_initial_candidates_parallel(self, task: Dict, candidates: List[Dict], baseline_ok: bool, baseline_score: float, max_retries: int = 3) -> tuple[List[Dict], List[Dict]]:
         """并行评估初始候选工具的同步包装器"""
         coroutine = self._evaluate_initial_candidates_parallel_async(task, candidates, baseline_ok, baseline_score, max_retries)
-        return asyncio.run(coroutine)
+        import asyncio
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(coroutine)
+            finally:
+                # 确保所有任务完成
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                # 关闭事件循环前等待一小段时间，让子进程清理
+                loop.run_until_complete(asyncio.sleep(0.1))
+                loop.close()
+            return result
+        except Exception as e:
+            print(f"[初始候选-并行评估出错] {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            # 返回空结果
+            return [], []
 
     async def _evaluate_initial_candidates_parallel_async(self, task: Dict, candidates: List[Dict], baseline_ok: bool, baseline_score: float, max_retries: int = 3) -> tuple[List[Dict], List[Dict]]:
         """并行评估初始候选工具（异步实现）
@@ -1504,7 +1544,28 @@ class AttackGenerator:
         # 根据配置选择使用串行或并行版本
         if hasattr(self, 'use_parallel_scoring') and self.use_parallel_scoring:
             coroutine = self._baseline_assessment_parallel(task, num_runs, max_retries)
-            return asyncio.run(coroutine)
+            import asyncio
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    result = loop.run_until_complete(coroutine)
+                finally:
+                    # 确保所有任务完成
+                    pending = asyncio.all_tasks(loop)
+                    if pending:
+                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    # 关闭事件循环前等待一小段时间，让子进程清理
+                    loop.run_until_complete(asyncio.sleep(0.1))
+                    loop.close()
+                return result
+            except Exception as e:
+                print(f"[基线评估-并行出错] {type(e).__name__}: {e}")
+                import traceback
+                traceback.print_exc()
+                # 如果并行失败，回退到串行版本
+                print("[基线评估] 并行评估失败，回退到串行版本")
+                return self._baseline_assessment_serial(task, num_runs, max_retries)
         else:
             return self._baseline_assessment_serial(task, num_runs, max_retries)
 
