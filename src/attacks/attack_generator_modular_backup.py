@@ -1852,9 +1852,26 @@ class AttackGenerator:
                 print(f"[Phase0] 还需要生成 {remaining_needed} 个候选...")
 
                 import asyncio
-                candidate_batch = asyncio.run(self._propose_name_desc_only_async(
-                    task, k=remaining_needed, model=self.generation_model
-                ))
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        candidate_batch = loop.run_until_complete(self._propose_name_desc_only_async(
+                            task, k=remaining_needed, model=self.generation_model
+                        ))
+                    finally:
+                        # 确保所有任务完成
+                        pending = asyncio.all_tasks(loop)
+                        if pending:
+                            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                        # 关闭事件循环前等待一小段时间，让子进程清理
+                        loop.run_until_complete(asyncio.sleep(0.1))
+                        loop.close()
+                except Exception as e:
+                    print(f"[Phase0生成候选出错] {type(e).__name__}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    candidate_batch = []
 
                 valid_candidates = [c for c in candidate_batch if c is not None]
                 raw_candidates.extend(valid_candidates)
@@ -2194,9 +2211,26 @@ class AttackGenerator:
 
             # 为精英工具生成return_value
             import asyncio
-            complete_tools = asyncio.run(self._generate_return_values_async(
-                task, expanded_elite_tools, expanded_feedbacks, model=self.generation_model
-            ))
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    complete_tools = loop.run_until_complete(self._generate_return_values_async(
+                        task, expanded_elite_tools, expanded_feedbacks, model=self.generation_model
+                    ))
+                finally:
+                    # 确保所有任务完成
+                    pending = asyncio.all_tasks(loop)
+                    if pending:
+                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    # 关闭事件循环前等待一小段时间，让子进程清理
+                    loop.run_until_complete(asyncio.sleep(0.1))
+                    loop.close()
+            except Exception as e:
+                print(f"[Phase1生成return_value出错] {type(e).__name__}: {e}")
+                import traceback
+                traceback.print_exc()
+                complete_tools = []
 
             print(f"[Phase1] 生成完成，共 {len(complete_tools)} 个完整工具，开始评估...")
 
@@ -2324,7 +2358,32 @@ class AttackGenerator:
                     )
 
                 import asyncio
-                optimized_tools = asyncio.run(run_analysis_optimization())
+                try:
+                    # 尝试获取当前运行的事件循环
+                    try:
+                        loop = asyncio.get_running_loop()
+                        # 如果已经在异步上下文中，直接await
+                        print("[警告] 检测到正在运行的事件循环，这不应该发生在同步代码中")
+                        optimized_tools = []
+                    except RuntimeError:
+                        # 没有运行中的事件循环，安全地使用asyncio.run()
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            optimized_tools = loop.run_until_complete(run_analysis_optimization())
+                        finally:
+                            # 确保所有任务完成
+                            pending = asyncio.all_tasks(loop)
+                            if pending:
+                                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                            # 关闭事件循环前等待一小段时间，让子进程清理
+                            loop.run_until_complete(asyncio.sleep(0.1))
+                            loop.close()
+                except Exception as e:
+                    print(f"[优化过程出错] {type(e).__name__}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    optimized_tools = []
 
                 # 更新最佳分数和工具
                 for tool in optimized_tools:
