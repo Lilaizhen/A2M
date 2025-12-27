@@ -270,6 +270,7 @@ class FitnessCalculator:
         Returns:
             tuple: (适应度分数, 失败原因)
         """
+        import asyncio
         try:
             # 检查是否已经在运行event loop
             loop = asyncio.get_running_loop()
@@ -280,7 +281,6 @@ class FitnessCalculator:
             return loop.run_until_complete(self.score_async(run_detail, baseline_ok, is_baseline, attack_tool))
         except RuntimeError:
             # 没有运行中的event loop，使用正确的事件循环管理
-            import asyncio
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
