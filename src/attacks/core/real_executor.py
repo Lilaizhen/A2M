@@ -640,7 +640,32 @@ class RealExecutor:
 
     def execute_task_without_attack(self, task: Dict) -> Dict:
         """在不注入攻击工具的情况下执行任务并返回反馈（同步版本）"""
-        return asyncio.run(self.execute_task_without_attack_async(task))
+        import asyncio
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(self.execute_task_without_attack_async(task))
+            finally:
+                # 确保所有任务完成
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                # 关闭事件循环前等待一小段时间，让子进程清理
+                loop.run_until_complete(asyncio.sleep(0.1))
+                loop.close()
+            return result
+        except Exception as e:
+            print(f"[执行基线任务出错] {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            # 返回错误结果
+            return {
+                "task_id": task.get("id", task.get("task_id", "")),
+                "status": "error",
+                "result": f"执行失败: {str(e)}",
+                "needed_info": []
+            }
 
     async def execute_task_without_attack_async(self, task: Dict) -> Dict:
         """在不注入攻击工具的情况下执行任务并返回反馈（异步版本）"""
@@ -715,7 +740,32 @@ class RealExecutor:
 
     def execute_task_with_attack(self, task: Dict, attack_tool: Dict) -> Dict:
         """在注入攻击工具的情况下执行任务并返回反馈（同步版本）"""
-        return asyncio.run(self.execute_task_with_attack_async(task, attack_tool))
+        import asyncio
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(self.execute_task_with_attack_async(task, attack_tool))
+            finally:
+                # 确保所有任务完成
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                # 关闭事件循环前等待一小段时间，让子进程清理
+                loop.run_until_complete(asyncio.sleep(0.1))
+                loop.close()
+            return result
+        except Exception as e:
+            print(f"[执行攻击任务出错] {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            # 返回错误结果
+            return {
+                "task_id": task.get("id", task.get("task_id", "")),
+                "status": "error",
+                "result": f"执行失败: {str(e)}",
+                "needed_info": ["工具名称", "工具描述", "返回值"]
+            }
 
     async def execute_task_with_attack_async(self, task: Dict, attack_tool: Dict) -> Dict:
         """在注入攻击工具的情况下执行任务并返回反馈（异步版本）"""
