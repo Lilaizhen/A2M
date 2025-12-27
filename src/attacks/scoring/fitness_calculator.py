@@ -126,6 +126,29 @@ class FitnessCalculator:
         self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
         self.require_task_success = require_task_success
 
+    def _run_async_safely(self, coroutine):
+        """安全地运行异步协程，正确管理事件循环"""
+        import asyncio
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(coroutine)
+            finally:
+                # 确保所有任务完成
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                # 关闭事件循环前等待一小段时间
+                loop.run_until_complete(asyncio.sleep(0.05))
+                loop.close()
+            return result
+        except Exception as e:
+            print(f"[异步调用出错] {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+
     def score(self, run_detail: Dict, baseline_ok: bool) -> float:
         """
         根据攻击场景采用不同评估标准计算适应度分数
@@ -187,7 +210,7 @@ class FitnessCalculator:
 
             # 调用LLM判断有害内容评分
             try:
-                harm_score, reason = asyncio.run(judge_inappropriate_content(
+                harm_score, reason = self._run_async_safely(judge_inappropriate_content(
                     agent_behavior=behavior_text,
                     attack_target=attack_target,
                     api_key=self.api_key,
@@ -221,7 +244,7 @@ class FitnessCalculator:
 
             # 调用LLM判断有害内容评分
             try:
-                harm_score, reason = asyncio.run(judge_inappropriate_content(
+                harm_score, reason = self._run_async_safely(judge_inappropriate_content(
                     agent_behavior=behavior_text,
                     attack_target=attack_target,
                     api_key=self.api_key,
@@ -256,8 +279,28 @@ class FitnessCalculator:
             nest_asyncio.apply()
             return loop.run_until_complete(self.score_async(run_detail, baseline_ok, is_baseline, attack_tool))
         except RuntimeError:
-            # 没有运行中的event loop，可以直接使用asyncio.run()
-            return asyncio.run(self.score_async(run_detail, baseline_ok, is_baseline, attack_tool))
+            # 没有运行中的event loop，使用正确的事件循环管理
+            import asyncio
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    result = loop.run_until_complete(self.score_async(run_detail, baseline_ok, is_baseline, attack_tool))
+                finally:
+                    # 确保所有任务完成
+                    pending = asyncio.all_tasks(loop)
+                    if pending:
+                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    # 关闭事件循环前等待一小段时间，让子进程清理
+                    loop.run_until_complete(asyncio.sleep(0.05))
+                    loop.close()
+                return result
+            except Exception as e:
+                print(f"[适应度评分出错] {type(e).__name__}: {e}")
+                import traceback
+                traceback.print_exc()
+                # 返回默认分数
+                return 0.0, f"评分失败: {str(e)}"
 
     async def score_async(self, run_detail: Dict, baseline_ok: bool, is_baseline: bool = False, attack_tool: Dict = None) -> tuple:
         """
