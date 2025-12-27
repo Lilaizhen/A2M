@@ -1,15 +1,41 @@
 [
   {
-    "task_id": "be3f2275-15a4-4e05-b3cb-b0eeb9109d3a",
-    "Question": "Help me check the high-speed train tickets from Beijing to Shanghai on next Wednesday.",
+    "task_id": "00e13e2e-07fa-4d0b-9863-e966190cffd6",
+    "Question": "find the painting \"Corridor in the Asylum\" and give me some background information,",
     "answers": "",
-    "category": "Travel",
+    "category": "Leisure",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. Get current time and calculate next Wednesday's date\n2. Query the station_code of a city by its Chinese name\n3. Check 12306 remaining ticket information.",
+      "Steps": "1. Realizes that \"Corridor in the Asylum\" is located in the Metropolitan Museum of Art Collection\n2. Search for objects in the Metropolitan Museum of Art\n3. Get the detailed information",
       "Number of steps": "3",
-      "Tools": "1. get_current_time\n2. get-station-code-of-citys\n3. get-tickets",
-      "Number of tools": "3"
+      "Tools": "1. search-museum-objects\n2. get-museum-object",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "0180954e-dc60-4df6-be68-63562fcafee2",
+    "Question": "Show me today's trending topics in the gaming world across all platforms.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. find the information in different website",
+      "Number of steps": "1",
+      "Tools": "1. get-bilibili-rank\n2. get-gcores-new\n3. get-weibo-trending\n4. get-douyin-trending",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "086e2393-dc1a-4c55-bf54-1e9a94951db7",
+    "Question": "Read the file ./annotated_data/word/exchange.docx, tell me who did not give a gift",
+    "answers": "Fred",
+    "category": "Leisure",
+    "file_name": "./annotated_data/word/exchange.docx",
+    "Annotator Metadata": {
+      "Steps": "1. open the word document\n2. answer the question",
+      "Number of steps": "2",
+      "Tools": "1. get_document_text",
+      "Number of tools": "1"
     }
   },
   {
@@ -26,28 +52,15 @@
     }
   },
   {
-    "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
-    "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
-    "answers": "20.76",
-    "category": "Lifestyle",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. read the excel\n2. caculate the bmi",
-      "Number of steps": "2",
-      "Tools": "1. excel_read_sheet\n2. calculate",
-      "Number of tools": "2"
-    }
-  },
-  {
-    "task_id": "7bda47e8-1b8b-4f1f-b67c-573a81417d36",
-    "Question": "Introduce me to the article on arxiv 2203.12277",
+    "task_id": "0dafdf66-af3a-4110-ab79-d9c037f7bc62",
+    "Question": "Find the earliest available high-speed train from Beijing to Shanghai for tomorrow. What's the departure time and ticket price?",
     "answers": "",
-    "category": "Office",
+    "category": "Travel",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. get detailed information about the paper\n2. fetch the full text of the paper\n3. write a introduction",
-      "Number of steps": "3",
-      "Tools": "1. get_paper_data\n2. fetch",
+      "Steps": "1. get the station codes\n2. check available tickets",
+      "Number of steps": "2",
+      "Tools": "1. get-station-code-by-names\n2. get-tickets",
       "Number of tools": "2"
     }
   },
@@ -65,107 +78,42 @@
     }
   },
   {
-    "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
-    "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+    "task_id": "1a3ffa81-d1fe-4b97-9308-3d2ae2d0d9b1",
+    "Question": "Extract the key points of this TED talk in https://www.youtube.com/watch?v=arj7oStGLkU, organize them into a mind map, and tell me what the main content of the lecture is.",
     "answers": "",
-    "category": "Travel",
+    "category": "Lifestyle",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
-      "Number of steps": "3",
-      "Tools": "1. get_current_time\n2. airbnb_search",
-      "Number of tools": "2"
-    }
-  },
-  {
-    "task_id": "00e13e2e-07fa-4d0b-9863-e966190cffd6",
-    "Question": "find the painting \"Corridor in the Asylum\" and give me some background information,",
-    "answers": "",
-    "category": "Leisure",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. Realizes that \"Corridor in the Asylum\" is located in the Metropolitan Museum of Art Collection\n2. Search for objects in the Metropolitan Museum of Art\n3. Get the detailed information",
-      "Number of steps": "3",
-      "Tools": "1. search-museum-objects\n2. get-museum-object",
-      "Number of tools": "2"
-    }
-  },
-  {
-    "task_id": "fa451c3f-23c2-4b03-bcb6-60b49e3a142f",
-    "Question": "Read the paper in ./annotated_data/pdf/WebArena.pdf, and find the latest papers in this area",
-    "answers": "",
-    "category": "Office",
-    "file_name": "./annotated_data/pdf/WebArena.pdf",
-    "Annotator Metadata": {
-      "Steps": "1. read the paper in path and identify the field\n2. search the arxiv to find the latest papers",
-      "Number of steps": "2",
-      "Tools": "1. document_reader\n2. search_papers",
-      "Number of tools": "2"
-    }
-  },
-  {
-    "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
-    "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
-    "answers": "",
-    "category": "Finance",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. get the current gold price\n2. calculate the price",
-      "Number of steps": "2",
-      "Tools": "1. get_asset_price\n2. calculate",
-      "Number of tools": "2"
-    }
-  },
-  {
-    "task_id": "fab605cf-d337-4ac1-beba-b3f563eaffff",
-    "Question": "What is the current effect text of 'Sky Striker Ace = Zero', and what are its ATK and DEF? Show me the picture.",
-    "answers": "",
-    "category": "Leisure",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. get the latest card information\n2. get the picture of the card",
-      "Number of steps": "2",
-      "Tools": "1. search_cards\n2. get_card_image",
-      "Number of tools": "2"
-    }
-  },
-  {
-    "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
-    "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
-    "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
-    "category": "Office",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. locate the 10th line in the file",
-      "Number of steps": "1",
-      "Tools": "1. get_text_file_contents",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "de75630e-b91e-4cc7-85b1-5d02c2455392",
-    "Question": " I'm looking at a PR and need to know if these libs are outdated. com.fasterxml.jackson.core:jackson-databind:2.13.4, org.apache.poi:poi-ooxml:5.2.0, and com.google.guava:guava:30.1-jre. What are the latest versions for each?",
-    "answers": "",
-    "category": "Office",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. check the versions",
-      "Number of steps": "1",
-      "Tools": "1. get_maven_latest_version",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "470f7ac1-f573-4fec-8990-97f578749f78",
-    "Question": "How are Samsung Electronics and SK Hynix doing today? I need their current stock prices, the daily percentage change for each, and can you also calculate their current market capitalization?",
-    "answers": "",
-    "category": "Finance",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. get current time\n2. get current stock prices for both\n3. calculate the daily percentage change\n4. get market capitalization",
+      "Steps": "1. extract transcript from the YouTube video URL\n2. write a markdown mindmap \n3. conver markdown mindmap to real mindmap\n4. summary the main content of the lecture",
       "Number of steps": "4",
-      "Tools": "1. get_current_time\n2. get_stock_ohlcv\n3. get_stock_market_cap\n4. calculate",
-      "Number of tools": "4"
+      "Tools": "1. get_transcript\n2. convert_markdown_to_mindmap",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "1ef11556-37d6-4585-b4b2-cf2f782141e6",
+    "Question": "Read all the articles in the ./annotated_data/pdf/embodied_ai_papers directory. Compare their similarities and differences, then write a report summarizing your analysis. Save the final report as a Markdown file at ./annotated_data/markdown/embodied_ai_report.md.",
+    "answers": "file ./annotated_data/markdown/embodied_ai_report.md",
+    "category": "Office",
+    "file_name": "./annotated_data/pdf/embodied_ai_papers",
+    "Annotator Metadata": {
+      "Steps": "1. list directory\n2. read all pdf\n3. write a summary report\n4. save it to the path",
+      "Number of steps": "4",
+      "Tools": "1. list_directory\n2. read_pdf\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "230fb273-b316-4a8f-9297-89ce5558bc6c",
+    "Question": "Find today's LeetCode Daily Challenge and generate a detailed markdown document in ./annotated_data/markdown/leetcode_daily.md that provides a comprehensive walkthrough of the problem. ",
+    "answers": "file ./annotated_data/markdown/leetcode_daily.md",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get leetcode daily challenge\n2. generate a comprehensive walkthrough of the problem\n3. write it to the path",
+      "Number of steps": "3",
+      "Tools": "1. get-daily-challenge\n2. write_file",
+      "Number of tools": "2"
     }
   },
   {
@@ -182,93 +130,67 @@
     }
   },
   {
-    "task_id": "086e2393-dc1a-4c55-bf54-1e9a94951db7",
-    "Question": "Read the file ./annotated_data/word/exchange.docx, tell me who did not give a gift",
-    "answers": "Fred",
-    "category": "Leisure",
-    "file_name": "./annotated_data/word/exchange.docx",
-    "Annotator Metadata": {
-      "Steps": "1. open the word document\n2. answer the question",
-      "Number of steps": "2",
-      "Tools": "1. get_document_text",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "507f592a-f21f-45f6-bbde-dadb86441791",
-    "Question": "Read the customer information in ./annotated_data/csv/customers-100.csv and tell me Sheryl Meyers's email address",
-    "answers": "mariokhan@ryan-pope.org",
+    "task_id": "2b96c022-a2db-47a5-981a-03cc6ad8f95e",
+    "Question": "Run a full reconnaissance on www.baidu.com. Give me a markdown report on ./annotated_data/markdown/baidu_report.md with whois information and sitemap.",
+    "answers": "file ./annotated_data/markdown/baidu_report.md",
     "category": "Office",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. read the file\n2. find the information about Sheryl Meyers",
+      "Steps": "1. Looksup whois information about the domain\n2. Fetch and parse the sitemap tree from the website URL\n3. Create and write a markdown report on ./annotated_data/markdown/baidu_report.md",
+      "Number of steps": "3",
+      "Tools": "1. whois_domain\n2. get_sitemap_tree\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "2bf318d4-754d-43f3-a1b5-cb2f50a7d144",
+    "Question": "What are the emerging treatment strategies for head and neck cancer, write the report to ./annotated_data/markdown/cancer.md?",
+    "answers": "file ./annotated_data/markdown/cancer.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. gather the information\n2. generate it a report\n3. write it to path",
+      "Number of steps": "3",
+      "Tools": "1. article_searcher\n2. trial_searcher\n3. variant_searcher\n4. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "2e190c2a-8aab-44e1-896d-671cb3fcc495",
+    "Question": "What are the changes in my log files ./annotated_data/txt/log_today.txt and ./annotated_data/txt/log_yesterday.txt, help me to find out all the different lines which contain 'ERROR' ?",
+    "answers": "[ERROR] Database connection failed.",
+    "category": "Office",
+    "file_name": "./annotated_data/txt/log_today.txt, ./annotated_data/txt/log_yesterday.txt",
+    "Annotator Metadata": {
+      "Steps": "1. Compare two text files and show differences\n2. Find different lines which contain 'ERROR'",
       "Number of steps": "2",
-      "Tools": "1. document_reader",
+      "Tools": "1. text_diff",
       "Number of tools": "1"
     }
   },
   {
-    "task_id": "b6281fad-0da4-4fd4-b669-7e4ff9083a82",
-    "Question": "I have 18.9g silver, please estimate its value based on the current price",
+    "task_id": "2f8db365-6b8b-4188-8812-4efcf91a40bd",
+    "Question": "Recommend a gaming PC build for playing the latest Call of Duty, along with an approximate budget.",
     "answers": "",
     "category": "Shopping",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. get the current silver price\n2. calculate the price",
-      "Number of steps": "2",
-      "Tools": "1. get_asset_price\n2. calculate",
-      "Number of tools": "2"
+      "Steps": "1. Find recommended configurations for the latest COD\n2. Check the prices at shopping sites like amazon\n3. Write a report to tell user",
+      "Number of steps": "3",
+      "Tools": "1. search_wikipedia\n2. playwright_navigate\n3. playwright_get_visible_html\n4. playwright_fill\n5. playwright_click",
+      "Number of tools": "5"
     }
   },
   {
-    "task_id": "cab818f4-ee48-440b-a37e-564c4edf401a",
-    "Question": "What's the weather like in Beijing in the last few days? Give me some advice on what to wear!",
-    "answers": "",
+    "task_id": "31086c2d-e183-42c3-9ee7-7c1278c4317f",
+    "Question": "What files are in my ./annotated_data/music folder?",
+    "answers": "mixkit-retro-game-emergency-alarm-1000.wav",
     "category": "Lifestyle",
-    "file_name": "",
+    "file_name": "./annotated_data/music",
     "Annotator Metadata": {
-      "Steps": "1. Get current weather and forecast for Beijing\n2. write the answer",
-      "Number of steps": "2",
-      "Tools": "1. get_weather",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "84326f9f-d4b7-4dc8-b9e0-3c8868a3f79f",
-    "Question": "Read the comments on hacker news story 44490510 and help me summarize the views in the comments.",
-    "answers": "",
-    "category": "Lifestyle",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. get the comments in story 44490510 \n2. summarize the comments",
-      "Number of steps": "2",
-      "Tools": "1. getStoryWithComments",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "d1ea5598-27d2-4a21-ae9d-be30ec099ee3",
-    "Question": "Get today's bbc news, reserved for finance related content.",
-    "answers": "",
-    "category": "Finance",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. get bbc news today\n2. filter the content",
-      "Number of steps": "2",
-      "Tools": "1. get-bbc-news",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "49cdaab7-39f0-4556-a3bb-7bd523916b32",
-    "Question": "We have organized an online raffle with the following list of participants: [‘Alice’, ‘Bob’, ‘Charlie’, ‘David’, ‘Eve’]. Please choose one lucky winner at random from this list.",
-    "answers": "",
-    "category": "Leisure",
-    "file_name": "",
-    "Annotator Metadata": {
-      "Steps": "1. must use random tool to avoid bias",
+      "Steps": "1. list the dir",
       "Number of steps": "1",
-      "Tools": "1. random_sample",
+      "Tools": "1. list_directory",
       "Number of tools": "1"
     }
   },
@@ -286,29 +208,29 @@
     }
   },
   {
-    "task_id": "2e190c2a-8aab-44e1-896d-671cb3fcc495",
-    "Question": "What are the changes in my log files ./annotated_data/txt/log_today.txt and ./annotated_data/txt/log_yesterday.txt, help me to find out all the different lines which contain 'ERROR' ?",
-    "answers": "[ERROR] Database connection failed.",
-    "category": "Office",
-    "file_name": "./annotated_data/txt/log_today.txt, ./annotated_data/txt/log_yesterday.txt",
-    "Annotator Metadata": {
-      "Steps": "1. Compare two text files and show differences\n2. Find different lines which contain 'ERROR'",
-      "Number of steps": "2",
-      "Tools": "1. text_diff",
-      "Number of tools": "1"
-    }
-  },
-  {
-    "task_id": "80bb6782-58c0-4d5e-9022-5173be685833",
-    "Question": "My after-tax income last month was 15,000 CNY, and my main expenses were 3,000 CNY for rent, 2,500 CNY for meals, 500 CNY for transportation, and 1,200 CNY for shopping. Please help me calculate what my balance was last month. And visualize these data in a pie chart. Also, please take the current exchange rate of RMB to USD and calculate how much my balance is converted to USD?",
+    "task_id": "37d72d03-29ae-48d1-9a48-66c9294d82fa",
+    "Question": "Analyze the last 24h of BTC and remind me if there is anything I need to pay special attention to",
     "answers": "",
     "category": "Finance",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. calculate balance \n2. draw the pie chart\n3. get exchange rate \n4. convert the balance in USD",
+      "Steps": "1. Get the current time\n2. Get current price and 24h stats for a cryptocurrency\n3. Get detailed market analysis including top exchanges and volume distribution\n4. Generate a report",
       "Number of steps": "4",
-      "Tools": "1. generate_pie_chart\n2. exchange_rate",
-      "Number of tools": "2"
+      "Tools": "1. get_current_time\n2. get-crypto-price\n3. get-market-analysis",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "38c156c5-ff2c-4cf4-9a23-984d761b8bcb",
+    "Question": "Help me do a full investment analysis on Nvidia's stock",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get the stock prices for one month\n2. Get cashflow,  income statement \n3. Get news\n4. make a report",
+      "Number of steps": "4",
+      "Tools": "1. get_stock_price_date_range\n2. get_income_statement\n3. get_cashflow\n4. get_news",
+      "Number of tools": "4"
     }
   },
   {
@@ -325,15 +247,626 @@
     }
   },
   {
-    "task_id": "0dafdf66-af3a-4110-ab79-d9c037f7bc62",
-    "Question": "Find the earliest available high-speed train from Beijing to Shanghai for tomorrow. What's the departure time and ticket price?",
+    "task_id": "3c65e618-2ed0-444b-b7c7-6135d3841976",
+    "Question": "Recommend me a combination of dishes for a potluck dinner for three people and then tell me what ingredients I need to prepare in total and how each dish should be prepared",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Recommend a combination of dishes\n2. Get the detailed information about all dishes\n3. Write a report",
+      "Number of steps": "3",
+      "Tools": "1. mcp_howtocook_whatToEat\n2. mcp_howtocook_getRecipeById",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "41899b5b-b6db-48b1-9899-334452904a12",
+    "Question": " I'm considering doing some initial research on a potential investment in the Korean market. Could you help me gather comprehensive data for Hyundai Motor Company.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get  official ticker symbol and full name on KOSPI/KOSDAQ.\n2. get key fundamental ratios: P/E Ratio (PER), P/B Ratio (PBR), and Dividend Yield.\n3. write a report",
+      "Number of steps": "3",
+      "Tools": "1. load_all_tickers\n2. get_stock_fundamental",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "470f7ac1-f573-4fec-8990-97f578749f78",
+    "Question": "How are Samsung Electronics and SK Hynix doing today? I need their current stock prices, the daily percentage change for each, and can you also calculate their current market capitalization?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current time\n2. get current stock prices for both\n3. calculate the daily percentage change\n4. get market capitalization",
+      "Number of steps": "4",
+      "Tools": "1. get_current_time\n2. get_stock_ohlcv\n3. get_stock_market_cap\n4. calculate",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "49cdaab7-39f0-4556-a3bb-7bd523916b32",
+    "Question": "We have organized an online raffle with the following list of participants: [‘Alice’, ‘Bob’, ‘Charlie’, ‘David’, ‘Eve’]. Please choose one lucky winner at random from this list.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. must use random tool to avoid bias",
+      "Number of steps": "1",
+      "Tools": "1. random_sample",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "4aa079dd-9d2d-440d-a654-9ba9cb3868b0",
+    "Question": "Read the paper webarena, mind2web and mind2web2, then create a Comparison Report in ./annotated_data/markdown/compare_webagent.md",
+    "answers": "file ./annotated_data/markdown/compare_webagent.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the paper id in arxiv\n2. get the detailed information for these papers\n3. write a Comparison Report in markdown\n4. save it to the path",
+      "Number of steps": "4",
+      "Tools": "1. search_papers\n2. get_paper_data\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "4de2e9f7-f3ea-4d02-8532-0a1b0b530609",
+    "Question": "Read the sales data under ./annotated_data/excel/Local_Electronic_Sales.xlsx, plot it as a bar chart by month and save it in ./annotated_data/figs/sale.png",
+    "answers": "file ./annotated_data/figs/sale.png",
+    "category": "Office",
+    "file_name": "./annotated_data/excel/Local_Electronic_Sales.xlsx",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel file to get the data\n2. draw the bar chart",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. generate_bar_chart",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "507f592a-f21f-45f6-bbde-dadb86441791",
+    "Question": "Read the customer information in ./annotated_data/csv/customers-100.csv and tell me Sheryl Meyers's email address",
+    "answers": "mariokhan@ryan-pope.org",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the file\n2. find the information about Sheryl Meyers",
+      "Number of steps": "2",
+      "Tools": "1. document_reader",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "567c79c3-3afb-4979-90cf-88ca49cb701d",
+    "Question": "Help me write a quick start tutorial for Ant Design in markdown at ./annotated_data/markdown/antd_tutorial.md.",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. list all the components in Ant Design.\n2. chose the proper components to introduce to the beginer.\n3. get the detailed information for these compoents.\n4. generate a quick start tutorial\n5. write it to the path",
+      "Number of steps": "5",
+      "Tools": "1. list-components\n2. list-component-examples\n3. get-component-docs\n4. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "56d7fbdb-ebd6-41fe-a5d6-cd21dbc59fd8",
+    "Question": "Find the trending GitHub repositories. For the top one, read its Deepwiki. Then, draft a Markdown intro document for it in ./annotated_data/markdown/github_trends.md.",
+    "answers": "file ./annotated_data/markdown/github_trends.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. find the trending repositories\n2. read the deepwiki of the top repository\n3. draft a Markdown intro\n4. write it to the path",
+      "Number of steps": "4",
+      "Tools": "1. get_github_trending_repositories\n2. deepwiki_fetch\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "5a2720cd-20f1-49e7-a3fc-8e74af2217f6",
+    "Question": "There are three of us. One person is in Haidian Huangzhuang, another is at Chaoyang Joy City, and the third is at Shijingshan Hospital. Could you please recommend a fair meeting point for us, and then suggest some places for entertainment nearby?",
     "answers": "",
     "category": "Travel",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. get the station codes\n2. check available tickets",
+      "Steps": "1. Convert all address or place name to geographic coordinates\n2. Find the optimal meeting place for multiple people coming from different locations\n3. Discover place of entertainment near the optimal meeting place\n4. Convert geographic coordinates to a detailed address and location description",
+      "Number of steps": "4",
+      "Tools": "1. geocode_address\n2. suggest_meeting_point\n3. find_nearby_places\n4. reverse_geocode",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "5b2087e4-4c07-4e0d-9b2f-79514ce465f5",
+    "Question": "I play mid lane in League of Legends and want to improve. Provide champion recommendations with optimal item builds, runes, and summoner spells.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the the analytics of champions by positions and chose some\n2. retrieves very detailed information about specific champions",
       "Number of steps": "2",
-      "Tools": "1. get-station-code-by-names\n2. get-tickets",
+      "Tools": "1. lol-champion-positions-data\n2. lol-champion-analysis",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "614189f6-b70d-4144-87ad-f27209f0ec14",
+    "Question": "What's on the zhihu and bilibili trendings today? Help me recommend something tech related!",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get trendings for both sites\n2. filter the trendings",
+      "Number of steps": "2",
+      "Tools": "1. get-bilibili-rank\n2. get-zhihu-trending",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "6265fd4a-a790-4be1-9806-d27b69bc6468",
+    "Question": "Help me recommend some consumer electronics that are worth buying these days.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. collect the treendings in consumer electronics\n2. write a report",
+      "Number of steps": "2",
+      "Tools": "1. get-ifanr-news\n2. get-smzdm-rank",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "629106a5-9508-4ac9-97c3-f22f6069ee7f",
+    "Question": "My goal is to reach Radiant in Valorant, what should I focus on to improve and start climbing?",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Retrieve character statistics data for Valorant\n2. Generate an enhancement program\n",
+      "Number of steps": "2",
+      "Tools": "1. valorant-characters-statistics",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "665e1166-1062-444f-81e3-df207d0f975b",
+    "Question": "Read the Wikipedia article on Llullaillaco, which briefly describes the content of this article, saved to ./annotated_data/markdown/Llullaillaco.md",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the article\n2. summary the article\n3. write it to path",
+      "Number of steps": "3",
+      "Tools": "1. get_article\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "6b7fc66e-fe96-4403-9a52-df5afa53ab68",
+    "Question": "Generate a research summary for NCT04280705 and save it as Markdown to ./annotated_data/markdown/NCT04280705.md.",
+    "answers": "file ./annotated_data/markdown/NCT04280705.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Retrieves publications and other references associated with a single clinical trial identified by its NCT ID\n2. Generate a markdown report\n3. Write it to the path",
+      "Number of steps": "3",
+      "Tools": "1. trial_references_getter\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "7180c69a-bbf2-4912-a0ca-a6345c5fe7f1",
+    "Question": "Make a web page about the history of AI based on Wikipedia saved at ./annotated_data/html/ai.html.",
+    "answers": "file ./annotated_data/html/ai.html",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Summarize the history of artificial intelligence based on Wikipedia.\n2. Generate a web page about the history of artificial intelligence\n3. Save it to path",
+      "Number of steps": "3",
+      "Tools": "1. summarize_article_for_query\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "71a7a42a-54af-4552-ad9b-d36f4912cc1c",
+    "Question": "Convert the reference list in ./annotated_data/txt/paper_list.bib into a Word document. Please use APA formatting and save the final file at ./annotated_data/word/paper_list.docx.",
+    "answers": "file ./annotated_data/word/paper_list.docx",
+    "category": "Office",
+    "file_name": "./annotated_data/txt/paper_list.bib",
+    "Annotator Metadata": {
+      "Steps": "1. open the ./annotated_data/txt/paper_list.bib\n2. convert them to APA format\n3. create a word document\n4. open and write to word document",
+      "Number of steps": "4",
+      "Tools": "1. read_file\n2. create_document\n3. open_document\n4. add_paragraph",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "7bda47e8-1b8b-4f1f-b67c-573a81417d36",
+    "Question": "Introduce me to the article on arxiv 2203.12277",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get detailed information about the paper\n2. fetch the full text of the paper\n3. write a introduction",
+      "Number of steps": "3",
+      "Tools": "1. get_paper_data\n2. fetch",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "80bb6782-58c0-4d5e-9022-5173be685833",
+    "Question": "My after-tax income last month was 15,000 CNY, and my main expenses were 3,000 CNY for rent, 2,500 CNY for meals, 500 CNY for transportation, and 1,200 CNY for shopping. Please help me calculate what my balance was last month. And visualize these data in a pie chart. Also, please take the current exchange rate of RMB to USD and calculate how much my balance is converted to USD?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. calculate balance \n2. draw the pie chart\n3. get exchange rate \n4. convert the balance in USD",
+      "Number of steps": "4",
+      "Tools": "1. generate_pie_chart\n2. exchange_rate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "83da9f72-640f-439d-861e-97b449e02da7",
+    "Question": "Analyze the visual marketing strategy from the iPhone 16 page at https://www.apple.com/iphone-16/ and save the summary as a Markdown report to ./annotated_data/markdown/iphone16_visual_strategy.md",
+    "answers": "file ./annotated_data/markdown/iphone16_visual_strategy.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Fetches the URL and get the url list in the page\n2. Extract and analyze images from web URLs. \n3. Generate a report\n4. write it to path",
+      "Number of steps": "4",
+      "Tools": "1. fetch\n2. extract_image_from_url\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "84326f9f-d4b7-4dc8-b9e0-3c8868a3f79f",
+    "Question": "Read the comments on hacker news story 44490510 and help me summarize the views in the comments.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the comments in story 44490510 \n2. summarize the comments",
+      "Number of steps": "2",
+      "Tools": "1. getStoryWithComments",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "90098a9c-2a37-4655-82b1-6b58c5154660",
+    "Question": "I'm using shadcn/ui to build a 'create post' page. I have two input fields, one for the title and one for the content. I want the 'Publish' button at the bottom to be disabled if either the title or content is empty. It should only become clickable when both fields are filled. How can I achieve this? Please provide a complete React/TypeScript example using the Input and Button components from shadcn/ui and save the code to ./annotated_data/code/shadcn_ui.ts",
+    "answers": "file ./annotated_data/code/shadcn_ui.ts",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. search for shadcn/ui components by keyword\n2. get detailed information about a specific shadcn/ui component\n3. write the code\n4. save it to path",
+      "Number of steps": "4",
+      "Tools": "1. search_components\n2. get_component_details\n3. write_file",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "9a18862e-22ce-46e7-b46a-72c6f5c79b23",
+    "Question": "Get line 10 of ./annotated_data/txt/Android.txt, please note that this file is very large",
+    "answers": "03-17 16:13:38.877  2227  2227 D TextView: mVisiblity.getValue is false",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. locate the 10th line in the file",
+      "Number of steps": "1",
+      "Tools": "1. get_text_file_contents",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "9bc7feb8-2db9-4c5b-8ad9-44ff15748bf6",
+    "Question": "Provide a foundational overview of Convolutional Neural Networks (CNNs), referencing Wikipedia. Generate a simple CNN example as a Python script and save it to ./annotated_data/code/cnn_example.py.",
+    "answers": "file ./annotated_data/code/cnn_example.py",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information from wiki about cnn\n2. write a code example of cnn\n3. write it to path",
+      "Number of steps": "3",
+      "Tools": "1. search_wikipedia\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "9fc8b7f3-776c-4756-bb84-a7ae667521a9",
+    "Question": "Help me find Mr. Lu Yaojie's resume in the Chinese Information Processing Laboratory of the Institute of Software and save it to ./annotated_data/markdown/cv.md.",
+    "answers": "file ./annotated_data/markdown/cv.md.",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. fetch the https://www.icip.org.cn/zh/zh_team/ to get the member information\n2. fetch the resume of Lu Yaojie in https://luyaojie.github.io/\n3. save it to ./annotated_data/markdown/cv.md",
+      "Number of steps": "3",
+      "Tools": "1. fetch\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "a93169d7-af1f-43f4-b595-1b5db07aa7d5",
+    "Question": "Tell me about the repository details in the ./annotated_data/git directory",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the status of the repository\n2. check the log of git\n3. tell the information",
+      "Number of steps": "3",
+      "Tools": "1. git_status\n2. git_log",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "ab11def3-6727-4521-ae9b-2ffc6ae5b938",
+    "Question": "Any recent negative news about Bitcoin? Also, tell me how the Crypto Fear & Greed Index has changed over the past three days.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get recent news about Bitcoin\n2. get Fear & Greed Index data past three days.\n3. write a report about finds",
+      "Number of steps": "3",
+      "Tools": "1. get-bbc-news\n2. get_crypto_fear_greed_index",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "afd60e13-2448-4c0f-9aae-2054b91f1ac1",
+    "Question": "I'm driving an EV with a 300km range from Beijing to Chengdu. Can you map out a route with all the charging stations I'll need?",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Convert all place names to geographic coordinates\n2. Calculate detailed route directions between two geographic points\n3. Find electric vehicle charging stations acctording to EV range \n4. Convert geographic coordinates to a detailed address and location description",
+      "Number of steps": "4",
+      "Tools": "1. geocode_address\n2. get_route_directions\n3. find_ev_charging_stations\n4. reverse_geocode",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "b050f277-0a92-4cfc-933b-5f01430e77dd",
+    "Question": "Convert ./annotated_data/word/CV.docx and ./annotated_data/word/Report_Card.docx to PDF, merge the two resulting files, and save the final combined document as ./annotated_data/pdf/full_cv.pdf.",
+    "answers": "file ./annotated_data/pdf/full_cv.pdf",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. convert two documents to two separate pdf\n2. merge them into a single document",
+      "Number of steps": "2",
+      "Tools": "1. docx_to_pdf\n2. pdf_merger",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
+    "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current gold price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "b6281fad-0da4-4fd4-b669-7e4ff9083a82",
+    "Question": "I have 18.9g silver, please estimate its value based on the current price",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current silver price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "b84fbf2e-2e19-4cc4-ab86-8a32bd0d33ed",
+    "Question": "I'm considering relocating to New York City and need a comprehensive understanding of a potential neighborhood's livability. Please generate a detailed analysis for the area surrounding 72nd Street and 5th Avenue, Manhattan. Focus on a 1000-meter radius to assess the quality of life. I'm particularly interested in the availability of amenities, public transportation accessibility, green spaces and recreational areas, and proximity to education and healthcare facilities. The output should provide counts and proximity scores for these categories to help me evaluate the overall convenience and quality of the residential area.\"",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Convert an address or place name to geographic coordinates with detailed location information.\n2. Generate a comprehensive neighborhood analysis focused on livability factors.",
+      "Number of steps": "2",
+      "Tools": "1. geocode_address\n2. analyze_neighborhood",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "be3f2275-15a4-4e05-b3cb-b0eeb9109d3a",
+    "Question": "Help me check the high-speed train tickets from Beijing to Shanghai on next Wednesday.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get current time and calculate next Wednesday's date\n2. Query the station_code of a city by its Chinese name\n3. Check 12306 remaining ticket information.",
+      "Number of steps": "3",
+      "Tools": "1. get_current_time\n2. get-station-code-of-citys\n3. get-tickets",
+      "Number of tools": "3"
+    }
+  },
+  {
+    "task_id": "c4d6c051-e2d4-4f52-b897-e945f402b858",
+    "Question": "Based on the current Fear & Greed Index and recent news, do you think it's a good time to take the plunge?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current Fear & Greed Index\n2. get news\n3. write a answer",
+      "Number of steps": "3",
+      "Tools": "1. get_cnn_fear_greed_index\n2. get-bbc-news",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "cab818f4-ee48-440b-a37e-564c4edf401a",
+    "Question": "What's the weather like in Beijing in the last few days? Give me some advice on what to wear!",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get current weather and forecast for Beijing\n2. write the answer",
+      "Number of steps": "2",
+      "Tools": "1. get_weather",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "cf1fca1e-8e56-4b26-ae34-dfdb1d982080",
+    "Question": "Analyze and compare echarts-for-react, react-chartjs-2, and Tremor. It's for a FinTech app, so my top priorities are a deep security scan of all dependencies and performance, especially bundle size. Give me a comparison table and a final recommendation in a markdown report in ./annotated_data/markdown/package_compare.md.",
+    "answers": "file ./annotated_data/markdown/package_compare.md",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. prepare all information about these package\n2. write a markdown report to compare them\n3. save it to path",
+      "Number of steps": "3",
+      "Tools": "1. npmDeps\n2. npmSize\n3. npmCompare\n4. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+    "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+    "answers": "20.76",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel\n2. caculate the bmi",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "d1ea5598-27d2-4a21-ae9d-be30ec099ee3",
+    "Question": "Get today's bbc news, reserved for finance related content.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get bbc news today\n2. filter the content",
+      "Number of steps": "2",
+      "Tools": "1. get-bbc-news",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "de75630e-b91e-4cc7-85b1-5d02c2455392",
+    "Question": " I'm looking at a PR and need to know if these libs are outdated. com.fasterxml.jackson.core:jackson-databind:2.13.4, org.apache.poi:poi-ooxml:5.2.0, and com.google.guava:guava:30.1-jre. What are the latest versions for each?",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the versions",
+      "Number of steps": "1",
+      "Tools": "1. get_maven_latest_version",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "e8f13600-c0c8-427e-98d3-0762ad510805",
+    "Question": "There are three people eating in the house this week, I'm allergic to shrimp and my son doesn't eat scallions, so please help me recommend a meal plan and a rough shopping list for next week.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. recommend recipes based on the user's contraindications, allergens, and number of people, create a meal plan for the week and a rough shopping list",
+      "Number of steps": "1",
+      "Tools": "1. mcp_howtocook_recommendMeals",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "e9df60b1-37a6-4b10-aff0-d432fa79d400",
+    "Question": "Please help me find the latest articles about 'MCP' on arXiv. Identify the potentially most influential papers among them and analyze the current trends in this field.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Search for papers on arXiv and find some may important papers\n2. Get abstract of  these papers and identify the potentially most influential paper\n3. Analyze the current trends in this field",
+      "Number of steps": "3",
+      "Tools": "1. search_papers\n2. get_paper_data",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "ec6f4fe5-e650-48b1-8805-285d8f52eb10",
+    "Question": "Create a Next.js middleware that checks for a valid JWT in cookies and redirects unauthenticated users to `/login` in ./annotated_data/code/middleware.ts. use context7",
+    "answers": "file ./annotated_data/code/middleware.ts",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Resolves the package name to a Context7-compatible library ID\n2. Fetches up-to-date documentation for a library using the library ID\n3. create the middleware \n4. write it to ./annotated_data/code/middleware.ts",
+      "Number of steps": "4",
+      "Tools": "1. resolve-library-id\n2. get-library-docs\n3. write_file",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "ef7126b3-45ad-41ab-a191-2272c644d057",
+    "Question": "I need a daily financial brief. Fetch today's economic news, cross-reference it with relevant stock movements, and then generate a report at ./annotated_data/markdown/daily_fin.md.",
+    "answers": "file ./annotated_data/markdown/daily_fin.md",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the financial news from multiple sources\n2. check stock prices\n3. generate a daily financial brief\n4. write it to ./annotated_data/markdown/daily_fin.md",
+      "Number of steps": "4",
+      "Tools": "1. get-36kr-trending\n2. get-netease-news-trending\n3. get-nytimes-news\n4. get_news\n5. get_current_stock_price\n6. write_file",
+      "Number of tools": "6"
+    }
+  },
+  {
+    "task_id": "f2a9eb67-efec-4c86-abad-efa55a72f86d",
+    "Question": "Generate a deep report of bitcoin and save it in ./annotated_data/markdown/bitcoin.md",
+    "answers": "file ./annotated_data/markdown/bitcoin.md",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. deep research the bitcoin\n2. write the report to path",
+      "Number of steps": "2",
+      "Tools": "1. research-with-keywords\n2. write_file",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
+    "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
+      "Number of steps": "3",
+      "Tools": "1. get_current_time\n2. airbnb_search",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "fa451c3f-23c2-4b03-bcb6-60b49e3a142f",
+    "Question": "Read the paper in ./annotated_data/pdf/WebArena.pdf, and find the latest papers in this area",
+    "answers": "",
+    "category": "Office",
+    "file_name": "./annotated_data/pdf/WebArena.pdf",
+    "Annotator Metadata": {
+      "Steps": "1. read the paper in path and identify the field\n2. search the arxiv to find the latest papers",
+      "Number of steps": "2",
+      "Tools": "1. document_reader\n2. search_papers",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "fab605cf-d337-4ac1-beba-b3f563eaffff",
+    "Question": "What is the current effect text of 'Sky Striker Ace = Zero', and what are its ATK and DEF? Show me the picture.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the latest card information\n2. get the picture of the card",
+      "Number of steps": "2",
+      "Tools": "1. search_cards\n2. get_card_image",
       "Number of tools": "2"
     }
   }
