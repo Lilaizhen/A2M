@@ -2333,7 +2333,7 @@ class AttackGenerator:
 
 def main():
     # 使用相对路径而非硬编码绝对路径
-    default_input = "datasets/test_prompts.json"
+    default_input = "datasets/all_annotations_filter.json"
     default_output = "test.json"
 
     parser = argparse.ArgumentParser(description="MCP-Bench 攻击工具生成器")
