@@ -1,0 +1,184 @@
+[
+  {
+    "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+    "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+    "answers": "20.76",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel\n2. caculate the bmi",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "10b5dbf7-0bac-4b25-835f-e806967ad340",
+    "Question": "Help me arrange a three-day trip from Beijing to Tianjin tomorrow, round-trip by rail, give me a detailed timetable and include an approximate total budget.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current data\n2. check the 12306 ticks\n3. arrange the trip and find the nearby places\n4. generate the report with timetable and budget",
+      "Number of steps": "4",
+      "Tools": "1. get-current-date\n2. get-station-code-of-citys\n3. get-tickets\n4. geocode_address\n5. find_nearby_places\n6. get_route_directions\n7. reverse_geocode",
+      "Number of tools": "7"
+    }
+  },
+  {
+    "task_id": "3c65e618-2ed0-444b-b7c7-6135d3841976",
+    "Question": "Recommend me a combination of dishes for a potluck dinner for three people and then tell me what ingredients I need to prepare in total and how each dish should be prepared",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Recommend a combination of dishes\n2. Get the detailed information about all dishes\n3. Write a report",
+      "Number of steps": "3",
+      "Tools": "1. mcp_howtocook_whatToEat\n2. mcp_howtocook_getRecipeById",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
+    "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
+      "Number of steps": "3",
+      "Tools": "1. get_current_time\n2. airbnb_search",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
+    "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current gold price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "a93169d7-af1f-43f4-b595-1b5db07aa7d5",
+    "Question": "Tell me about the repository details in the ./annotated_data/git directory",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the status of the repository\n2. check the log of git\n3. tell the information",
+      "Number of steps": "3",
+      "Tools": "1. git_status\n2. git_log",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "29fa007d-5caf-41a0-b107-e9388305c6c5",
+    "Question": "I just pulled Jiyan and want to build a team around him as my main DPS. Can you recommend a good starter team for me? I need a sub-DPS/buffer and a healer/survivor. Also, what's his best Echo set and main Echo, and please explain why.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the information about Jiyan \n2. get the information about Echo set\n3. write a report to explain",
+      "Number of steps": "3",
+      "Tools": "1. get_character_info\n2. get_artifact_info",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "086e2393-dc1a-4c55-bf54-1e9a94951db7",
+    "Question": "Read the file ./annotated_data/word/exchange.docx, tell me who did not give a gift",
+    "answers": "Fred",
+    "category": "Leisure",
+    "file_name": "./annotated_data/word/exchange.docx",
+    "Annotator Metadata": {
+      "Steps": "1. open the word document\n2. answer the question",
+      "Number of steps": "2",
+      "Tools": "1. get_document_text",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "b6281fad-0da4-4fd4-b669-7e4ff9083a82",
+    "Question": "I have 18.9g silver, please estimate its value based on the current price",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current silver price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "41899b5b-b6db-48b1-9899-334452904a12",
+    "Question": " I'm considering doing some initial research on a potential investment in the Korean market. Could you help me gather comprehensive data for Hyundai Motor Company.",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get  official ticker symbol and full name on KOSPI/KOSDAQ.\n2. get key fundamental ratios: P/E Ratio (PER), P/B Ratio (PBR), and Dividend Yield.\n3. write a report",
+      "Number of steps": "3",
+      "Tools": "1. load_all_tickers\n2. get_stock_fundamental",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "36d95b6f-8cc6-40d0-bb64-77d3fa162f8d",
+    "Question": "I received an email from amaz0n.com asking me to click on a link to enter my account information. Is this site official for Amazon?",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Looksup whois information about the domain\n2. Answer this question based on information",
+      "Number of steps": "2",
+      "Tools": "1. whois_domain",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "80bb6782-58c0-4d5e-9022-5173be685833",
+    "Question": "My after-tax income last month was 15,000 CNY, and my main expenses were 3,000 CNY for rent, 2,500 CNY for meals, 500 CNY for transportation, and 1,200 CNY for shopping. Please help me calculate what my balance was last month. And visualize these data in a pie chart. Also, please take the current exchange rate of RMB to USD and calculate how much my balance is converted to USD?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. calculate balance \n2. draw the pie chart\n3. get exchange rate \n4. convert the balance in USD",
+      "Number of steps": "4",
+      "Tools": "1. generate_pie_chart\n2. exchange_rate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "0dafdf66-af3a-4110-ab79-d9c037f7bc62",
+    "Question": "Find the earliest available high-speed train from Beijing to Shanghai for tomorrow. What's the departure time and ticket price?",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the station codes\n2. check available tickets",
+      "Number of steps": "2",
+      "Tools": "1. get-station-code-by-names\n2. get-tickets",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "38c156c5-ff2c-4cf4-9a23-984d761b8bcb",
+    "Question": "Help me do a full investment analysis on Nvidia's stock",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get the stock prices for one month\n2. Get cashflow,  income statement \n3. Get news\n4. make a report",
+      "Number of steps": "4",
+      "Tools": "1. get_stock_price_date_range\n2. get_income_statement\n3. get_cashflow\n4. get_news",
+      "Number of tools": "4"
+    }
+  }
+]

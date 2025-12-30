@@ -50,6 +50,22 @@ def _is_transient_error(e: Exception) -> bool:
     )
 
 
+def _is_agent_soft_error(e: Exception) -> bool:
+    s = (str(e) or "").lower()
+    return any(
+        x in s
+        for x in [
+            "recursion limit",
+            "graphrecursionerror",
+            "recursionerror",
+            "prompt exceed max tokens",
+            "promptexceedmaxtokens",
+            "error code: 511",
+            "code': '511'",
+        ]
+    )
+
+
 async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name="op"):
     """
     对异步操作做指数退避 + 抖动的重试。
@@ -377,12 +393,13 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
         final_response = ""
         action_trace = [{"ts": _now(), "type": "user_input", "content": user_prompt}]
         token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+        agent_error = None
 
         from langgraph.prebuilt import create_react_agent
         from langgraph.checkpoint.memory import MemorySaver
 
         agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
-        config = {"recursion_limit": 100, "configurable": {"thread_id": f"task-{task_id}"}}
+        config = {"recursion_limit": 40, "configurable": {"thread_id": f"task-{task_id}"}}
         user_msg = {"messages": [{"role": "user", "content": user_prompt}]}
 
         async def _drain():
@@ -415,10 +432,23 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
 
         try:
             with get_openai_callback() as cb:
-                await retry_async(
-                    lambda: asyncio.wait_for(_drain(), timeout=500),
-                    tries=2, base=1.0, factor=2.0, max_delay=5.0, name="agent.stream",
-                )
+                try:
+                    await retry_async(
+                        lambda: asyncio.wait_for(_drain(), timeout=500),
+                        tries=2, base=1.0, factor=2.0, max_delay=5.0, name="agent.stream",
+                    )
+                except Exception as e:
+                    if _is_agent_soft_error(e):
+                        agent_error = str(e)
+                        action_trace.append(
+                            {
+                                "ts": _now(),
+                                "type": "ai_message",
+                                "content": f"Agent stopped: {agent_error}",
+                            }
+                        )
+                    else:
+                        raise
 
                 token_usage = {
                     "total_tokens": cb.total_tokens,
@@ -431,7 +461,13 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
         # 任务完成度判定
         is_task_completed = False
         completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
-        if action_trace and task_desc:
+        if agent_error:
+            completion_json = {
+                "result": "未完成",
+                "reason": f"Agent error: {agent_error}",
+                "failure_type": "agent_error",
+            }
+        elif action_trace and task_desc:
             # 检查 agent 行为轨迹的最后一个步骤是否是 AI 输出的信息
             def _check_last_step_is_ai_message(trace):
                 """检查轨迹的最后一个步骤是否是 AI 消息"""
@@ -447,7 +483,7 @@ async def _run_single_task(task, llm, tool_to_mcp, mcp_configs, attack, attack_m
                 completion_json = {
                     "result": "未完成",
                     "reason": "Agent行为轨迹最后一个步骤不是AI输出的信息",
-                    "failure_type": "system_error"
+                    "failure_type": "system_error",
                 }
             else:
                 behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)

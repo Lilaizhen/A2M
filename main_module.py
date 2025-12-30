@@ -105,6 +105,22 @@ def _is_transient_error(e: Exception) -> bool:
     )
 
 
+def _is_agent_soft_error(e: Exception) -> bool:
+    s = (str(e) or "").lower()
+    return any(
+        x in s
+        for x in [
+            "recursion limit",
+            "graphrecursionerror",
+            "recursionerror",
+            "prompt exceed max tokens",
+            "promptexceedmaxtokens",
+            "error code: 511",
+            "code': '511'",
+        ]
+    )
+
+
 async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name="op"):
     """
     对异步操作做指数退避 + 抖动的重试。
@@ -315,10 +331,11 @@ async def main(
 
                 action_trace.append({"ts": _now(), "type": "user_input", "content": user_prompt})
 
+                agent_error = None
                 try:
                     agent = create_react_agent(llm, tools, checkpointer=MemorySaver())
                     config = {
-                        "recursion_limit": 100,
+                        "recursion_limit": 40,
                         "configurable": {"thread_id": f"test-{task_id}"},
                     }
                     user_input = {"role": "user", "content": user_prompt}
@@ -453,14 +470,27 @@ async def main(
                                 )
 
                         # 整体流式执行再加一层重试（抗瞬断）
-                        await retry_async(
-                            _run_stream_once,
-                            tries=5,
-                            base=1.0,
-                            factor=2.0,
-                            max_delay=5.0,
-                            name="agent.stream",
-                        )
+                        try:
+                            await retry_async(
+                                _run_stream_once,
+                                tries=5,
+                                base=1.0,
+                                factor=2.0,
+                                max_delay=5.0,
+                                name="agent.stream",
+                            )
+                        except Exception as e:
+                            if _is_agent_soft_error(e):
+                                agent_error = str(e)
+                                action_trace.append(
+                                    {
+                                        "ts": _now(),
+                                        "type": "ai_message",
+                                        "content": f"Agent stopped: {agent_error}",
+                                    }
+                                )
+                            else:
+                                raise
 
                         token_usage = {
                             "total_tokens": cb.total_tokens,
@@ -515,13 +545,19 @@ async def main(
                 # === 任务完成度判断（基于轨迹）===
                 is_task_completed = False
                 completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
-                if action_trace and task_desc:
+                if agent_error:
+                    completion_json = {
+                        "result": "未完成",
+                        "reason": f"Agent error: {agent_error}",
+                        "failure_type": "agent_error",
+                    }
+                elif action_trace and task_desc:
                     # 检查最后一个步骤是否是 AI 消息，如果不是则判断为 system_error
                     if not _check_last_step_is_ai_message(action_trace):
                         completion_json = {
                             "result": "未完成",
                             "reason": "Agent行为轨迹最后一个步骤不是AI输出的信息",
-                            "failure_type": "system_error"
+                            "failure_type": "system_error",
                         }
                         # 如果是system_error且不是最后一次尝试，则重试
                         if attempt < max_retries - 1:

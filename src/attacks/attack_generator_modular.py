@@ -460,7 +460,7 @@ class AttackGenerator:
         self.use_parallel_scoring = use_parallel_scoring  # 保存并行评分配置
         self.llm_concurrent_limit = llm_concurrent_limit  # LLM 最大并发数（API速率限制）
         self.elite_rate = 0.2
-        self.crossover_rate = 0.8
+        self.crossover_rate = 0.7
         self.mutation_rate = 0.1
         self.executor = RealExecutor(api_key=api_key, execution_model=execution_model)
         self.fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key, require_task_success=require_task_success)
