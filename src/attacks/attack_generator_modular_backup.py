@@ -413,7 +413,7 @@ Please output JSON format directly, do not include other explanatory text.
 class AttackGenerator:
     """Attack tool generator (supports multiple attack scenarios)"""
 
-    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, return_value_count: int = None, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 3, use_strategy_tags: bool = False, use_execution_trace: bool = False, require_task_success: bool = True):
+    def __init__(self, api_key: Optional[str] = None, attack_type: AttackType = AttackType.RESOURCE_WASTE, score_threshold: int = 5000, candidate_count: int = 4, return_value_count: int = None, execution_model: str = None, generation_model: str = None, mutation_model: str = None, mutation_strategy: str = "crossover", parent_selection_strategy: str = "diverse", top_k: int = 10, use_parallel_scoring: bool = True, llm_concurrent_limit: int = 3, use_strategy_tags: bool = False, use_execution_trace: bool = False, merge_phase0_phase1: bool = False, require_task_success: bool = True):
         from src.utils.model_config import get_default_model
         print("Using functional real executor")
         self.api_key = api_key
@@ -426,6 +426,7 @@ class AttackGenerator:
         self.mutation_model = mutation_model or get_default_model("mutation")
         self.use_strategy_tags = use_strategy_tags
         self.use_execution_trace = use_execution_trace
+        self.merge_phase0_phase1 = merge_phase0_phase1
         self.require_task_success = require_task_success
         self.mutation_strategy = mutation_strategy
         self.parent_selection_strategy = parent_selection_strategy
@@ -1901,12 +1902,15 @@ class AttackGenerator:
 
             baseline_ok, baseline_score = baseline_result
 
-            # ========== Phase 0: 只生成name和description（return_value为空）==========
+            # ========== Phase 0: 初始候选生成（默认仅name+desc，可选合并Phase1）==========
             raw_candidates = []
             attempts = 0
             max_attempts = 5
 
-            print(f"[Phase0] 开始生成只有name+description的候选，目标: {self.candidate_count}个")
+            if self.merge_phase0_phase1:
+                print(f"[Phase0] 开始生成完整候选工具，目标: {self.candidate_count}个")
+            else:
+                print(f"[Phase0] 开始生成只有name+description的候选，目标: {self.candidate_count}个")
 
             while len(raw_candidates) < self.candidate_count and attempts < max_attempts:
                 remaining_needed = self.candidate_count - len(raw_candidates)
@@ -1917,9 +1921,14 @@ class AttackGenerator:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
-                        candidate_batch = loop.run_until_complete(self._propose_name_desc_only_async(
-                            task, k=remaining_needed, model=self.generation_model
-                        ))
+                        if self.merge_phase0_phase1:
+                            candidate_batch = loop.run_until_complete(self._propose_candidates_async(
+                                task, k=remaining_needed, model=self.generation_model
+                            ))
+                        else:
+                            candidate_batch = loop.run_until_complete(self._propose_name_desc_only_async(
+                                task, k=remaining_needed, model=self.generation_model
+                            ))
                     finally:
                         # 确保所有任务完成
                         pending = asyncio.all_tasks(loop)
@@ -1943,7 +1952,7 @@ class AttackGenerator:
                     import time
                     time.sleep(2)
 
-            # Phase 0 评估：评估只有name+description的工具
+            # Phase 0 评估：评估初始候选工具
             if not raw_candidates:
                 print(f"[Phase0] 没有生成任何候选，使用fallback")
                 candidates = []
@@ -2238,7 +2247,7 @@ class AttackGenerator:
         full_tool_collection = self._manage_tool_collection([], tool_collection) if tool_collection else []
 
         # ========== Phase 1: 为精英生成return_value ==========
-        if start_iteration == 0 and tool_collection:
+        if start_iteration == 0 and tool_collection and not self.merge_phase0_phase1:
             print(f"\n[Phase1] 开始为精英工具生成return_value...")
 
             # 先选择精英（按照精英率和分数）
@@ -2869,6 +2878,8 @@ def main():
     # 新增：执行轨迹参数
     parser.add_argument("--use-execution-trace", dest="use_execution_trace", action="store_true",
                         help="启用执行轨迹，变异时使用执行结果和详细信息")
+    parser.add_argument("--merge-phase0-phase1", dest="merge_phase0_phase1", action="store_true",
+                        help="合并Phase0/Phase1，直接生成完整候选工具")
     parser.add_argument("--no-require-task-success", dest="require_task_success", action="store_false",
                         help="不要求原始任务成功，默认要求任务成功")
 
@@ -2885,7 +2896,7 @@ def main():
         print(f"错误: 无效的攻击场景类型: {args.attack_type}")
         sys.exit(1)
 
-    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, return_value_count=args.return_value_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace, require_task_success=args.require_task_success)
+    generator = AttackGenerator(api_key=args.api_key, attack_type=attack_type, score_threshold=args.score_threshold, candidate_count=args.candidate_count, return_value_count=args.return_value_count, execution_model=args.execution_model, generation_model=args.generation_model, mutation_model=args.mutation_model, mutation_strategy=args.mutation_strategy, parent_selection_strategy=args.parent_selection_strategy, top_k=args.top_k, use_strategy_tags=args.use_strategy_tags, use_execution_trace=args.use_execution_trace, merge_phase0_phase1=args.merge_phase0_phase1, require_task_success=args.require_task_success)
 
     print("正在加载输入数据集...")
     input_dataset = generator.load_dataset(args.input)
