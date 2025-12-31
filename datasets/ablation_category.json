@@ -1,0 +1,236 @@
+[
+  {
+    "task_id": "629106a5-9508-4ac9-97c3-f22f6069ee7f",
+    "Question": "My goal is to reach Radiant in Valorant, what should I focus on to improve and start climbing?",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Retrieve character statistics data for Valorant\n2. Generate an enhancement program\n",
+      "Number of steps": "2",
+      "Tools": "1. valorant-characters-statistics",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "d116bda4-e70c-4ef1-ab1a-b68b4855e1bf",
+    "Question": "Read the data under ./annotated_data/excel/people_data.xlsx and tell me Sophia Moore's bmi.",
+    "answers": "20.76",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the excel\n2. caculate the bmi",
+      "Number of steps": "2",
+      "Tools": "1. excel_read_sheet\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "7bda47e8-1b8b-4f1f-b67c-573a81417d36",
+    "Question": "Introduce me to the article on arxiv 2203.12277",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get detailed information about the paper\n2. fetch the full text of the paper\n3. write a introduction",
+      "Number of steps": "3",
+      "Tools": "1. get_paper_data\n2. fetch",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "3c65e618-2ed0-444b-b7c7-6135d3841976",
+    "Question": "Recommend me a combination of dishes for a potluck dinner for three people and then tell me what ingredients I need to prepare in total and how each dish should be prepared",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Recommend a combination of dishes\n2. Get the detailed information about all dishes\n3. Write a report",
+      "Number of steps": "3",
+      "Tools": "1. mcp_howtocook_whatToEat\n2. mcp_howtocook_getRecipeById",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "f2b074b5-860e-4ecf-afac-16874155dc59",
+    "Question": "Help me find homestays in Paris, France, I want to stay tomorrow, about 3 days, one adult.",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current time\n2. find the homestays in airbnb\n3. recommendations for suitable homestays",
+      "Number of steps": "3",
+      "Tools": "1. get_current_time\n2. airbnb_search",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "00e13e2e-07fa-4d0b-9863-e966190cffd6",
+    "Question": "find the painting \"Corridor in the Asylum\" and give me some background information,",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Realizes that \"Corridor in the Asylum\" is located in the Metropolitan Museum of Art Collection\n2. Search for objects in the Metropolitan Museum of Art\n3. Get the detailed information",
+      "Number of steps": "3",
+      "Tools": "1. search-museum-objects\n2. get-museum-object",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "b276e772-28b5-42fd-bb85-fd73e017fe25",
+    "Question": "I have 9.5g gold, please estimate its value based on the current price of gold",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the current gold price\n2. calculate the price",
+      "Number of steps": "2",
+      "Tools": "1. get_asset_price\n2. calculate",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "fab605cf-d337-4ac1-beba-b3f563eaffff",
+    "Question": "What is the current effect text of 'Sky Striker Ace = Zero', and what are its ATK and DEF? Show me the picture.",
+    "answers": "",
+    "category": "Leisure",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the latest card information\n2. get the picture of the card",
+      "Number of steps": "2",
+      "Tools": "1. search_cards\n2. get_card_image",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "470f7ac1-f573-4fec-8990-97f578749f78",
+    "Question": "How are Samsung Electronics and SK Hynix doing today? I need their current stock prices, the daily percentage change for each, and can you also calculate their current market capitalization?",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get current time\n2. get current stock prices for both\n3. calculate the daily percentage change\n4. get market capitalization",
+      "Number of steps": "4",
+      "Tools": "1. get_current_time\n2. get_stock_ohlcv\n3. get_stock_market_cap\n4. calculate",
+      "Number of tools": "4"
+    }
+  },
+  {
+    "task_id": "a93169d7-af1f-43f4-b595-1b5db07aa7d5",
+    "Question": "Tell me about the repository details in the ./annotated_data/git directory",
+    "answers": "",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. check the status of the repository\n2. check the log of git\n3. tell the information",
+      "Number of steps": "3",
+      "Tools": "1. git_status\n2. git_log",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "6265fd4a-a790-4be1-9806-d27b69bc6468",
+    "Question": "Help me recommend some consumer electronics that are worth buying these days.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. collect the treendings in consumer electronics\n2. write a report",
+      "Number of steps": "2",
+      "Tools": "1. get-ifanr-news\n2. get-smzdm-rank",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "2f8db365-6b8b-4188-8812-4efcf91a40bd",
+    "Question": "Recommend a gaming PC build for playing the latest Call of Duty, along with an approximate budget.",
+    "answers": "",
+    "category": "Shopping",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Find recommended configurations for the latest COD\n2. Check the prices at shopping sites like amazon\n3. Write a report to tell user",
+      "Number of steps": "3",
+      "Tools": "1. search_wikipedia\n2. playwright_navigate\n3. playwright_get_visible_html\n4. playwright_fill\n5. playwright_click",
+      "Number of tools": "5"
+    }
+  },
+  {
+    "task_id": "507f592a-f21f-45f6-bbde-dadb86441791",
+    "Question": "Read the customer information in ./annotated_data/csv/customers-100.csv and tell me Sheryl Meyers's email address",
+    "answers": "mariokhan@ryan-pope.org",
+    "category": "Office",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. read the file\n2. find the information about Sheryl Meyers",
+      "Number of steps": "2",
+      "Tools": "1. document_reader",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "b84fbf2e-2e19-4cc4-ab86-8a32bd0d33ed",
+    "Question": "I'm considering relocating to New York City and need a comprehensive understanding of a potential neighborhood's livability. Please generate a detailed analysis for the area surrounding 72nd Street and 5th Avenue, Manhattan. Focus on a 1000-meter radius to assess the quality of life. I'm particularly interested in the availability of amenities, public transportation accessibility, green spaces and recreational areas, and proximity to education and healthcare facilities. The output should provide counts and proximity scores for these categories to help me evaluate the overall convenience and quality of the residential area.\"",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Convert an address or place name to geographic coordinates with detailed location information.\n2. Generate a comprehensive neighborhood analysis focused on livability factors.",
+      "Number of steps": "2",
+      "Tools": "1. geocode_address\n2. analyze_neighborhood",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "84326f9f-d4b7-4dc8-b9e0-3c8868a3f79f",
+    "Question": "Read the comments on hacker news story 44490510 and help me summarize the views in the comments.",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the comments in story 44490510 \n2. summarize the comments",
+      "Number of steps": "2",
+      "Tools": "1. getStoryWithComments",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "36d95b6f-8cc6-40d0-bb64-77d3fa162f8d",
+    "Question": "I received an email from amaz0n.com asking me to click on a link to enter my account information. Is this site official for Amazon?",
+    "answers": "",
+    "category": "Lifestyle",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Looksup whois information about the domain\n2. Answer this question based on information",
+      "Number of steps": "2",
+      "Tools": "1. whois_domain",
+      "Number of tools": "1"
+    }
+  },
+  {
+    "task_id": "0dafdf66-af3a-4110-ab79-d9c037f7bc62",
+    "Question": "Find the earliest available high-speed train from Beijing to Shanghai for tomorrow. What's the departure time and ticket price?",
+    "answers": "",
+    "category": "Travel",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. get the station codes\n2. check available tickets",
+      "Number of steps": "2",
+      "Tools": "1. get-station-code-by-names\n2. get-tickets",
+      "Number of tools": "2"
+    }
+  },
+  {
+    "task_id": "38c156c5-ff2c-4cf4-9a23-984d761b8bcb",
+    "Question": "Help me do a full investment analysis on Nvidia's stock",
+    "answers": "",
+    "category": "Finance",
+    "file_name": "",
+    "Annotator Metadata": {
+      "Steps": "1. Get the stock prices for one month\n2. Get cashflow,  income statement \n3. Get news\n4. make a report",
+      "Number of steps": "4",
+      "Tools": "1. get_stock_price_date_range\n2. get_income_statement\n3. get_cashflow\n4. get_news",
+      "Number of tools": "4"
+    }
+  }
+]
