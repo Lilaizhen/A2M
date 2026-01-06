@@ -8,7 +8,7 @@ from src.data_loaders.data_loader import load_dataset
 from src.utils.model_config import resolve_model, get_default_model
 
 def reset_annotated_data():
-    """重置annotated_data文件夹到备份状态"""
+    """重置annotated_data文件夹到备份状态1111111111111"""
     annotated_data_path = os.path.join(os.getcwd(), "annotated_data")
     annotated_data_backup_path = os.path.join(os.getcwd(), "annotated_data_backup")
     
