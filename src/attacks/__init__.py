@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MCP-Bench 攻击生成器模块初始化文件
+MCP-Bench attack generator module initialization.
 """
 
-# 导入主要的类和函数
+# Export primary classes
 from .attack_generator_modular import AttackGenerator, AttackType
 
 __all__ = ['AttackGenerator', 'AttackType']

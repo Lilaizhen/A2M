@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-攻击场景模块初始化文件
+Attack scenario module initialization.
 """
 
 from .resource_waste import ResourceWasteScenario

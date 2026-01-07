@@ -3,33 +3,32 @@ import re
 import asyncio
 import os
 
-# 导入临时路径管理器
+# Import temp path manager
 from src.utils.temp_path_manager import convert_relative_paths_with_temp_mapping
 
 
 def _convert_relative_paths_in_text(text):
     """
-    在文本中查找类似 "./path/to/file" 的相对路径并转换为绝对路径
-    仅转换以 ./ 或 ../ 开头的路径
+    Find relative paths like "./path/to/file" in text and convert to absolute.
+    Only converts paths starting with ./ or ../.
     """
     if not text or not isinstance(text, str):
         return text
     
-    # 匹配相对路径模式 (./ 或 ../ 开头的路径)
-    # 这个正则表达式会匹配引号中的相对路径或独立的相对路径
+    # Match relative path patterns (starting with ./ or ../), including quoted paths
     pattern = r'(["\']?)(\.{1,2}/[^\s"\']+)["\']?'
     
     def replace_path(match):
         quote = match.group(1)
         path = match.group(2)
         
-        # 只处理以 ./ 或 ../ 开头的路径
+        # Only handle ./ or ../ prefixes
         if path.startswith('./') or path.startswith('../'):
             try:
                 abs_path = os.path.abspath(path)
                 return f'{quote}{abs_path}{quote}'
             except Exception:
-                # 如果转换失败，保持原路径
+                # Keep original path on failure
                 return match.group(0)
         
         return match.group(0)
@@ -38,7 +37,7 @@ def _convert_relative_paths_in_text(text):
 
 
 def load_mcp_configs_from_live_config(live_config_path):
-    """从live配置文件加载MCP配置"""
+    """Load MCP configs from the live config file."""
     with open(live_config_path, "r", encoding="utf-8") as f:
         live_configs = json.load(f)
     merged_config = {}
@@ -50,7 +49,7 @@ def load_mcp_configs_from_live_config(live_config_path):
 
 
 def load_tool_to_mcp_mapping(tool2mcp_path):
-    """加载工具到MCP的映射"""
+    """Load mapping from tool name to MCP server config."""
     with open(tool2mcp_path, "r", encoding="utf-8") as f:
         tool2mcp_data = json.load(f)
     
@@ -74,7 +73,7 @@ def load_tool_to_mcp_mapping(tool2mcp_path):
 
 
 async def fetch_server_tool_names(server_key: str, server_cfg: dict, MultiServerMCPClient):
-    """单独连接一个 server，返回其当前暴露的工具名集合"""
+    """Connect to one server and return its current tool names."""
     client = MultiServerMCPClient({server_key: server_cfg})
     try:
         tools = await asyncio.wait_for(client.get_tools(), timeout=30)
@@ -86,7 +85,7 @@ async def fetch_server_tool_names(server_key: str, server_cfg: dict, MultiServer
 
 
 def load_dataset(data_path, task_id_for_temp_mapping=None):
-    """加载数据集，支持任务ID参数用于临时路径映射"""
+    """Load dataset; optionally rewrite paths for per-task temp dirs."""
     dataset = []
     try:
         with open(data_path, "r", encoding="utf-8") as f:
@@ -99,15 +98,15 @@ def load_dataset(data_path, task_id_for_temp_mapping=None):
                     tools_list = [t.strip() for t in re.sub(r"\d+\.", "", tools_str).split("\n") if t.strip()]
                     expected_tools = [t for t in tools_list if t]
                 
-                # 转换任务描述和输入中的相对路径为绝对路径
+                # Convert relative paths in description/input to absolute paths
                 description = item.get("Question", "")
                 input_text = item.get("Question", "")
                 
-                # 转换相对路径
+                # Convert relative paths
                 description = _convert_relative_paths_in_text(description)
                 input_text = _convert_relative_paths_in_text(input_text)
                 
-                # 如果提供了任务ID，则也转换为临时路径
+                # If a task id is provided, also convert to temp-mapped paths
                 if task_id_for_temp_mapping:
                     description = convert_relative_paths_with_temp_mapping(description, task_id_for_temp_mapping)
                     input_text = convert_relative_paths_with_temp_mapping(input_text, task_id_for_temp_mapping)
@@ -121,7 +120,7 @@ def load_dataset(data_path, task_id_for_temp_mapping=None):
                 }
                 dataset.append(task_data)
     except FileNotFoundError:
-        print(f"警告: 未找到数据集文件 {data_path}")
+        print(f"Warning: dataset file not found {data_path}")
     except Exception as e:
-        print(f"加载 {data_path} 时出错: {e}")
+        print(f"Error loading {data_path}: {e}")
     return dataset

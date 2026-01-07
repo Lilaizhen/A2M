@@ -3,7 +3,7 @@ import json
 
 
 def _pretty_json(x):
-    """格式化JSON输出"""
+    """Format JSON output for readability."""
     if isinstance(x, str):
         try:
             return json.dumps(json.loads(x), ensure_ascii=False, indent=2)
@@ -13,7 +13,7 @@ def _pretty_json(x):
 
 
 def format_agent_step(step_message):
-    """格式化Agent步骤消息"""
+    """Format agent step messages for logging/printing."""
     if isinstance(step_message, HumanMessage):
         role_header = "================================== Human Input =================================="
         return f"\n{role_header}\n{step_message.content}\n"
@@ -38,7 +38,7 @@ def format_agent_step(step_message):
         role_header = "================================== Tool Call ===================================="
         name = step_message.get("tool_name", "unknown_tool")
         args = step_message.get("tool_input", {})
-        return f"\n{role_header}\n工具名: {name}\n参数: {_pretty_json(args)}\n"
+        return f"\n{role_header}\nTool Name: {name}\nArguments: {_pretty_json(args)}\n"
     else:
         role_header = "================================== Unknown Message ================================"
         return f"\n{role_header}\n{getattr(step_message, 'content', '')}\n"

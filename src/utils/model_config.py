@@ -12,11 +12,11 @@ def _load_config():
     return _config
 
 def resolve_model(name: str) -> str:
-    """将模型别名解析为实际模型名称"""
+    """Resolve a model alias to the real model name."""
     cfg = _load_config()
     return cfg["aliases"].get(name, name)
 
 def get_default_model(role: str) -> str:
-    """获取指定角色的默认模型"""
+    """Get the default model for a given role."""
     cfg = _load_config()
     return cfg["defaults"].get(role, cfg["defaults"]["agent"])

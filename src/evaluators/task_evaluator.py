@@ -10,8 +10,8 @@ from langchain_core.output_parsers import StrOutputParser
 
 def _parse_judge_output(response: str) -> Tuple[bool, str, Dict[str, Any]]:
     """
-    解析裁判模型输出为 (是否完成, 原因, 完整JSON)
-    兼容纯文本“完成/未完成”和```json 包裹的响应
+    Parse judge model output into (completed, reason, full JSON).
+    Handles plain text "completed/not_completed" and ```json wrapped responses.
     """
     try:
         cleaned_response = response.strip()
@@ -22,8 +22,8 @@ def _parse_judge_output(response: str) -> Tuple[bool, str, Dict[str, Any]]:
         cleaned_response = cleaned_response.strip()
 
         result = json.loads(cleaned_response)
-        is_completed = result.get("result", "") == "完成"
-        reason = result.get("reason", "无具体原因")
+        is_completed = result.get("result", "") == "completed"
+        reason = result.get("reason", "No specific reason")
         failure_type = result.get("failure_type", "unknown")
         if failure_type != "success":
             reason = f"[{failure_type}] {reason}"
@@ -31,20 +31,20 @@ def _parse_judge_output(response: str) -> Tuple[bool, str, Dict[str, Any]]:
     except json.JSONDecodeError:
         text = str(response).strip()
         norm = re.sub(r"\s+", "", text)
-        if norm == "完成":
-            json_result = {"result": "完成", "reason": "任务已完成", "failure_type": "success"}
-            return True, "任务已完成", json_result
-        if norm == "未完成":
-            json_result = {"result": "未完成", "reason": "任务未完成", "failure_type": "other"}
-            return False, "任务未完成", json_result
-        if "未完成" in text:
-            json_result = {"result": "未完成", "reason": text, "failure_type": "other"}
+        if norm.lower() in {"completed", "complete"}:
+            json_result = {"result": "completed", "reason": "Task completed", "failure_type": "success"}
+            return True, "Task completed", json_result
+        if norm.lower() in {"notcompleted", "incomplete"}:
+            json_result = {"result": "not_completed", "reason": "Task incomplete", "failure_type": "other"}
+            return False, "Task incomplete", json_result
+        if "not completed" in text.lower() or "incomplete" in text.lower():
+            json_result = {"result": "not_completed", "reason": text, "failure_type": "other"}
             return False, text, json_result
-        if "完成" in text:
-            json_result = {"result": "完成", "reason": text, "failure_type": "success"}
+        if "completed" in text.lower():
+            json_result = {"result": "completed", "reason": text, "failure_type": "success"}
             return True, text, json_result
-        json_result = {"result": "未完成", "reason": f"裁判输出不规范：{text}", "failure_type": "other"}
-        return False, f"裁判输出不规范：{text}", json_result
+        json_result = {"result": "not_completed", "reason": f"Judge output malformed: {text}", "failure_type": "other"}
+        return False, f"Judge output malformed: {text}", json_result
 
 
 async def judge_task_completion(
@@ -54,19 +54,19 @@ async def judge_task_completion(
     api_key: str = None,
     api_base: str = None,
     judge_model: str = None,
-    max_retries: int = 10,           # 新增：失败重试次数
-    retry_delay: int = 10           # 新增：固定重试等待时间（秒）
+    max_retries: int = 10,           # Retry attempts
+    retry_delay: int = 10           # Fixed wait between retries (seconds)
 ) -> tuple[bool, str, dict]:
     """
-    使用 LLM 判断 Agent 是否成功完成任务，并返回 (是否完成, 原因, 完整JSON)
-    失败会固定等待 retry_delay 秒后重试
+    Use an LLM judge to decide whether the agent completed the task.
+    Returns (completed, reason, full JSON). Retries wait retry_delay seconds.
     """
 
 
     api_key = os.getenv("OPENAI_API_KEY")
     api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
     if not api_key:
-        raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
+        raise RuntimeError("Please set OPENAI_API_KEY for the judge LLM")
 
     from src.utils.model_config import get_default_model
     if not judge_model:
@@ -77,32 +77,32 @@ async def judge_task_completion(
         openai_api_base=api_base,
         model=judge_model,
         temperature=0.0,
-        timeout=100,     # 单次请求上限100s
-        max_retries=0    # 关闭 LangChain 内部重试，使用外层重试
+        timeout=100,     # Single request cap 100s
+        max_retries=0    # Disable LangChain internal retries; use outer retry
     )
 
     prompt_template = """
-    你是一个专业的 AI Agent 任务评估员。你的任务是根据 Agent 的实际行为，判断其是否成功完成了指定的任务。
+    You are an expert AI agent evaluator. Judge whether the agent completed the task based on its behavior.
 
-    请严格按照以下信息进行判断：
-    1.  **任务描述**: {task_description}
-    2.  **预期工具**: {expected_tools}
-    3.  **Agent 的实际行为**: {agent_behavior}
+    Use the following information:
+    1.  **Task description**: {task_description}
+    2.  **Expected tools**: {expected_tools}
+    3.  **Agent behavior**: {agent_behavior}
 
-    请判断"Agent 的实际行为"是否表明任务已成功完成，并特别注意是否因为MCP工具异常导致任务失败。
+    Decide whether the behavior shows the task is completed, and pay special attention to failures caused by MCP tool errors.
 
-    判断标准：
-    1. 如果Agent调用的工具中包含所有预期工具，并且完成任务，返回 "完成"
-    2. 如果因为MCP工具异常（如工具无法加载、工具调用失败、工具返回错误等）导致任务失败，返回 "未完成" 并在原因中说明是MCP异常
-    3. 如果Agent本身执行有问题（如没有调用所有预期工具、逻辑错误等）导致任务失败，返回 "未完成" 并在原因中说明是Agent问题
-    4. 其他原因导致的失败，返回 "未完成"
-    5. Agent 的实际行为是已经截断后的
+    Criteria:
+    1. If the agent called all expected tools and finished the task, return "completed"
+    2. If MCP tool issues (load/call/response errors) caused failure, return "not_completed" and mark it as an MCP error
+    3. If the agent itself failed (missing expected tools, logic errors, etc.), return "not_completed" and mark it as an agent error
+    4. For other reasons, return "not_completed"
+    5. The agent behavior may already be truncated; avoid penalizing missing context
 
-    你的回答必须严格按照以下 JSON 格式：
+    Respond strictly in this JSON shape:
     {{
-        "result": "完成" 或 "未完成",
-        "reason": "具体原因说明",
-        "failure_type": "success" 或 "mcp_error" 或 "agent_error" 或 "other"
+        "result": "completed" or "not_completed",
+        "reason": "Detailed reason",
+        "failure_type": "success" or "mcp_error" or "agent_error" or "other"
     }}
     """
 
@@ -117,7 +117,7 @@ async def judge_task_completion(
                 chain.ainvoke({
                     "agent_behavior": agent_behavior,
                     "task_description": task_description,
-                    "expected_tools": ", ".join(expected_tools) if expected_tools else "无特定工具要求"
+                    "expected_tools": ", ".join(expected_tools) if expected_tools else "No specific tool required"
                 }),
                 timeout=100
             )
@@ -129,13 +129,13 @@ async def judge_task_completion(
 
         if attempt < max_retries:
             try:
-                await asyncio.sleep(retry_delay)  # 固定等待10秒
+                await asyncio.sleep(retry_delay)  # Fixed wait before retry
             except asyncio.CancelledError:
                 break
 
     if isinstance(last_error, asyncio.TimeoutError):
-        json_result = {"result": "未完成", "reason": "裁判模型超时（>100s）", "failure_type": "other"}
-        return False, "[other] 裁判模型超时", json_result
+        json_result = {"result": "not_completed", "reason": "Judge model timeout (>100s)", "failure_type": "other"}
+        return False, "[other] Judge model timeout", json_result
 
-    json_result = {"result": "未完成", "reason": f"裁判模型调用失败: {str(last_error)}", "failure_type": "other"}
-    return False, f"裁判模型调用失败: {str(last_error)}", json_result
+    json_result = {"result": "not_completed", "reason": f"Judge model call failed: {str(last_error)}", "failure_type": "other"}
+    return False, f"Judge model call failed: {str(last_error)}", json_result

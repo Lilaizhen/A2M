@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 def setup_run_logger(run_log_file):
-    """设置运行日志配置"""
+    """Configure logging for a single run."""
     root = logging.getLogger()
     for h in root.handlers[:]:
         root.removeHandler(h)
@@ -27,5 +27,5 @@ def setup_run_logger(run_log_file):
 
 
 def log_and_echo(text: str, level: int = logging.INFO):
-    """记录并输出日志信息"""
+    """Record and print a log message."""
     logging.log(level, "%s", text.rstrip("\n"))

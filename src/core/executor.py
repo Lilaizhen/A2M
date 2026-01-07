@@ -6,30 +6,28 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
-# 定义执行器类
 class TaskExecutor:
-    """统一的任务执行器"""
+    """Task executor placeholder."""
     
     def __init__(self):
-        """初始化执行器"""
+        """Initialize executor."""
         pass
     
     async def execute_task(self, task_info: Dict[str, Any], attack_tool_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        异步执行单个任务
+        Execute a single task asynchronously.
         
         Args:
-            task_info: 任务信息
-            attack_tool_info: 恶意工具信息（可选）
+            task_info: Task payload
+            attack_tool_info: Optional malicious tool info
             
         Returns:
-            执行结果
+            Execution result
         """
-        # 这里应该实现具体的任务执行逻辑
-        # 为简化起见，我们先返回一个占位结果
+        # TODO: Implement actual task execution logic.
         return {
             "task_id": task_info["id"],
             "status": "executed",
@@ -38,47 +36,47 @@ class TaskExecutor:
     
     def execute_task_sync(self, task_info: Dict[str, Any], attack_tool_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        同步执行单个任务
+        Execute a single task synchronously.
         
         Args:
-            task_info: 任务信息
-            attack_tool_info: 恶意工具信息（可选）
+            task_info: Task payload
+            attack_tool_info: Optional malicious tool info
             
         Returns:
-            执行结果
+            Execution result
         """
         return asyncio.run(self.execute_task(task_info, attack_tool_info))
 
 
-# 创建全局执行器实例
+# Global executor instance
 executor = TaskExecutor()
 
 
-# 便捷函数
+# Convenience helpers
 def execute_task_sync(task_info: Dict[str, Any], attack_tool_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    同步执行单个任务的便捷函数
+    Convenience wrapper to execute a single task synchronously.
     
     Args:
-        task_info: 任务信息
-        attack_tool_info: 恶意工具信息（可选）
+        task_info: Task payload
+        attack_tool_info: Optional malicious tool info
         
     Returns:
-        执行结果
+        Execution result
     """
     return executor.execute_task_sync(task_info, attack_tool_info)
 
 
 def execute_tasks_sync(tasks: List[Dict[str, Any]], attack_tool_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    同步执行多个任务的便捷函数
+    Convenience wrapper to execute multiple tasks synchronously.
     
     Args:
-        tasks: 任务列表
-        attack_tool_info: 恶意工具信息（可选）
+        tasks: Task list
+        attack_tool_info: Optional malicious tool info
         
     Returns:
-        汇总结果
+        Summary result
     """
     results = []
     for task in tasks:

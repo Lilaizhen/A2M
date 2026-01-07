@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-工具集合管理器测试脚本
+Test script for the embedding utilities/tool set.
 """
 
 import sys
 import os
 import json
 
-# 添加项目根目录到Python路径
+# Add project root to Python path
 project_root = os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.insert(0, project_root)
 
-# 确保在正确的工作目录中
+# Ensure we are in project root
 os.chdir(project_root)
 
-# 使用环境变量设置SSL上下文
+# Configure SSL context via environment
 import ssl
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# 创建不验证SSL的池管理器
+# Create pool manager without strict SSL verification
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 
@@ -32,67 +32,67 @@ class SSLAdapter(HTTPAdapter):
         return super().init_poolmanager(*args, **kwargs)
 
 def test_embedding_calculator():
-    """测试嵌入计算器功能"""
-    print("测试嵌入计算器...")
+    """Test embedding calculator behavior."""
+    print("Testing embedding calculator...")
 
-    # 由于API连接问题，我们使用模拟数据进行测试
+    # Use mock data to avoid API calls
     from src.attacks.embedding.embedding_calculator import EmbeddingCalculator
 
-    # 创建一个模拟的嵌入计算器（不实际调用API）
+    # Mock calculator that does not hit real APIs
     class MockEmbeddingCalculator(EmbeddingCalculator):
         def get_embeddings(self, texts):
-            """模拟嵌入获取"""
-            # 返回随机向量作为模拟嵌入
+            """Return mock embeddings."""
+            # Generate random vectors as fake embeddings
             import numpy as np
             is_single = isinstance(texts, str)
             if is_single:
                 texts = [texts]
 
-            # 生成随机向量（4096维）
+            # Produce random 4096-d vectors
             embeddings = [np.random.rand(4096).tolist() for _ in texts]
             return embeddings[0] if is_single else embeddings
 
     calculator = MockEmbeddingCalculator()
 
-    # 测试单个文本嵌入
-    text = "这是一个测试文本"
+    # Single text embedding
+    text = "This is a test text"
     embedding = calculator.get_embeddings(text)
-    print(f"单个文本嵌入维度: {len(embedding)}")
+    print(f"Single text embedding dims: {len(embedding)}")
 
-    # 测试多个文本嵌入
-    texts = ["这是第一个测试文本", "这是第二个测试文本", "这是第三个测试文本"]
+    # Multiple texts
+    texts = ["First test text", "Second test text", "Third test text"]
     embeddings = calculator.get_embeddings(texts)
-    print(f"多个文本嵌入数量: {len(embeddings)}, 每个维度: {len(embeddings[0])}")
+    print(f"Text embeddings count: {len(embeddings)}, each dim: {len(embeddings[0])}")
 
-    # 测试相似度计算
+    # Similarity
     similarity = calculator.calculate_similarity(embeddings[0], embeddings[1])
-    print(f"文本1和文本2的相似度: {similarity:.3f}")
+    print(f"Similarity of text1/text2: {similarity:.3f}")
 
-    # 测试多样性得分
+    # Diversity score
     diversity_score = calculator.calculate_diversity_score(embeddings)
-    print(f"文本集合的多样性得分: {diversity_score:.3f}")
+    print(f"Diversity score: {diversity_score:.3f}")
 
-    # 测试工具相似度计算
+    # Tool similarity
     tools = [
-        {"name": "文件读取工具", "description": "用于读取系统文件内容"},
-        {"name": "网络请求工具", "description": "用于发送HTTP网络请求"},
-        {"name": "数据处理工具", "description": "用于处理和转换数据"}
+        {"name": "file_reader", "description": "Read system file contents"},
+        {"name": "http_client", "description": "Send HTTP requests"},
+        {"name": "data_processor", "description": "Process and transform data"}
     ]
 
     similarities = calculator.calculate_tool_similarities(tools)
-    print("\n工具间相似度:")
+    print("\nTool similarities:")
     for i, j, sim in similarities:
-        print(f"  {tools[i]['name']} 与 {tools[j]['name']}: {sim:.3f}")
+        print(f"  {tools[i]['name']} vs {tools[j]['name']}: {sim:.3f}")
 
-    # 测试语义融合
+    # Semantic fusion
     tools_with_scores = [
-        {"name": "文件读取工具", "description": "用于读取系统文件内容", "return_value": {"content": "file content"}, "score": 0.8},
-        {"name": "数据读取工具", "description": "用于读取和解析数据", "return_value": {"data": "parsed data"}, "score": 0.7}
+        {"name": "file_reader", "description": "Read system file contents", "return_value": {"content": "file content"}, "score": 0.8},
+        {"name": "data_reader", "description": "Read and parse data", "return_value": {"data": "parsed data"}, "score": 0.7}
     ]
 
     fused_tool = calculator.semantic_fusion(tools_with_scores, strategy="weighted")
-    print(f"\n融合工具: {fused_tool['name']}")
-    print(f"融合描述: {fused_tool['description']}")
+    print(f"\nFused tool: {fused_tool['name']}")
+    print(f"Fused description: {fused_tool['description']}")
 
 if __name__ == "__main__":
     test_embedding_calculator()

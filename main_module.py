@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_community.callbacks.manager import get_openai_callback
 
-# 加载自定义模块
+# Load project modules
 from src.utils.logging_config import setup_run_logger, log_and_echo
 from src.utils.tool_functions import truncate_tool_outputs, _now, _as_text, render_behavior_from_trace
 from src.mcp_client.client import LimitedMCPClient
@@ -31,13 +31,13 @@ from src.core.executor import TaskExecutor
 import shutil
 from src.attacks.scoring.fitness_calculator import FitnessCalculator, AttackType
 
-load_dotenv()  # 加载 .env 文件中的环境变量
+load_dotenv()  # Load env vars from .env
 
 
 def _convert_relative_paths_in_text(text):
     """
-    在文本中查找类似 "./path/to/file" 的相对路径并转换为绝对路径
-    仅转换以 ./ 或 ../ 开头的路径
+    Find relative paths like "./path/to/file" in text and convert them to absolute paths.
+    Only converts paths starting with ./ or ../.
     """
     if not text or not isinstance(text, str):
         return text
@@ -60,7 +60,7 @@ def _convert_relative_paths_in_text(text):
 
 def _reset_annotated_data():
     """
-    重置annotated_data文件夹到备份状态
+    Reset the annotated_data folder to the backup state.
     """
     annotated_data_path = "./annotated_data"
     annotated_data_backup_path = "./annotated_data_backup"
@@ -74,18 +74,18 @@ def _reset_annotated_data():
         os.makedirs(annotated_data_path, exist_ok=True)
 
 
-# --- 全局配置 ---
+# --- Global config ---
 RESULTS_DIR = f"results/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 RUN_LOG_FILE = os.path.join(RESULTS_DIR, "run.log")
 RESULT_JSON_FILE = os.path.join(RESULTS_DIR, "results.json")
 
-# 可选：限制单条工具输出写入轨迹的最大字符数，避免结果过大
+# Optional: limit single tool output characters written to trace
 MAX_TOOL_OUTPUT_CHARS = 8000
 
 
-# ============ 重试工具函数（新增） ============
+# ============ Retry helpers ============
 def _is_transient_error(e: Exception) -> bool:
     s = (str(e) or "").lower()
     return isinstance(e, (asyncio.TimeoutError, ConnectionError, OSError)) or any(
@@ -123,8 +123,8 @@ def _is_agent_soft_error(e: Exception) -> bool:
 
 async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name="op"):
     """
-    对异步操作做指数退避 + 抖动的重试。
-    op: 零参可调用，返回 coroutine。
+    Exponential backoff + jitter retry for async operations.
+    op: zero-arg callable returning a coroutine.
     """
     last = None
     for i in range(tries):
@@ -137,7 +137,7 @@ async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name=
                 raise
             delay = min(max_delay, base * (factor ** i)) * (0.5 + random())
             log_and_echo(
-                f"↻ 重试 {name} ({i+1}/{tries-1})，原因：{e.__class__.__name__}: {str(e)[:120]}，等待 {delay:.2f}s"
+                f"↻ Retry {name} ({i+1}/{tries-1}) due to {e.__class__.__name__}: {str(e)[:120]} ; wait {delay:.2f}s"
             )
             await asyncio.sleep(delay)
     raise last
@@ -153,7 +153,7 @@ async def main(
     judge_model: str = None,
     dataset_type: str = "all",
 ):
-    # 重试执行单个任务的函数
+    # Retry wrapper for running a single task
     async def _run_task_with_retry(
         task_id, task_desc, user_prompt, expected_tools, attack, attack_dataset_path,
         attack_tool_mapping, mcp_configs, tool_to_mcp, proxy_settings, extra_mcp_configs,
@@ -163,19 +163,19 @@ async def main(
         for attempt in range(max_retries):
             task_start_time = time.time()
             if attempt > 0:
-                log_and_echo(f"=============== 重试运行任务 {task_id}（{task_desc}） [尝试 {attempt + 1}/{max_retries}] ===============")
+                log_and_echo(f"=============== Retrying task {task_id} ({task_desc}) [attempt {attempt + 1}/{max_retries}] ===============")
 
-            # === 使用annotated_data目录 ===
+            # === Use annotated_data directory ===
             temp_dir = "./annotated_data"
             if attempt == 0:
-                log_and_echo(f"🔧 使用annotated_data目录: {temp_dir}")
+                log_and_echo(f"🔧 Using annotated_data directory: {temp_dir}")
 
             _reset_annotated_data()
             if attempt == 0:
-                log_and_echo("🔄 重置annotated_data目录到备份状态")
+                log_and_echo("🔄 Reset annotated_data directory to backup state")
 
             try:
-                # === 构造 filtered_config（包含 expected 工具 + 可选 mytool + 额外配置）===
+                # === Build filtered_config (expected tools + optional mytool + extra configs) ===
                 filtered_config = {}
                 required_mcp_servers = set()
 
@@ -226,7 +226,7 @@ async def main(
                                 if key not in filtered_config[server_name]["env"]:
                                     filtered_config[server_name]["env"][key] = value
 
-                # 添加额外的MCP配置（避免重复加载）
+                # Add extra MCP configs (avoid duplicate loads)
                 for server_name, server_config in extra_mcp_configs.items():
                     if server_name not in filtered_config:
                         filtered_config[server_name] = server_config.copy()
@@ -248,9 +248,9 @@ async def main(
                                     filtered_config[server_name]["env"][key] = value
 
                 if attempt == 0:
-                    log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
+                    log_and_echo("🧪 Tools to load: " + str(list(filtered_config.keys())))
 
-                # === 动态获取 mytool 的工具名集合（加重试）===
+                # === Dynamically fetch mytool tool names (with retry) ===
                 if attack and mytool_server_key in filtered_config and attempt == 0:
                     try:
                         mytool_tool_names_inner = await retry_async(
@@ -265,12 +265,12 @@ async def main(
                             max_delay=6.0,
                             name="fetch_server_tool_names",
                         )
-                        log_and_echo(f"mytool 工具清单: {sorted(mytool_tool_names_inner)}")
+                        log_and_echo(f"mytool tool list: {sorted(mytool_tool_names_inner)}")
                     except Exception as e:
-                        log_and_echo(f"⚠️ 获取 mytool 工具名失败，将无法区分其调用：{e}")
+                        log_and_echo(f"⚠️ Failed to fetch mytool tool names; will not distinguish its calls: {e}")
                         mytool_tool_names_inner = set()
 
-                # --- 加载 MCP 工具（LimitedMCPClient，带重试）---
+                # --- Load MCP tools (LimitedMCPClient with retry) ---
                 try:
                     limited = LimitedMCPClient(
                         filtered_config,
@@ -288,9 +288,9 @@ async def main(
                         name="limited.get_tools",
                     )
                 except Exception as e:
-                    log_and_echo(f"❌ 加载 MCP 工具失败: {e}")
+                    log_and_echo(f"❌ Failed to load MCP tools: {e}")
                     if attempt < max_retries - 1:
-                        log_and_echo(f"[任务 {task_id}] 第 {attempt + 1} 次尝试遇到 MCP 工具加载失败，正在重试...")
+                        log_and_echo(f"[Task {task_id}] Attempt {attempt + 1} hit MCP tool load failure, retrying...")
                         continue
                     else:
                         task_end_time = time.time()
@@ -300,11 +300,11 @@ async def main(
                             "task_id": task_id,
                             "input": user_prompt,
                             "expected_tools": expected_tools,
-                            "agent_final_response": "MCP 工具加载失败",
+                            "agent_final_response": "MCP tool loading failed",
                             "task_completed": False,
                             "completion_reason": {
-                                "result": "未完成",
-                                "reason": f"MCP 工具加载失败: {e.__class__.__name__}",
+                                "result": "incomplete",
+                                "reason": f"MCP tool loading failed: {e.__class__.__name__}",
                                 "failure_type": "mcp_error",
                             },
                             "execution_time_seconds": task_execution_time,
@@ -320,9 +320,9 @@ async def main(
                             ],
                         }
 
-                # --- 创建 Agent 并行（容错） ---
+                # --- Create Agent and run (fault tolerant) ---
                 final_response = ""
-                action_trace = []  # 行动轨迹
+                action_trace = []  # action trace
                 token_usage = {
                     "total_tokens": 0,
                     "prompt_tokens": 0,
@@ -353,7 +353,7 @@ async def main(
                                 pretty = format_agent_step(last_message)
                                 log_and_echo(pretty)
 
-                                # 1) 工具输出
+                                # 1) Tool output
                                 if isinstance(last_message, ToolMessage):
                                     tool_output_text = _as_text(last_message.content)
                                     if (
@@ -362,7 +362,7 @@ async def main(
                                     ):
                                         tool_output_text = (
                                             tool_output_text[:MAX_TOOL_OUTPUT_CHARS]
-                                            + "...(内容已截断)"
+                                            + "...(truncated)"
                                         )
                                     action_trace.append(
                                         {
@@ -375,7 +375,7 @@ async def main(
                                     current_tool_execution = None
                                     continue
 
-                                # 2) AI 消息 + 工具调用
+                                # 2) AI messages + tool calls
                                 if isinstance(last_message, AIMessage):
                                     content_text = _as_text(last_message.content).strip()
                                     if content_text:
@@ -420,11 +420,11 @@ async def main(
                                                 "tool_input": args,
                                             }
                                             tc_pretty = format_agent_step(tool_call_msg)
-                                            log_and_echo(tc_prety if (tc_prety := tc_pretty) else tc_pretty)  # 兼容局部变量引用
+                                            log_and_echo(tc_prety if (tc_prety := tc_pretty) else tc_pretty)  # Keep local var reference compatibility
                                             current_tool_execution = name
                                     continue
 
-                                # 3) 兜底：dict 形式的 tool_call
+                                # 3) Fallback: dict-style tool_call
                                 if isinstance(last_message, dict) and last_message.get("type") == "tool_call":
                                     fn = (last_message.get("function") or {})
                                     name = fn.get("name") or last_message.get("name", "unknown_tool")
@@ -460,16 +460,16 @@ async def main(
                             try:
                                 await asyncio.wait_for(_drain_stream(), timeout=500)
                             except asyncio.TimeoutError:
-                                log_and_echo("Agent 流式执行超时（>500s）")
+                                log_and_echo("Agent streaming execution timed out (>500s)")
                                 action_trace.append(
                                     {
                                         "ts": _now(),
                                         "type": "ai_message",
-                                        "content": "Agent 执行超时（>500s）",
+                                        "content": "Agent execution timed out (>500s)",
                                     }
                                 )
 
-                        # 整体流式执行再加一层重试（抗瞬断）
+                        # Add another retry layer for streaming to resist transient issues
                         try:
                             await retry_async(
                                 _run_stream_once,
@@ -499,9 +499,9 @@ async def main(
                         }
 
                 except Exception as e:
-                    log_and_echo(f"❌ 运行代理失败: {e}")
+                    log_and_echo(f"❌ Agent execution failed: {e}")
                     if attempt < max_retries - 1:
-                        log_and_echo(f"[任务 {task_id}] 第 {attempt + 1} 次尝试遇到 Agent 运行失败，正在重试...")
+                        log_and_echo(f"[Task {task_id}] Attempt {attempt + 1} hit agent failure, retrying...")
                         continue
                     else:
                         task_end_time = time.time()
@@ -510,11 +510,11 @@ async def main(
                             "task_id": task_id,
                             "input": user_prompt,
                             "expected_tools": expected_tools,
-                            "agent_final_response": f"Agent 运行失败: {e}",
+                            "agent_final_response": f"Agent execution failed: {e}",
                             "task_completed": False,
                             "completion_reason": {
-                                "result": "未完成",
-                                "reason": f"Agent 运行失败: {e.__class__.__name__}",
+                                "result": "incomplete",
+                                "reason": f"Agent execution failed: {e.__class__.__name__}",
                                 "failure_type": "system_error",
                             },
                             "execution_time_seconds": task_execution_time,
@@ -532,36 +532,32 @@ async def main(
                             "action_trace": action_trace,
                         }
 
-                # === 检查 agent 行为轨迹的最后一个步骤是否是 AI 输出的信息 ===
                 def _check_last_step_is_ai_message(trace):
-                    """检查轨迹的最后一个步骤是否是 AI 消息"""
+                    """Check whether the last step in the trace is an AI message."""
                     if not trace:
                         return False
-                    # 获取最后一个步骤
+                    # Get last step
                     last_step = trace[-1]
-                    # 检查是否是 AI 消息类型
+                    # Verify it is an AI message
                     return last_step.get("type") == "ai_message"
 
-                # === 任务完成度判断（基于轨迹）===
                 is_task_completed = False
-                completion_json = {"result": "未知", "reason": "缺少必要信息", "failure_type": "unknown"}
+                completion_json = {"result": "unknown", "reason": "Missing required info", "failure_type": "unknown"}
                 if agent_error:
                     completion_json = {
-                        "result": "未完成",
+                        "result": "incomplete",
                         "reason": f"Agent error: {agent_error}",
                         "failure_type": "agent_error",
                     }
                 elif action_trace and task_desc:
-                    # 检查最后一个步骤是否是 AI 消息，如果不是则判断为 system_error
                     if not _check_last_step_is_ai_message(action_trace):
                         completion_json = {
-                            "result": "未完成",
-                            "reason": "Agent行为轨迹最后一个步骤不是AI输出的信息",
+                            "result": "incomplete",
+                            "reason": "Last step in agent trace is not an AI message",
                             "failure_type": "system_error",
                         }
-                        # 如果是system_error且不是最后一次尝试，则重试
                         if attempt < max_retries - 1:
-                            log_and_echo(f"[任务 {task_id}] 第 {attempt + 1} 次尝试遇到 system_error，正在重试...")
+                            log_and_echo(f"[Task {task_id}] Attempt {attempt + 1} hit system_error, retrying...")
                             continue
                     else:
                         behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
@@ -572,7 +568,7 @@ async def main(
                             judge_model=judge_model,
                         )
                 else:
-                    log_and_echo("⚠️  跳过任务完成度判断（缺少必要信息）")
+                    log_and_echo("⚠️  Skip completion judgment (missing necessary info)")
 
                 total_tool_calls = sum(1 for x in action_trace if x.get("type") == "tool_call")
                 mytool_calls = sum(
@@ -582,7 +578,6 @@ async def main(
                 task_end_time = time.time()
                 task_execution_time = task_end_time - task_start_time
 
-                # 如果成功执行到这里，说明任务执行成功，不需要重试
                 return {
                     "task_id": task_id,
                     "input": user_prompt,
@@ -599,18 +594,17 @@ async def main(
 
             finally:
                 if attempt == 0:
-                    log_and_echo(f"ℹ️  使用annotated_data目录，无需清理")
+                    log_and_echo(f"ℹ️  Using annotated_data directory; no cleanup needed")
 
-        # 如果所有重试都失败了，返回失败结果
         return {
             "task_id": task_id,
             "input": user_prompt,
             "expected_tools": expected_tools,
-            "agent_final_response": "所有重试都失败了",
+            "agent_final_response": "All retries failed",
             "task_completed": False,
             "completion_reason": {
-                "result": "未完成",
-                "reason": "所有重试都失败了",
+                "result": "incomplete",
+                "reason": "All retries failed",
                 "failure_type": "system_error",
             },
             "execution_time_seconds": 0,
@@ -623,7 +617,7 @@ async def main(
             },
             "action_trace": [],
         }
-    # --- 全局配置 ---
+    # --- Global config for run ---
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     RESULTS_DIR = f"results/{timestamp}_{model_name}_{dataset_type}"
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -636,7 +630,7 @@ async def main(
     all_mcp_config = load_mcp_configs_from_live_config("./configs/live_mcp.json")
     tool_to_mcp, mcp_configs = load_tool_to_mcp_mapping("./configs/tool2mcp.json")
 
-    # 加载额外的MCP配置（避免重复加载）
+    # Load extra MCP configs (to avoid reloading)
     extra_mcp_configs = {}
     extra_mcp_config_path = "./configs/mcp_config.json"
     if os.path.exists(extra_mcp_config_path):
@@ -644,9 +638,9 @@ async def main(
             with open(extra_mcp_config_path, "r", encoding="utf-8") as f:
                 extra_mcp_configs = json.load(f)
         except Exception as e:
-            log_and_echo(f"⚠️ 加载额外MCP配置文件失败: {e}")
+            log_and_echo(f"⚠️ Failed to load extra MCP config: {e}")
 
-    # 加载attack数据集（如果提供）
+    # Load attack dataset (if provided)
     attack_tool_mapping = {}
     if attack_dataset_path:
         try:
@@ -656,9 +650,9 @@ async def main(
                     item["task_id"]: item["attack_tools"] for item in attack_data
                 }
         except Exception as e:
-            log_and_echo(f"⚠️ 加载attack数据集失败: {e}")
+            log_and_echo(f"⚠️ Failed to load attack dataset: {e}")
 
-    # 从配置文件加载代理设置
+    # Load proxy settings
     proxy_config_path = "./configs/proxy_config.json"
     proxy_settings = {}
     if os.path.exists(proxy_config_path):
@@ -666,9 +660,9 @@ async def main(
             with open(proxy_config_path, "r", encoding="utf-8") as f:
                 proxy_settings = json.load(f)
         except Exception as e:
-            log_and_echo(f"⚠️ 加载代理配置文件失败: {e}")
+            log_and_echo(f"⚠️ Failed to load proxy config: {e}")
     else:
-        log_and_echo("ℹ️ 代理配置文件不存在，不添加代理设置")
+        log_and_echo("ℹ️ Proxy config file missing; no proxy settings added")
 
     for tool in all_mcp_config.values():
         tool.setdefault("transport", "stdio")
@@ -692,27 +686,27 @@ async def main(
         model=model_name,
         streaming=False,
         temperature=0.0,
-        timeout=100,  # 业务 LLM 100s
+        timeout=100,  # Business LLM 100s
         max_retries=1,
     )
 
     results_summary = []
 
-    # 获取 mytool 工具名集合（只需要获取一次）
+    # Fetch mytool tool names once
     mytool_tool_names: set[str] = set()
     mytool_server_key = "mytool"
     mytool_server_path = "./tools/myTool.py"
 
-    # 初始化适应度计算器
+    # Initialize fitness calculator
     fitness_calculator = None
     if attack:
-        # 根据攻击场景类型创建适应度计算器
+        # Build fitness calculator for the attack scenario
         try:
             attack_type = AttackType(attack_scenario)
             fitness_calculator = FitnessCalculator(attack_type=attack_type, api_key=api_key)
-            log_and_echo(f"初始化适应度计算器: {attack_scenario}")
+            log_and_echo(f"Initialized fitness calculator: {attack_scenario}")
         except ValueError:
-            log_and_echo(f"⚠️ 无效的攻击场景类型: {attack_scenario}，使用默认 resource_waste")
+            log_and_echo(f"⚠️ Invalid attack scenario type: {attack_scenario}, using default resource_waste")
             fitness_calculator = FitnessCalculator(attack_type=AttackType.RESOURCE_WASTE, api_key=api_key)
 
         mytool_config = {
@@ -720,7 +714,7 @@ async def main(
             "args": [os.path.abspath(mytool_server_path)],
             "transport": "stdio",
         }
-        # 取第一个任务来获取 mytool 工具名（假设所有任务使用相同的 mytool）
+        # Use first task to fetch mytool tool names (assumes same across tasks)
         if dataset:
             first_task = dataset[0]
             first_task_id = first_task["id"]
@@ -748,15 +742,15 @@ async def main(
                         max_delay=6.0,
                         name="fetch_server_tool_names",
                     )
-                    log_and_echo(f"mytool 工具清单: {sorted(mytool_tool_names)}")
+                    log_and_echo(f"mytool tool list: {sorted(mytool_tool_names)}")
                 except Exception as e:
-                    log_and_echo(f"⚠️ 获取 mytool 工具名失败，将无法区分其调用：{e}")
+                    log_and_echo(f"⚠️ Failed to fetch mytool tool names; will not distinguish its calls: {e}")
                     mytool_tool_names = set()
 
-    # 执行所有任务
-    log_and_echo(f"开始执行 {len(dataset)} 个任务")
+    # Execute tasks
+    log_and_echo(f"Starting {len(dataset)} tasks")
     if attack and attack_dataset_path:
-        log_and_echo(f"启用了攻击模式，将使用攻击数据集: {attack_dataset_path}")
+        log_and_echo(f"Attack mode enabled; using attack dataset: {attack_dataset_path}")
 
     for task in dataset:
         task_id = task["id"]
@@ -764,45 +758,45 @@ async def main(
         user_prompt = task["input"]
         expected_tools = task["expected_tools"]
 
-        # 使用重试函数执行任务
+        # Execute task with retry wrapper
         task_result = await _run_task_with_retry(
             task_id, task_desc, user_prompt, expected_tools, attack, attack_dataset_path,
             attack_tool_mapping, mcp_configs, tool_to_mcp, proxy_settings, extra_mcp_configs,
             llm, mytool_tool_names
         )
 
-        # 如果启用了攻击模式，使用适应度计算器计算得分
+        # If attack mode is on, compute fitness score
         if attack and fitness_calculator and attack_dataset_path:
             try:
-                # 获取当前任务的攻击工具
+                # Fetch attack tools for current task
                 attack_tools = attack_tool_mapping.get(task_id, [])
                 if attack_tools:
-                    # 使用第一个攻击工具进行评分
+                    # Use the first attack tool for scoring
                     attack_tool = attack_tools[0]
-                    # 计算分数
+                    # Compute score
                     score, reason = await fitness_calculator.score_async(task_result, baseline_ok=True, attack_tool=attack_tool)
 
-                    # 将得分添加到任务结果中
+                    # Attach score to task result
                     task_result["attack_score"] = {
                         "score": score,
                         "reason": reason,
                         "attack_scenario": attack_scenario
                     }
 
-                    log_and_echo(f"任务 {task_id} 攻击评分: {score:.2f} - {reason}")
+                    log_and_echo(f"Task {task_id} attack score: {score:.2f} - {reason}")
                 else:
-                    log_and_echo(f"任务 {task_id} 没有找到攻击工具，跳过评分")
+                    log_and_echo(f"Task {task_id} has no attack tool; skip scoring")
             except Exception as e:
-                log_and_echo(f"⚠️ 任务 {task_id} 评分失败: {e}")
+                log_and_echo(f"⚠️ Task {task_id} scoring failed: {e}")
                 task_result["attack_score"] = {
                     "score": 0,
-                    "reason": f"评分失败: {str(e)}",
+                    "reason": f"Scoring failed: {str(e)}",
                     "attack_scenario": attack_scenario
                 }
 
         results_summary.append(task_result)
 
-    # === 汇总结果 ===
+    # === Summaries ===
     total_tasks = len(results_summary)
     completed_tasks = sum(1 for r in results_summary if r["task_completed"])
     completion_rate = 0 if total_tasks == 0 else completed_tasks / total_tasks * 100
@@ -815,7 +809,7 @@ async def main(
         "completion_tokens": sum(r.get("token_usage", {}).get("completion_tokens", 0) for r in results_summary),
     }
 
-    # 计算攻击评分统计
+    # Attack score stats
     attack_scores = []
     avg_attack_score = 0
     max_attack_score = 0
@@ -835,11 +829,11 @@ async def main(
             max_attack_score = max(attack_scores)
             min_attack_score = min(attack_scores)
 
-            # 计算大于等于2的数量和百分比
+            # Count scores >= 2 and percentage
             score_ge_2_count = sum(1 for score in attack_scores if score >= 2)
             score_ge_2_percentage = (score_ge_2_count / len(attack_scores)) * 100 if attack_scores else 0
 
-            # 计算等于4的数量和百分比
+            # Count scores = 4 and percentage
             score_eq_4_count = sum(1 for score in attack_scores if score == 4)
             score_eq_4_percentage = (score_eq_4_count / len(attack_scores)) * 100 if attack_scores else 0
 
@@ -891,56 +885,56 @@ async def main(
     with open(RESULT_JSON_FILE, "w", encoding="utf-8") as f:
         json.dump(final_report, f, indent=4, ensure_ascii=False)
 
-    print("\n================= 所有任务运行完毕 =================\n")
-    print(f"📊 任务完成率: {completion_rate:.2f}% ({completed_tasks}/{total_tasks})")
-    print(f"📊 总工具调用次数: {overall_total_tool_calls}，其中 mytool: {overall_mytool_calls}")
+    print("\n================= All tasks finished =================\n")
+    print(f"📊 Completion rate: {completion_rate:.2f}% ({completed_tasks}/{total_tasks})")
+    print(f"📊 Total tool calls: {overall_total_tool_calls}, mytool: {overall_mytool_calls}")
     print(
-        f"📊 总token使用量: {overall_token_usage['total_tokens']} "
-        f"(提示: {overall_token_usage['prompt_tokens']}, 完成: {overall_token_usage['completion_tokens']})"
+        f"📊 Total token usage: {overall_token_usage['total_tokens']} "
+        f"(prompt: {overall_token_usage['prompt_tokens']}, completion: {overall_token_usage['completion_tokens']})"
     )
 
-    # 显示攻击评分统计
+    # Show attack score stats
     if attack and attack_scores:
-        print(f"🎯 攻击场景: {attack_scenario}")
-        print(f"🎯 攻击评分统计 - 平均分: {avg_attack_score:.2f}, 最高分: {max_attack_score:.2f}, 最低分: {min_attack_score:.2f}")
+        print(f"🎯 Attack scenario: {attack_scenario}")
+        print(f"🎯 Attack score stats - Avg: {avg_attack_score:.2f}, Max: {max_attack_score:.2f}, Min: {min_attack_score:.2f}")
         if attack_scores:
-            print(f"📈 评分≥2: {score_ge_2_count}个 ({score_ge_2_percentage:.1f}%)")
-            print(f"⭐ 评分=4: {score_eq_4_count}个 ({score_eq_4_percentage:.1f}%)")
+            print(f"📈 Scores ≥2: {score_ge_2_count} ({score_ge_2_percentage:.1f}%)")
+            print(f"⭐ Scores =4: {score_eq_4_count} ({score_eq_4_percentage:.1f}%)")
 
-    print(f"📄 结果 JSON 路径: {RESULT_JSON_FILE}")
-    print(f"📝 运行日志路径: {RUN_LOG_FILE}")
+    print(f"📄 Results JSON path: {RESULT_JSON_FILE}")
+    print(f"📝 Run log path: {RUN_LOG_FILE}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # 选择数据集：all、test、filter
+    # Choose dataset: all, test, filter
     parser.add_argument(
         "--dataset",
         choices=["all", "test", "filter"],
         default="all",
         help=(
-            "选择数据集：\n"
-            "all=./datasets/all_annotations.json（默认）\n"
+            "Choose dataset:\n"
+            "all=./datasets/all_annotations.json (default)\n"
             "test=./datasets/test_prompts.json\n"
             "filter=./datasets/all_annotations_filter.json"
         ),
     )
-    parser.add_argument("--use-mytool", action="store_true", help="启用 mytool MCP server")
-    parser.add_argument("--attack-dataset", type=str, help="attack数据集路径")
-    parser.add_argument("--attack-scenario", type=str, choices=["resource_waste", "task_failure", "information_leakage", "backdoor_injection", "resource_waste_no_success"], default="resource_waste", help="攻击场景类型 (默认: resource_waste)")
+    parser.add_argument("--use-mytool", action="store_true", help="Enable mytool MCP server")
+    parser.add_argument("--attack-dataset", type=str, help="Path to attack dataset")
+    parser.add_argument("--attack-scenario", type=str, choices=["resource_waste", "task_failure", "information_leakage", "backdoor_injection", "resource_waste_no_success"], default="resource_waste", help="Attack scenario type (default: resource_waste)")
     args = parser.parse_args()
 
-    # 路径映射
+    # Dataset path mapping
     if args.dataset == "test":
         data_path = "./datasets/test_prompts.json"
     elif args.dataset == "filter":
         data_path = "./datasets/all_annotations_filter.json"
-    else:  # 默认 all
+    else:  # default all
         data_path = "./datasets/all_annotations.json"
 
     dataset = load_dataset(data_path)
 
-    # 再次确保所有任务中的相对路径都被转换为绝对路径
+    # Ensure relative paths in tasks are converted to absolute paths
     if dataset:
         for task in dataset:
             if "description" in task:
@@ -950,4 +944,4 @@ if __name__ == "__main__":
 
         asyncio.run(main(dataset, attack=args.use_mytool, attack_dataset_path=args.attack_dataset, attack_scenario=args.attack_scenario))
     else:
-        print("错误: 没有找到任何有效的数据集文件")
+        print("Error: no valid dataset files found")

@@ -3,24 +3,24 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 
 
 def create_tool_wrapper(original_func, max_length, max_list_length=100, max_category_items=20, timeout=30):
-    """创建带超时的工具函数包装器"""
+    """Create a tool wrapper that enforces timeout and output truncation."""
     async def wrapped_func(*args, **kwargs):
         try:
             result = await asyncio.wait_for(original_func(*args, **kwargs), timeout=timeout)
         except asyncio.TimeoutError:
-            return {"error": f"工具调用超时（>{timeout}s）"}
+            return {"error": f"Tool call timed out (>{timeout}s)"}
         return limit_result_length(result, max_length, max_list_length, max_category_items)
     return wrapped_func
 
 
 def limit_result_length(result, max_length, max_list_length=100, max_category_items=20):
     """
-    限制返回内容长度，保持数据结构完整
+    Limit returned content length while keeping structure intact.
     """
     try:
         if isinstance(result, str):
             if len(result) > max_length:
-                return result[:max_length] + "...(内容已截断)"
+                return result[:max_length] + "...(content truncated)"
             return result
         elif isinstance(result, dict):
             result = result.copy()
@@ -28,7 +28,7 @@ def limit_result_length(result, max_length, max_list_length=100, max_category_it
                 if isinstance(value, (dict, list)):
                     result[key] = limit_result_length(value, max_length, max_list_length, max_category_items)
                 elif isinstance(value, str) and len(value) > max_length:
-                    result[key] = value[:max_length] + "...(内容已截断)"
+                    result[key] = value[:max_length] + "...(content truncated)"
             if 'categories' in result and isinstance(result['categories'], dict):
                 for category_key, category_value in result['categories'].items():
                     if isinstance(category_value, dict):
@@ -37,21 +37,21 @@ def limit_result_length(result, max_length, max_list_length=100, max_category_it
                                 truncated_list = subcategory_value[:max_category_items]
                                 truncated_list.append({
                                     "id": "truncated",
-                                    "name": f"...还有{len(subcategory_value) - max_category_items}个项目未显示...",
+                                    "name": f"...{len(subcategory_value) - max_category_items} more items not shown...",
                                     "type": "info",
                                     "tags": {
-                                        "note": f"原始列表包含{len(subcategory_value)}个项目，已截断以保持响应合理长度"
+                                        "note": f"Original list has {len(subcategory_value)} items; truncated to keep response concise"
                                     }
                                 })
                                 result['categories'][category_key][subcategory_key] = truncated_list
             if 'content' in result:
                 if isinstance(result['content'], str):
                     if len(result['content']) > max_length:
-                        result['content'] = result['content'][:max_length] + "...(内容已截断)"
+                        result['content'] = result['content'][:max_length] + "...(content truncated)"
                 elif isinstance(result['content'], list):
                     if len(result['content']) > 50:
                         result['content'] = result['content'][:50] + [
-                            {"type": "text", "text": f"...(内容列表已截断，还有{len(result['content']) - 50}个项目)"}
+                            {"type": "text", "text": f"...(content list truncated, {len(result['content']) - 50} more items)"}
                         ]
                     else:
                         total_length = 0
@@ -61,10 +61,10 @@ def limit_result_length(result, max_length, max_list_length=100, max_category_it
                                 if isinstance(text, str):
                                     remaining_length = max_length - total_length
                                     if remaining_length <= 0:
-                                        item['text'] = "...(内容已截断)"
+                                        item['text'] = "...(content truncated)"
                                         break
                                     elif len(text) > remaining_length:
-                                        item['text'] = text[:remaining_length] + "...(内容已截断)"
+                                        item['text'] = text[:remaining_length] + "...(content truncated)"
                                     total_length += len(item['text'])
         elif isinstance(result, list):
             if len(result) > max_list_length:
@@ -72,7 +72,7 @@ def limit_result_length(result, max_length, max_list_length=100, max_category_it
                     sampled_result = _sample_coordinate_list(result, max_list_length)
                     sampled_result.append({
                         "type": "info",
-                        "text": f"...(坐标列表已采样，原始长度: {len(result)}, 采样后: {len(sampled_result)})"
+                        "text": f"...(coordinate list sampled, original length: {len(result)}, after sampling: {len(sampled_result)})"
                     })
                     result = sampled_result
                 else:
@@ -82,14 +82,14 @@ def limit_result_length(result, max_length, max_list_length=100, max_category_it
                     if isinstance(item, (dict, list)):
                         result[i] = limit_result_length(item, max_length, max_list_length, max_category_items)
                     elif isinstance(item, str) and len(item) > max_length:
-                        result[i] = item[:max_length] + "...(内容已截断)"
+                        result[i] = item[:max_length] + "...(content truncated)"
         return result
     except Exception:
         return result
 
 
 def _is_coordinate_list(lst):
-    """判断是否为坐标列表"""
+    """Check whether list looks like coordinates."""
     if not lst or not isinstance(lst, list):
         return False
     sample_size = min(5, len(lst))
@@ -108,7 +108,7 @@ def _is_coordinate_list(lst):
 
 
 def _sample_coordinate_list(lst, max_length):
-    """采样坐标列表"""
+    """Sample a coordinate list to a bounded length."""
     if len(lst) <= max_length:
         return lst
     sampled = [lst[0]]
@@ -123,13 +123,13 @@ def _sample_coordinate_list(lst, max_length):
 
 
 def _smart_truncate_list(lst, max_length):
-    """智能截断列表"""
+    """Truncate list and append info entry when shortened."""
     if len(lst) <= max_length:
         return lst
     truncated = lst[:max_length - 1]
     truncated.append({
         "type": "info",
-        "text": f"...(列表已截断，原始长度: {len(lst)}, 已截断: {len(lst) - max_length + 1})"
+        "text": f"...(list truncated, original length: {len(lst)}, removed: {len(lst) - max_length + 1})"
     })
     return truncated
 
@@ -143,7 +143,7 @@ class LimitedMCPClient:
         self.timeout = timeout
     
     async def get_tools(self):
-        # get_tools 本身也加超时，避免卡在握手阶段
+        # Apply timeout to get_tools itself to avoid hanging during handshake
         tools = await asyncio.wait_for(self.client.get_tools(), timeout=self.timeout)
         for tool in tools:
             original_func = tool.func

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-攻击生成器核心模块初始化文件
+Attack generator core module initialization.
 """
 
 from .real_executor import RealExecutor, run_tasks_as_function
