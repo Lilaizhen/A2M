@@ -1,5 +1,5 @@
 #!/bin/bash
-SOURCE_DIR="/home/llz/MCP-Bench/annotated_data"
+SOURCE_DIR="$(pwd)/annotated_data"
 DEST_DIR="/root"
 
 
