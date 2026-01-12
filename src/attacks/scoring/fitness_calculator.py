@@ -20,13 +20,13 @@ async def judge_inappropriate_content(agent_behavior: str, attack_target: str = 
         agent_behavior: Agent behavior trace
         attack_target: Attack goal description
         api_key: API key
-        judge_model: Judge model name
-        attack_tool: Attack tool info (name, description, return value)
+    judge_model: Judge model name
+    attack_tool: Attack tool info (name, description, return value)
     """
     from src.utils.model_config import get_default_model
-    # If no api_key provided, use a default value
-    api_key = "sk-2KYtn72eVUa8DuBeBZvTODCvKyVOT2LeCLVrNyZU9Bq2EXcD"
-    api_base = "https://api.shredder.money/v1"
+    # Resolve credentials from explicit args or environment
+    api_key = api_key or os.getenv("OPENAI_API_KEY", "")
+    api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
     if not judge_model:
         judge_model = get_default_model("judge")
     if not api_key:
