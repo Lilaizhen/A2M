@@ -1,4 +1,4 @@
-# MCP-Bench
+# A2M
 
 A LangGraph/LangChain–based benchmark that runs multi-tool MCP agents on curated tasks, with optional adversarial tools to stress-test safety and robustness.
 
