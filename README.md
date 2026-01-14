@@ -36,5 +36,3 @@ python src/attacks/attack_generator_modular_backup.py --output results_attack/re
 - `src/attacks/`: attack scenarios, scoring, and generators.
 - `scripts/`: helper scripts.
 
-## Notes
-- Network calls and MCP tool processes are required for full runs.
