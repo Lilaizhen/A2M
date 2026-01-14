@@ -4,37 +4,26 @@ A LangGraph/LangChain–based benchmark that runs multi-tool MCP agents on curat
 
 ## Quick Start
 - Requirements: Python 3.10+ and access to the internet for model/MCP calls.
-- Install deps (recommend venv):
+- Install deps (conda):
   ```bash
-  python -m venv .venv
-  source .venv/bin/activate
+  conda create -n a2m python=3.10
+  conda activate a2m
   pip install -r requirements.txt
   ```
-- Env vars: set `OPENAI_API_KEY`; optionally `OPENAI_API_BASE` (defaults to `https://apis.iflow.cn/v1`).
+- Env vars: set `OPENAI_API_KEY`; optionally `OPENAI_API_BASE`.
 
 ## Running the Benchmark
 Run tasks with optional attack tools:
 ```bash
 python main.py --dataset all --attack \
-  --attack-dataset ./datasets/test_prompts.json \
+  --attack-dataset results_attack/resource_waste.json \
   --attack-scenario resource_waste
 ```
-- `--dataset`: `all` (default) | `test` | `filter`
-- `--attack`: enable the malicious `mytool` MCP server
-- `--attack-dataset`: JSON list of attack tools mapped to task IDs
-- `--attack-scenario`: `resource_waste` | `task_failure` | `information_leakage` | `backdoor_injection` | `resource_waste_no_success`
-- Outputs land in `results/<timestamp>_<model>_<dataset>/run.log` and `results.json`
 
 ## Attack Tool Generation
-- Modular generator (genetic-style evolution): `src/attacks/attack_generator_modular.py`
-  ```bash
-  python src/attacks/attack_generator_modular.py --input datasets/test_prompts.json --attack-type resource_waste
-  ```
-- Simple one-pass generator: `src/attacks/attack_generator_simple.py`
-  ```bash
-  python src/attacks/attack_generator_simple.py --input datasets/test_prompts.json --output attack_tools.json
-  ```
-- Extract best-performing tools from result folders: `python extract_attack_tools.py --base-dir ./results_attack --output attack_tools_extracted.json`
+```bash
+python src/attacks/attack_generator_modular_backup.py --output results_attack/resource_waste.json --iterations 10 --output-dir results_attack/resource_waste --execution-model glm-4.6 --generation-model glm-4.6 --mutation-model glm-4.6 --candidate-count 20 --use-strategy-tags --attack-type resource_waste --use-execution-trace --no-require-task-success --top-k 10
+```
 
 ## Repository Layout
 - `main.py`: CLI entry; loads dataset, resets `annotated_data`, wires MCP servers, runs tasks.
