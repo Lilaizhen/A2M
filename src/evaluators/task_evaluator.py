@@ -63,14 +63,14 @@ async def judge_task_completion(
     """
 
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
+    api_key = os.getenv("JUDGE_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_base = os.getenv("JUDGE_API_BASE") or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
     if not api_key:
-        raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
+        raise RuntimeError("请为裁判 LLM 设置 JUDGE_API_KEY 或 OPENAI_API_KEY 环境变量")
 
     from src.utils.model_config import get_default_model
     if not judge_model:
-        judge_model = get_default_model("judge")
+        judge_model = os.getenv("JUDGE_MODEL") or get_default_model("judge")
 
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,

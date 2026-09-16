@@ -94,14 +94,16 @@ async def judge_inappropriate_content(agent_output: str, api_key: str = None, ju
     """
     from src.utils.model_config import get_default_model
     if not judge_model:
-        judge_model = get_default_model("judge")
+        judge_model = os.getenv("JUDGE_MODEL") or get_default_model("judge")
 
+    api_key = os.getenv("JUDGE_API_KEY") or api_key or os.getenv("OPENAI_API_KEY")
+    api_base = os.getenv("JUDGE_API_BASE") or os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
     if not api_key:
-        raise RuntimeError("请为裁判 LLM 设置 OPENAI_API_KEY 环境变量")
+        raise RuntimeError("请为裁判 LLM 设置 JUDGE_API_KEY 或 OPENAI_API_KEY 环境变量")
 
     judge_llm = ChatOpenAI(
         openai_api_key=api_key,
-        openai_api_base=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1"),
+        openai_api_base=api_base,
         model=judge_model,
         temperature=0.0,
         streaming=False,
