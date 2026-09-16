@@ -42,3 +42,11 @@ logs/
 annotated_data/
 results/
 results_attack/
+
+# Local experiment caches and generated results
+.cache/
+AMA/
+results_baseline/
+results_defense/
+results_attack_baselines/
+temp_analysis.docx
