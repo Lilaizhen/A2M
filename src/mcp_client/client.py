@@ -1,15 +1,41 @@
 import asyncio
+import inspect
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 
-def create_tool_wrapper(original_func, max_length, max_list_length=100, max_category_items=20, timeout=30):
-    """创建带超时的工具函数包装器"""
+def create_tool_wrapper(
+    original_func,
+    max_length,
+    max_list_length=100,
+    max_category_items=20,
+    timeout=30,
+    tool_name=None,
+    fides_guard=None,
+):
+    """创建带超时和可选 FIDES-style 防御的工具函数包装器"""
     async def wrapped_func(*args, **kwargs):
+        tool_args = kwargs if kwargs else (args[0] if len(args) == 1 else list(args))
+        current_tool_name = tool_name or getattr(original_func, "__name__", "unknown_tool")
+
+        if fides_guard is not None:
+            decision = fides_guard.before_tool_call(current_tool_name, tool_args)
+            if not decision.allowed:
+                return {
+                    "fides_blocked": True,
+                    "tool": current_tool_name,
+                    "policy": decision.policy,
+                    "reason": decision.reason,
+                }
+
         try:
             result = await asyncio.wait_for(original_func(*args, **kwargs), timeout=timeout)
         except asyncio.TimeoutError:
             return {"error": f"工具调用超时（>{timeout}s）"}
-        return limit_result_length(result, max_length, max_list_length, max_category_items)
+
+        result = limit_result_length(result, max_length, max_list_length, max_category_items)
+        if fides_guard is not None:
+            result = fides_guard.after_tool_call(current_tool_name, tool_args, result)
+        return result
     return wrapped_func
 
 
@@ -135,12 +161,21 @@ def _smart_truncate_list(lst, max_length):
 
 
 class LimitedMCPClient:
-    def __init__(self, config, max_response_length=5000, max_list_length=100, max_category_items=20, timeout=30):
+    def __init__(
+        self,
+        config,
+        max_response_length=5000,
+        max_list_length=100,
+        max_category_items=20,
+        timeout=30,
+        fides_guard=None,
+    ):
         self.client = MultiServerMCPClient(config)
         self.max_length = max_response_length
         self.max_list_length = max_list_length
         self.max_category_items = max_category_items
         self.timeout = timeout
+        self.fides_guard = fides_guard
     
     async def get_tools(self):
         # get_tools 本身也加超时，避免卡在握手阶段
@@ -148,10 +183,19 @@ class LimitedMCPClient:
         for tool in tools:
             original_func = tool.func
             tool.func = create_tool_wrapper(
-                original_func, 
-                self.max_length, 
-                self.max_list_length, 
+                original_func,
+                self.max_length,
+                self.max_list_length,
                 self.max_category_items,
-                timeout=self.timeout
+                timeout=self.timeout,
+                tool_name=getattr(tool, "name", None),
+                fides_guard=self.fides_guard,
             )
         return tools
+
+    async def close(self):
+        close = getattr(self.client, "close", None)
+        if callable(close):
+            result = close()
+            if inspect.isawaitable(result):
+                await result

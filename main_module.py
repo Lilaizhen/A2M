@@ -3,6 +3,7 @@ import json
 import os
 import time
 import re
+import sys
 from datetime import datetime
 import argparse
 from random import random
@@ -13,12 +14,14 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_community.callbacks.manager import get_openai_callback
 
 # 加载自定义模块
-from src.utils.logging_config import setup_run_logger, log_and_echo
+from src.utils.logging_config import setup_run_logger, log_and_echo, task_log_context
 from src.utils.tool_functions import truncate_tool_outputs, _now, _as_text, render_behavior_from_trace
 from src.mcp_client.client import LimitedMCPClient
+from src.defenses import FidesGuard
 from src.agents.agent_utils import format_agent_step
 from src.evaluators.task_evaluator import judge_task_completion
 from src.data_loaders.data_loader import (
@@ -28,7 +31,7 @@ from src.data_loaders.data_loader import (
     load_dataset,
 )
 from src.core.executor import TaskExecutor
-import shutil
+from src.utils.task_isolation import TaskIsolationManager
 from src.attacks.scoring.fitness_calculator import FitnessCalculator, AttackType
 
 load_dotenv()  # 加载 .env 文件中的环境变量
@@ -56,22 +59,6 @@ def _convert_relative_paths_in_text(text):
         return match.group(0)
 
     return re.sub(pattern, replace_path, text)
-
-
-def _reset_annotated_data():
-    """
-    重置annotated_data文件夹到备份状态
-    """
-    annotated_data_path = "./annotated_data"
-    annotated_data_backup_path = "./annotated_data_backup"
-
-    if os.path.exists(annotated_data_path):
-        shutil.rmtree(annotated_data_path)
-
-    if os.path.exists(annotated_data_backup_path):
-        shutil.copytree(annotated_data_backup_path, annotated_data_path)
-    else:
-        os.makedirs(annotated_data_path, exist_ok=True)
 
 
 # --- 全局配置 ---
@@ -144,6 +131,81 @@ async def retry_async(op, *, tries=4, base=0.5, factor=2.0, max_delay=8.0, name=
 # ============================================
 
 
+def _safe_task_filename(index: int, task_id: str) -> str:
+    safe_task_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(task_id))
+    return f"{index:03d}_{safe_task_id}.json"
+
+
+def _atomic_write_json(path: str, data: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp_path, path)
+
+
+def _remap_annotated_data_paths(text: str, task_annotated_data_path: str) -> str:
+    if not text or not isinstance(text, str):
+        return text
+    original_annotated_data_path = os.path.abspath(os.path.join(os.getcwd(), "annotated_data"))
+    result = text.replace(original_annotated_data_path, task_annotated_data_path)
+    result = result.replace("./annotated_data", task_annotated_data_path)
+    return result
+
+
+def _remap_task_paths(text: str, task_annotated_data_path: str, *, remap_repo_root: bool = False) -> str:
+    if not text or not isinstance(text, str):
+        return text
+    repo_root = os.path.abspath(os.getcwd())
+    process_root = os.path.dirname(task_annotated_data_path)
+    original_annotated_data_path = os.path.join(repo_root, "annotated_data")
+    placeholder = "__MCP_BENCH_TASK_ANNOTATED_DATA__"
+    result = text.replace(original_annotated_data_path, placeholder)
+    result = result.replace("./annotated_data", placeholder)
+    if remap_repo_root:
+        result = result.replace(repo_root, process_root)
+    result = result.replace(placeholder, task_annotated_data_path)
+    return result
+
+
+def _remap_paths_in_object(value, task_annotated_data_path: str, *, remap_repo_root: bool = False):
+    if isinstance(value, str):
+        return _remap_task_paths(value, task_annotated_data_path, remap_repo_root=remap_repo_root)
+    if isinstance(value, list):
+        return [_remap_paths_in_object(item, task_annotated_data_path, remap_repo_root=remap_repo_root) for item in value]
+    if isinstance(value, dict):
+        return {
+            key: _remap_paths_in_object(item, task_annotated_data_path, remap_repo_root=remap_repo_root)
+            for key, item in value.items()
+        }
+    return value
+
+
+def _failed_task_result(task: dict, reason: str, failure_type: str = "system_error") -> dict:
+    return {
+        "task_id": task.get("id", "unknown"),
+        "input": task.get("input", ""),
+        "expected_tools": task.get("expected_tools", []),
+        "agent_final_response": reason,
+        "task_completed": False,
+        "completion_reason": {
+            "result": "未完成",
+            "reason": reason,
+            "failure_type": failure_type,
+        },
+        "execution_time_seconds": 0,
+        "total_tool_calls": 0,
+        "mytool_calls": 0,
+        "token_usage": {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+        },
+        "action_trace": [],
+    }
+
+
 async def main(
     dataset,
     attack: bool = True,
@@ -152,29 +214,75 @@ async def main(
     model_name: str = None,
     judge_model: str = None,
     dataset_type: str = "all",
+    run_args: dict | None = None,
+    run_argv: list[str] | None = None,
+    concurrency: int = 1,
+    judge_concurrency: int | None = None,
+    agent_rpm_limit: float | None = None,
+    resume: bool = False,
+    results_dir: str | None = None,
+    keep_isolation: bool = False,
+    defense: str = "none",
+    fides_same_tool_same_args_limit: int = 3,
+    fides_max_total_tool_calls: int = 35,
+    fides_label_outputs: bool = True,
+    fides_block_unsafe_path_writes: bool = True,
 ):
+    isolation_manager = TaskIsolationManager()
+
     # 重试执行单个任务的函数
     async def _run_task_with_retry(
         task_id, task_desc, user_prompt, expected_tools, attack, attack_dataset_path,
         attack_tool_mapping, mcp_configs, tool_to_mcp, proxy_settings, extra_mcp_configs,
-        llm, mytool_tool_names
+        llm, mytool_tool_names, judge_semaphore=None, keep_isolation=False,
+        defense="none", fides_same_tool_same_args_limit=3,
+        fides_max_total_tool_calls=35, fides_label_outputs=True,
+        fides_block_unsafe_path_writes=True,
     ):
         max_retries = 5
+        original_task_desc = task_desc
+        original_user_prompt = user_prompt
+        last_defense_summary = None
+
+        def _with_defense(result, guard=None):
+            nonlocal last_defense_summary
+            if defense != "fides":
+                return result
+            if guard is not None:
+                last_defense_summary = guard.summary()
+            result["defense"] = last_defense_summary or {
+                "name": "fides",
+                "policy": "scenario_agnostic_untrusted_tool_output_and_runtime_limits",
+                "blocked_count": 0,
+                "events": [],
+            }
+            return result
+
         for attempt in range(max_retries):
             task_start_time = time.time()
             if attempt > 0:
                 log_and_echo(f"=============== 重试运行任务 {task_id}（{task_desc}） [尝试 {attempt + 1}/{max_retries}] ===============")
 
-            # === 使用annotated_data目录 ===
-            temp_dir = "./annotated_data"
-            if attempt == 0:
-                log_and_echo(f"🔧 使用annotated_data目录: {temp_dir}")
-
-            _reset_annotated_data()
-            if attempt == 0:
-                log_and_echo("🔄 重置annotated_data目录到备份状态")
-
+            process_id = None
+            task_annotated_data_path = None
+            limited = None
+            fides_guard = None
             try:
+                process_id, _, task_annotated_data_path = isolation_manager.create_process_isolation_dir(task_id)
+                if defense == "fides":
+                    fides_guard = FidesGuard(
+                        task_annotated_data_path=task_annotated_data_path,
+                        repo_root=os.getcwd(),
+                        same_tool_same_args_limit=fides_same_tool_same_args_limit,
+                        max_total_tool_calls=fides_max_total_tool_calls,
+                        label_tool_outputs=fides_label_outputs,
+                        block_unsafe_path_writes=fides_block_unsafe_path_writes,
+                    )
+                task_desc = _remap_annotated_data_paths(original_task_desc, task_annotated_data_path)
+                user_prompt = _remap_annotated_data_paths(original_user_prompt, task_annotated_data_path)
+                if attempt == 0:
+                    log_and_echo(f"🔧 使用任务隔离目录: {task_annotated_data_path}")
+
                 # === 构造 filtered_config（包含 expected 工具 + 可选 mytool + 额外配置）===
                 filtered_config = {}
                 required_mcp_servers = set()
@@ -202,6 +310,11 @@ async def main(
                         and attack_tool_mapping[task_id]
                     ):
                         attack_tool = attack_tool_mapping[task_id][0]
+                        attack_tool = _remap_paths_in_object(
+                            attack_tool,
+                            task_annotated_data_path,
+                            remap_repo_root=(attack_scenario == AttackType.TASK_FAILURE.value),
+                        )
                         config_json = json.dumps(attack_tool, ensure_ascii=False)
                         mytool_config["args"].extend([config_json])
                     filtered_config[mytool_server_key] = mytool_config
@@ -247,6 +360,12 @@ async def main(
                                 if key not in filtered_config[server_name]["env"]:
                                     filtered_config[server_name]["env"][key] = value
 
+                filtered_config, _ = isolation_manager.generate_mcp_config_for_process(
+                    filtered_config,
+                    task_annotated_data_path,
+                    process_id,
+                )
+
                 if attempt == 0:
                     log_and_echo("🧪 工具加载: " + str(list(filtered_config.keys())))
 
@@ -278,6 +397,7 @@ async def main(
                         max_list_length=100,
                         max_category_items=20,
                         timeout=30,
+                        fides_guard=fides_guard,
                     )
                     tools = await retry_async(
                         lambda: limited.get_tools(),
@@ -296,7 +416,7 @@ async def main(
                         task_end_time = time.time()
                         task_execution_time = task_end_time - task_start_time
 
-                        return {
+                        return _with_defense({
                             "task_id": task_id,
                             "input": user_prompt,
                             "expected_tools": expected_tools,
@@ -318,7 +438,7 @@ async def main(
                             "action_trace": [
                                 {"ts": _now(), "type": "user_input", "content": user_prompt}
                             ],
-                        }
+                        }, fides_guard)
 
                 # --- 创建 Agent 并行（容错） ---
                 final_response = ""
@@ -506,7 +626,7 @@ async def main(
                     else:
                         task_end_time = time.time()
                         task_execution_time = task_end_time - task_start_time
-                        return {
+                        return _with_defense({
                             "task_id": task_id,
                             "input": user_prompt,
                             "expected_tools": expected_tools,
@@ -530,7 +650,7 @@ async def main(
                                 "completion_tokens": 0,
                             },
                             "action_trace": action_trace,
-                        }
+                        }, fides_guard)
 
                 # === 检查 agent 行为轨迹的最后一个步骤是否是 AI 输出的信息 ===
                 def _check_last_step_is_ai_message(trace):
@@ -565,12 +685,21 @@ async def main(
                             continue
                     else:
                         behavior_text = render_behavior_from_trace(action_trace, max_tool_out_chars=2000)
-                        is_task_completed, _, completion_json = await judge_task_completion(
-                            agent_behavior=behavior_text,
-                            task_description=task_desc,
-                            expected_tools=expected_tools,
-                            judge_model=judge_model,
-                        )
+                        if judge_semaphore:
+                            async with judge_semaphore:
+                                is_task_completed, _, completion_json = await judge_task_completion(
+                                    agent_behavior=behavior_text,
+                                    task_description=task_desc,
+                                    expected_tools=expected_tools,
+                                    judge_model=judge_model,
+                                )
+                        else:
+                            is_task_completed, _, completion_json = await judge_task_completion(
+                                agent_behavior=behavior_text,
+                                task_description=task_desc,
+                                expected_tools=expected_tools,
+                                judge_model=judge_model,
+                            )
                 else:
                     log_and_echo("⚠️  跳过任务完成度判断（缺少必要信息）")
 
@@ -583,7 +712,7 @@ async def main(
                 task_execution_time = task_end_time - task_start_time
 
                 # 如果成功执行到这里，说明任务执行成功，不需要重试
-                return {
+                return _with_defense({
                     "task_id": task_id,
                     "input": user_prompt,
                     "expected_tools": expected_tools,
@@ -595,14 +724,21 @@ async def main(
                     "mytool_calls": mytool_calls,
                     "token_usage": token_usage,
                     "action_trace": action_trace,
-                }
+                }, fides_guard)
 
             finally:
-                if attempt == 0:
-                    log_and_echo(f"ℹ️  使用annotated_data目录，无需清理")
+                if fides_guard is not None:
+                    last_defense_summary = fides_guard.summary()
+                if limited:
+                    try:
+                        await limited.close()
+                    except Exception as e:
+                        log_and_echo(f"⚠️ 关闭 MCP client 失败: {e}")
+                if process_id and not keep_isolation:
+                    isolation_manager.cleanup_process_isolation_dir(process_id)
 
         # 如果所有重试都失败了，返回失败结果
-        return {
+        return _with_defense({
             "task_id": task_id,
             "input": user_prompt,
             "expected_tools": expected_tools,
@@ -622,16 +758,27 @@ async def main(
                 "completion_tokens": 0,
             },
             "action_trace": [],
-        }
+        })
     # --- 全局配置 ---
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    RESULTS_DIR = f"results/{timestamp}_{model_name}_{dataset_type}"
+    RESULTS_DIR = results_dir or f"results/{timestamp}_{model_name}_{dataset_type}"
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
     RUN_LOG_FILE = os.path.join(RESULTS_DIR, "run.log")
     RESULT_JSON_FILE = os.path.join(RESULTS_DIR, "results.json")
+    TASK_RESULTS_DIR = os.path.join(RESULTS_DIR, "task_results")
+    TASK_LOGS_DIR = os.path.join(RESULTS_DIR, "task_logs")
+    os.makedirs(TASK_RESULTS_DIR, exist_ok=True)
+    os.makedirs(TASK_LOGS_DIR, exist_ok=True)
 
-    setup_run_logger(RUN_LOG_FILE)
+    setup_run_logger(RUN_LOG_FILE, mode="a" if resume else "w")
+    if run_args is not None:
+        try:
+            log_and_echo("运行参数: " + json.dumps(run_args, ensure_ascii=False, sort_keys=True))
+        except TypeError:
+            log_and_echo(f"运行参数: {run_args}")
+    if run_argv is not None:
+        log_and_echo("命令行参数: " + json.dumps(run_argv, ensure_ascii=False))
 
     all_mcp_config = load_mcp_configs_from_live_config("./configs/live_mcp.json")
     tool_to_mcp, mcp_configs = load_tool_to_mcp_mapping("./configs/tool2mcp.json")
@@ -686,15 +833,48 @@ async def main(
 
     api_key = os.getenv("OPENAI_API_KEY")
     api_base = os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
-    llm = ChatOpenAI(
-        openai_api_key=api_key,
-        openai_api_base=api_base,
-        model=model_name,
-        streaming=False,
-        temperature=0.0,
-        timeout=100,  # 业务 LLM 100s
-        max_retries=1,
-    )
+
+    agent_rate_limiter = None
+    if agent_rpm_limit and agent_rpm_limit > 0:
+        agent_rate_limiter = InMemoryRateLimiter(
+            requests_per_second=agent_rpm_limit / 60.0,
+            check_every_n_seconds=0.1,
+            max_bucket_size=1,
+        )
+
+    def create_agent_llm():
+        llm_kwargs = {
+            "openai_api_key": api_key,
+            "openai_api_base": api_base,
+            "model": model_name,
+            "streaming": False,
+            "temperature": 0.0,
+            "timeout": 100,
+            "max_retries": 1,
+        }
+        if agent_rate_limiter is not None:
+            llm_kwargs["rate_limiter"] = agent_rate_limiter
+        return ChatOpenAI(**llm_kwargs)
+
+    concurrency = max(1, int(concurrency or 1))
+    judge_concurrency = max(1, int(judge_concurrency or min(concurrency, 3)))
+    task_semaphore = asyncio.Semaphore(concurrency)
+    judge_semaphore = asyncio.Semaphore(judge_concurrency)
+    checkpoint_lock = asyncio.Lock()
+    defense = (defense or "none").lower()
+    if defense not in {"none", "fides"}:
+        log_and_echo(f"⚠️ 未知防御 {defense}，回退为 none")
+        defense = "none"
+    rpm_msg = f"; agent RPM limit={agent_rpm_limit}" if agent_rate_limiter is not None else ""
+    log_and_echo(f"任务并发数: {concurrency}; judge并发数: {judge_concurrency}; resume={resume}{rpm_msg}")
+    if defense == "fides":
+        log_and_echo(
+            "启用 FIDES-style 防御: "
+            f"same_tool_same_args_limit={fides_same_tool_same_args_limit}, "
+            f"max_total_tool_calls={fides_max_total_tool_calls}, "
+            f"label_outputs={fides_label_outputs}, "
+            f"block_unsafe_path_writes={fides_block_unsafe_path_writes}"
+        )
 
     results_summary = []
 
@@ -758,49 +938,94 @@ async def main(
     if attack and attack_dataset_path:
         log_and_echo(f"启用了攻击模式，将使用攻击数据集: {attack_dataset_path}")
 
-    for task in dataset:
+    async def run_one_task(index: int, task: dict):
         task_id = task["id"]
-        task_desc = task["description"]
-        user_prompt = task["input"]
-        expected_tools = task["expected_tools"]
+        checkpoint_path = os.path.join(TASK_RESULTS_DIR, _safe_task_filename(index, task_id))
+        task_log_path = os.path.join(TASK_LOGS_DIR, _safe_task_filename(index, task_id).replace(".json", ".log"))
+        if resume and os.path.exists(checkpoint_path):
+            with task_log_context(task_log_path):
+                try:
+                    with open(checkpoint_path, "r", encoding="utf-8") as f:
+                        cached_result = json.load(f)
+                    log_and_echo(f"↪ 跳过已完成任务 {index + 1}/{len(dataset)}: {task_id}")
+                    return index, cached_result
+                except Exception as e:
+                    log_and_echo(f"⚠️ 读取checkpoint失败，将重跑任务 {task_id}: {e}")
 
-        # 使用重试函数执行任务
-        task_result = await _run_task_with_retry(
-            task_id, task_desc, user_prompt, expected_tools, attack, attack_dataset_path,
-            attack_tool_mapping, mcp_configs, tool_to_mcp, proxy_settings, extra_mcp_configs,
-            llm, mytool_tool_names
-        )
+        async with task_semaphore:
+            with task_log_context(task_log_path):
+                task_start_msg = f"=============== 并发运行任务 {index + 1}/{len(dataset)}: {task_id} ==============="
+                log_and_echo(task_start_msg)
+                try:
+                    task_result = await _run_task_with_retry(
+                        task_id,
+                        task["description"],
+                        task["input"],
+                        task["expected_tools"],
+                        attack,
+                        attack_dataset_path,
+                        attack_tool_mapping,
+                        mcp_configs,
+                        tool_to_mcp,
+                        proxy_settings,
+                        extra_mcp_configs,
+                        create_agent_llm(),
+                        mytool_tool_names,
+                        judge_semaphore=judge_semaphore,
+                        keep_isolation=keep_isolation,
+                        defense=defense,
+                        fides_same_tool_same_args_limit=fides_same_tool_same_args_limit,
+                        fides_max_total_tool_calls=fides_max_total_tool_calls,
+                        fides_label_outputs=fides_label_outputs,
+                        fides_block_unsafe_path_writes=fides_block_unsafe_path_writes,
+                    )
 
-        # 如果启用了攻击模式，使用适应度计算器计算得分
-        if attack and fitness_calculator and attack_dataset_path:
-            try:
-                # 获取当前任务的攻击工具
-                attack_tools = attack_tool_mapping.get(task_id, [])
-                if attack_tools:
-                    # 使用第一个攻击工具进行评分
-                    attack_tool = attack_tools[0]
-                    # 计算分数
-                    score, reason = await fitness_calculator.score_async(task_result, baseline_ok=True, attack_tool=attack_tool)
+                    if attack and fitness_calculator and attack_dataset_path:
+                        try:
+                            attack_tools = attack_tool_mapping.get(task_id, [])
+                            if attack_tools:
+                                attack_tool = attack_tools[0]
+                                async with judge_semaphore:
+                                    score, reason = await fitness_calculator.score_async(
+                                        task_result,
+                                        baseline_ok=True,
+                                        attack_tool=attack_tool,
+                                    )
+                                task_result["attack_score"] = {
+                                    "score": score,
+                                    "reason": reason,
+                                    "attack_scenario": attack_scenario,
+                                }
+                                log_and_echo(f"任务 {task_id} 攻击评分: {score:.2f} - {reason}")
+                            else:
+                                log_and_echo(f"任务 {task_id} 没有找到攻击工具，跳过评分")
+                        except Exception as e:
+                            log_and_echo(f"⚠️ 任务 {task_id} 评分失败: {e}")
+                            task_result["attack_score"] = {
+                                "score": 0,
+                                "reason": f"评分失败: {str(e)}",
+                                "attack_scenario": attack_scenario,
+                            }
+                except Exception as e:
+                    log_and_echo(f"❌ 任务 {task_id} 未捕获异常: {e}")
+                    task_result = _failed_task_result(task, f"未捕获异常: {e}")
 
-                    # 将得分添加到任务结果中
-                    task_result["attack_score"] = {
-                        "score": score,
-                        "reason": reason,
-                        "attack_scenario": attack_scenario
-                    }
+                async with checkpoint_lock:
+                    _atomic_write_json(checkpoint_path, task_result)
+                return index, task_result
 
-                    log_and_echo(f"任务 {task_id} 攻击评分: {score:.2f} - {reason}")
-                else:
-                    log_and_echo(f"任务 {task_id} 没有找到攻击工具，跳过评分")
-            except Exception as e:
-                log_and_echo(f"⚠️ 任务 {task_id} 评分失败: {e}")
-                task_result["attack_score"] = {
-                    "score": 0,
-                    "reason": f"评分失败: {str(e)}",
-                    "attack_scenario": attack_scenario
-                }
-
-        results_summary.append(task_result)
+    task_pairs = await asyncio.gather(
+        *[run_one_task(index, task) for index, task in enumerate(dataset)],
+        return_exceptions=True,
+    )
+    for index, item in enumerate(task_pairs):
+        if isinstance(item, Exception):
+            task = dataset[index]
+            log_and_echo(f"❌ 任务 {task.get('id')} gather异常: {item}")
+            results_summary.append(_failed_task_result(task, f"gather异常: {item}"))
+        else:
+            _, task_result = item
+            results_summary.append(task_result)
 
     # === 汇总结果 ===
     total_tasks = len(results_summary)
@@ -884,6 +1109,13 @@ async def main(
             "token_usage": overall_token_usage,
             "attack_scenario": attack_scenario if attack else None,
             "attack_score_statistics": attack_score_stats if attack else None,
+            "defense": {
+                "name": defense,
+                "fides_same_tool_same_args_limit": fides_same_tool_same_args_limit if defense == "fides" else None,
+                "fides_max_total_tool_calls": fides_max_total_tool_calls if defense == "fides" else None,
+                "fides_label_outputs": fides_label_outputs if defense == "fides" else None,
+                "fides_block_unsafe_path_writes": fides_block_unsafe_path_writes if defense == "fides" else None,
+            },
         },
         "task_details": results_summary,
     }
@@ -948,6 +1180,15 @@ if __name__ == "__main__":
             if "input" in task:
                 task["input"] = _convert_relative_paths_in_text(task["input"])
 
-        asyncio.run(main(dataset, attack=args.use_mytool, attack_dataset_path=args.attack_dataset, attack_scenario=args.attack_scenario))
+        asyncio.run(
+            main(
+                dataset,
+                attack=args.use_mytool,
+                attack_dataset_path=args.attack_dataset,
+                attack_scenario=args.attack_scenario,
+                run_args=vars(args),
+                run_argv=sys.argv,
+            )
+        )
     else:
         print("错误: 没有找到任何有效的数据集文件")

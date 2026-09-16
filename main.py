@@ -3,21 +3,51 @@ import argparse
 import os
 import shutil
 import json
+import sys
+import time
 from main_module import main as main_function
 from src.data_loaders.data_loader import load_dataset
 from src.utils.model_config import resolve_model, get_default_model
 
+
+def _rmtree_with_retries(path, attempts=3, delay_seconds=0.5):
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            last_error = exc
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_seconds)
+    if last_error:
+        raise last_error
+
+
 def reset_annotated_data():
     """重置annotated_data文件夹到备份状态"""
+    import fcntl
+
+    lock_dir = os.path.join(os.getcwd(), ".cache")
+    os.makedirs(lock_dir, exist_ok=True)
+    lock_path = os.path.join(lock_dir, "annotated_data_reset.lock")
     annotated_data_path = os.path.join(os.getcwd(), "annotated_data")
     annotated_data_backup_path = os.path.join(os.getcwd(), "annotated_data_backup")
-    
-    if os.path.exists(annotated_data_path):
-        shutil.rmtree(annotated_data_path)
-    if os.path.exists(annotated_data_backup_path):
-        shutil.copytree(annotated_data_backup_path, annotated_data_path)
-    else:
-        os.makedirs(annotated_data_path, exist_ok=True)
+
+    with open(lock_path, "w") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            if os.path.exists(annotated_data_path):
+                _rmtree_with_retries(annotated_data_path)
+            if os.path.exists(annotated_data_backup_path):
+                shutil.copytree(annotated_data_backup_path, annotated_data_path)
+            else:
+                os.makedirs(annotated_data_path, exist_ok=True)
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -38,6 +68,17 @@ if __name__ == "__main__":
     parser.add_argument("--attack-scenario", type=str, choices=["resource_waste", "task_failure", "information_leakage", "backdoor_injection", "resource_waste_no_success"], default="resource_waste", help="攻击场景类型 (默认: resource_waste)")
     parser.add_argument("--model", type=str, default=None, help="指定使用的模型名称(支持别名)")
     parser.add_argument("--judge-model", type=str, default=None, help="裁判模型名称")
+    parser.add_argument("--concurrency", type=int, default=1, help="并发执行任务数，默认1保持串行")
+    parser.add_argument("--judge-concurrency", type=int, default=None, help="裁判模型并发数，默认min(concurrency, 3)")
+    parser.add_argument("--agent-rpm-limit", type=float, default=None, help="agent模型请求RPM上限；默认不限制")
+    parser.add_argument("--resume", action="store_true", help="复用results-dir中的task checkpoint，跳过已完成任务")
+    parser.add_argument("--results-dir", type=str, default=None, help="指定结果目录；配合--resume可断点续跑")
+    parser.add_argument("--keep-isolation", action="store_true", help="保留每个任务的隔离目录用于调试")
+    parser.add_argument("--defense", choices=["none", "fides"], default="none", help="攻击评测防御开关；默认none")
+    parser.add_argument("--fides-same-tool-same-args-limit", type=int, default=3, help="FIDES: 同一工具+同一参数最多允许调用次数")
+    parser.add_argument("--fides-max-total-tool-calls", type=int, default=35, help="FIDES: 单任务最大工具调用预算")
+    parser.add_argument("--fides-no-label-outputs", action="store_true", help="FIDES: 不在工具输出中加入untrusted标签")
+    parser.add_argument("--fides-no-path-write-block", action="store_true", help="FIDES: 不拦截写类工具越出任务隔离目录")
     args = parser.parse_args()
 
     # 路径映射
@@ -109,7 +150,20 @@ if __name__ == "__main__":
             attack_scenario=args.attack_scenario,
             model_name=model_name,
             judge_model=judge_model,
-            dataset_type=args.dataset
+            dataset_type=args.dataset,
+            run_args=vars(args),
+            run_argv=sys.argv,
+            concurrency=args.concurrency,
+            judge_concurrency=args.judge_concurrency,
+            agent_rpm_limit=args.agent_rpm_limit,
+            resume=args.resume,
+            results_dir=args.results_dir,
+            keep_isolation=args.keep_isolation,
+            defense=args.defense,
+            fides_same_tool_same_args_limit=args.fides_same_tool_same_args_limit,
+            fides_max_total_tool_calls=args.fides_max_total_tool_calls,
+            fides_label_outputs=not args.fides_no_label_outputs,
+            fides_block_unsafe_path_writes=not args.fides_no_path_write_block,
         ))
     else:
         print("错误: 没有找到任何有效的数据集文件")
