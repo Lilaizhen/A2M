@@ -1,0 +1,2350 @@
+[
+  {
+    "name": "geocode_address",
+    "description": "\nConvert an address or place name to geographic coordinates with detailed location information.\n\nThis tool takes a text description of a location (such as an address, landmark name, or\nplace of interest) and returns its precise geographic coordinates along with rich metadata.\nThe results can be used for mapping, navigation, location-based analysis, and as input to\nother geospatial tools.\n\nArgs:\n    address: The address, place name, landmark, or description to geocode (e.g., \"Empire State Building\", \n            \"123 Main St, Springfield\", \"Golden Gate Park, San Francisco\")\n    \nReturns:\n    List of matching locations with:\n    - Geographic coordinates (latitude/longitude)\n    - Formatted address\n    - Administrative boundaries (city, state, country)\n    - OSM type and ID\n    - Bounding box (if applicable)\n    - Importance ranking\n"
+  },
+  {
+    "name": "reverse_geocode",
+    "description": "\nConvert geographic coordinates to a detailed address and location description.\n\nThis tool takes a specific point on Earth (latitude and longitude) and returns \ncomprehensive information about that location, including its address, nearby landmarks,\nadministrative boundaries, and other contextual information. Useful for translating\nGPS coordinates into human-readable locations.\n\nArgs:\n    latitude: The latitude coordinate (decimal degrees, WGS84)\n    longitude: The longitude coordinate (decimal degrees, WGS84)\n    \nReturns:\n    Detailed address and location information including:\n    - Formatted address\n    - Building, street, city, state, country\n    - Administrative hierarchy\n    - OSM metadata\n    - Postal code and other relevant identifiers\n"
+  },
+  {
+    "name": "find_nearby_places",
+    "description": "\nDiscover points of interest and amenities near a specific location.\n\nThis tool performs a comprehensive search around a geographic point to identify\nnearby establishments, amenities, and points of interest. Results are organized by\ncategory and subcategory, making it easy to find specific types of places. Essential\nfor location-based recommendations, neighborhood analysis, and proximity-based decision making.\n\nArgs:\n    latitude: Center point latitude (decimal degrees)\n    longitude: Center point longitude (decimal degrees)\n    radius: Search radius in meters (defaults to 1000m/1km)\n    categories: List of OSM categories to search for (e.g., [\"amenity\", \"shop\", \"tourism\"]).\n               If omitted, searches common categories.\n    limit: Maximum number of total results to return\n    \nReturns:\n    Structured dictionary containing:\n    - Original query parameters\n    - Total count of places found\n    - Results grouped by category and subcategory\n    - Each place includes name, coordinates, and associated tags\n"
+  },
+  {
+    "name": "get_route_directions",
+    "description": "\nCalculate detailed route directions between two geographic points.\n\nThis tool provides comprehensive turn-by-turn navigation directions between any two locations\non Earth. It calculates the optimal route based on the specified transportation mode and\nreturns detailed information about distance, duration, maneuvers, and the route geometry.\nPerfect for trip planning, navigation assistance, and commute analysis.\n\nArgs:\n    from_latitude: Starting point latitude (decimal degrees)\n    from_longitude: Starting point longitude (decimal degrees)\n    to_latitude: Destination latitude (decimal degrees)\n    to_longitude: Destination longitude (decimal degrees)\n    mode: Transportation mode - options include:\n          - \"car\" (default): Standard automobile routing\n          - \"bike\": Bicycle-friendly routes\n          - \"foot\": Pedestrian walking paths\n    \nReturns:\n    Comprehensive routing information including:\n    - Summary with total distance (meters) and duration (seconds)\n    - Turn-by-turn directions with individual segments\n    - Route geometry for mapping visualization\n    - Waypoint information\n"
+  },
+  {
+    "name": "search_category",
+    "description": "\nSearch for specific types of places within a defined geographic area.\n\nThis tool allows targeted searches for places matching specific categories within\na rectangular geographic region. It's particularly useful for filtering places by type\n(restaurants, schools, parks, etc.) within a neighborhood or city district. Results include\ncomplete location details and metadata about each matching place.\n\nArgs:\n    category: Main OSM category to search for (e.g., \"amenity\", \"shop\", \"tourism\", \"building\")\n    min_latitude: Southern boundary of search area (decimal degrees)\n    min_longitude: Western boundary of search area (decimal degrees)\n    max_latitude: Northern boundary of search area (decimal degrees)\n    max_longitude: Eastern boundary of search area (decimal degrees)\n    subcategories: Optional list of specific subcategories to filter by (e.g., [\"restaurant\", \"cafe\"])\n    \nReturns:\n    Structured results including:\n    - Query parameters\n    - Count of matching places\n    - List of matching places with coordinates, names, and metadata\n"
+  },
+  {
+    "name": "suggest_meeting_point",
+    "description": "\nFind the optimal meeting place for multiple people coming from different locations.\n\nThis tool calculates a central meeting point based on the locations of multiple individuals,\nthen recommends suitable venues near that central point. Ideal for planning social gatherings,\nbusiness meetings, or any situation where multiple people need to converge from different\nstarting points.\n\nArgs:\n    locations: List of dictionaries, each containing the latitude and longitude of a person's location\n              Example: [{\"latitude\": 37.7749, \"longitude\": -122.4194}, {\"latitude\": 37.3352, \"longitude\": -121.8811}]\n    venue_type: Type of venue to suggest as a meeting point. Options include:\n               \"cafe\", \"restaurant\", \"bar\", \"library\", \"park\", etc.\n    \nReturns:\n    Meeting point recommendations including:\n    - Calculated center point coordinates\n    - List of suggested venues with names and details\n    - Total number of matching venues in the area\n"
+  },
+  {
+    "name": "explore_area",
+    "description": "\nGenerate a comprehensive profile of an area including all amenities and features.\n\nThis powerful analysis tool creates a detailed overview of a neighborhood or area by\nidentifying and categorizing all geographic features, amenities, and points of interest.\nResults are organized by category for easy analysis. Excellent for neighborhood research,\narea comparisons, and location-based decision making.\n\nArgs:\n    latitude: Center point latitude (decimal degrees)\n    longitude: Center point longitude (decimal degrees)\n    radius: Search radius in meters (defaults to 500m)\n    \nReturns:\n    In-depth area profile including:\n    - Address and location context\n    - Total feature count\n    - Features organized by category and subcategory\n    - Each feature includes name, coordinates, and detailed metadata\n"
+  },
+  {
+    "name": "find_schools_nearby",
+    "description": "\nLocate educational institutions near a specific location, filtered by education level.\n\nThis specialized search tool identifies schools, colleges, and other educational institutions\nwithin a specified distance from a location. Results can be filtered by education level\n(elementary, middle, high school, university, etc.). Essential for families evaluating\nneighborhoods or real estate purchases with education considerations.\n\nArgs:\n    latitude: Center point latitude (decimal degrees)\n    longitude: Center point longitude (decimal degrees)\n    radius: Search radius in meters (defaults to 2000m/2km)\n    education_levels: Optional list of specific education levels to filter by\n                     (e.g., [\"elementary\", \"secondary\", \"university\"])\n    \nReturns:\n    List of educational institutions with:\n    - Name and type\n    - Distance from search point\n    - Education levels offered\n    - Contact information if available\n    - Other relevant metadata\n"
+  },
+  {
+    "name": "analyze_commute",
+    "description": "\nPerform a detailed commute analysis between home and work locations.\n\nThis advanced tool analyzes commute options between two locations (typically home and work),\ncomparing multiple transportation modes and providing detailed metrics for each option.\nIncludes estimated travel times, distances, turn-by-turn directions, and other commute-relevant\ndata. Essential for real estate decisions, lifestyle planning, and workplace relocation analysis.\n\nArgs:\n    home_latitude: Home location latitude (decimal degrees)\n    home_longitude: Home location longitude (decimal degrees)\n    work_latitude: Workplace location latitude (decimal degrees)\n    work_longitude: Workplace location longitude (decimal degrees)\n    modes: List of transportation modes to analyze (options: \"car\", \"foot\", \"bike\")\n    depart_at: Optional departure time (format: \"HH:MM\") for time-sensitive routing\n    \nReturns:\n    Comprehensive commute analysis with:\n    - Summary comparing all transportation modes\n    - Detailed route information for each mode\n    - Total distance and duration for each option\n    - Turn-by-turn directions\n"
+  },
+  {
+    "name": "find_ev_charging_stations",
+    "description": "\nLocate electric vehicle charging stations near a specific location.\n\nThis specialized search tool identifies EV charging infrastructure within a specified\ndistance from a location. Results can be filtered by connector type (Tesla, CCS, CHAdeMO, etc.)\nand minimum power delivery. Essential for EV owners planning trips or evaluating potential\ncharging stops.\n\nArgs:\n    latitude: Center point latitude (decimal degrees)\n    longitude: Center point longitude (decimal degrees)\n    radius: Search radius in meters (defaults to 5000m/5km)\n    connector_types: Optional list of specific connector types to filter by\n                    (e.g., [\"type2\", \"ccs\", \"tesla\"])\n    min_power: Minimum charging power in kW\n    \nReturns:\n    List of charging stations with:\n    - Location name and operator\n    - Available connector types\n    - Charging speeds\n    - Number of charging points\n    - Access restrictions\n    - Other relevant metadata\n"
+  },
+  {
+    "name": "analyze_neighborhood",
+    "description": "\nGenerate a comprehensive neighborhood analysis focused on livability factors.\n\nThis advanced analysis tool evaluates a neighborhood based on multiple livability factors,\nincluding amenities, transportation options, green spaces, and services. Results include\ncounts and proximity scores for various categories, helping to assess the overall quality\nand convenience of a residential area. Invaluable for real estate decisions, relocation\nplanning, and neighborhood comparisons.\n\nArgs:\n    latitude: Center point latitude (decimal degrees)\n    longitude: Center point longitude (decimal degrees)\n    radius: Analysis radius in meters (defaults to 1000m/1km)\n    \nReturns:\n    Comprehensive neighborhood profile including:\n    - Overall neighborhood score\n    - Walkability assessment\n    - Public transportation access\n    - Nearby amenities (shops, restaurants, services)\n    - Green spaces and recreation\n    - Education and healthcare facilities\n    - Detailed counts and distance metrics for each category\n"
+  },
+  {
+    "name": "find_parking_facilities",
+    "description": "\nLocate parking facilities near a specific location.\n\nThis tool finds parking options (lots, garages, street parking) near a specified location.\nResults can be filtered by parking type and include capacity information where available.\nUseful for trip planning, city navigation, and evaluating parking availability in urban areas.\n\nArgs:\n    latitude: Center point latitude (decimal degrees)\n    longitude: Center point longitude (decimal degrees)\n    radius: Search radius in meters (defaults to 1000m/1km)\n    parking_type: Optional filter for specific types of parking facilities\n                 (\"surface\", \"underground\", \"multi-storey\", etc.)\n    \nReturns:\n    List of parking facilities with:\n    - Name and type\n    - Capacity information if available\n    - Fee structure if available\n    - Access restrictions\n    - Distance from search point\n"
+  },
+  {
+    "name": "getBaziDetail",
+    "description": "根据时间（公历或农历）、性别来获取八字信息。solarDatetime和lunarDatetime必须传且只传其中一个。"
+  },
+  {
+    "name": "getSolarTimes",
+    "description": "根据八字获取公历时间列表。返回的时间格式为：YYYY-MM-DD hh:mm:ss。例如时间1998年7月31日下午2点整表示为：1998-07-31 14:00:00"
+  },
+  {
+    "name": "getChineseCalendar",
+    "description": "获取指定公历时间（默认今天）的黄历信息。"
+  },
+  {
+    "name": "buildBaziFromLunarDatetime",
+    "description": "根据农历时间、性别来获取八字信息。"
+  },
+  {
+    "name": "buildBaziFromSolarDatetime",
+    "description": "根据阳历时间、性别来获取八字信息。"
+  },
+  {
+    "name": "get_latest_release",
+    "description": "Get the latest release version of a Maven dependency (excludes pre-releases by default)"
+  },
+  {
+    "name": "check_maven_version_exists",
+    "description": "Check if a specific version of a Maven dependency exists"
+  },
+  {
+    "name": "list_maven_versions",
+    "description": "List Maven dependency versions sorted by last updated date (most recent first)"
+  },
+  {
+    "name": "load_all_tickers",
+    "description": "Loads all ticker symbols and names for KOSPI and KOSDAQ into memory.\n\nReturns:\n    Dict[str, str]: A dictionary mapping tickers to stock names.\n    Example: {\"005930\": \"삼성전자\", \"035720\": \"카카오\", ...}\n"
+  },
+  {
+    "name": "get_stock_ohlcv",
+    "description": "Retrieves OHLCV (Open/High/Low/Close/Volume) data for a specific stock.\n\nArgs:\n    fromdate (str): Start date for retrieval (YYYYMMDD)\n    todate   (str): End date for retrieval (YYYYMMDD)\n    ticker   (str): Stock ticker symbol\n    adjusted (bool, optional): Whether to use adjusted prices (True: adjusted, False: unadjusted). Defaults to True.\n\nReturns:\n    DataFrame:\n        >> get_stock_ohlcv(\"20210118\", \"20210126\", \"005930\")\n                        Open     High     Low    Close   Volume\n        Date\n        2021-01-26  89500  94800  89500  93800  46415214\n        2021-01-25  87300  89400  86800  88700  25577517\n        2021-01-22  89000  89700  86800  86800  30861661\n        2021-01-21  87500  88600  86500  88100  25318011\n        2021-01-20  89000  89000  86500  87200  25211127\n        2021-01-19  84500  88000  83600  87000  39895044\n        2021-01-18  86600  87300  84100  85000  43227951\n"
+  },
+  {
+    "name": "get_stock_market_cap",
+    "description": "Retrieves market capitalization data for a specific stock.\n\nArgs:\n    fromdate (str): Start date for retrieval (YYYYMMDD)\n    todate   (str): End date for retrieval (YYYYMMDD)\n    ticker   (str): Stock ticker symbol\n\nReturns:\n    DataFrame:\n        >> get_stock_market_cap(\"20150720\", \"20150724\", \"005930\")\n                          Market Cap  Volume      Trading Value  Listed Shares\n        Date\n        2015-07-24  181030885173000  196584  241383636000  147299337\n        2015-07-23  181767381858000  208965  259446564000  147299337\n        2015-07-22  184566069261000  268323  333813094000  147299337\n        2015-07-21  186039062631000  194055  244129106000  147299337\n        2015-07-20  187806654675000  128928  165366199000  147299337\n"
+  },
+  {
+    "name": "get_stock_fundamental",
+    "description": "Retrieves fundamental data (PER/PBR/Dividend Yield) for a specific stock.\n\nArgs:\n    fromdate (str): Start date for retrieval (YYYYMMDD)\n    todate   (str): End date for retrieval (YYYYMMDD)\n    ticker   (str): Stock ticker symbol\n\nReturns:\n    DataFrame:\n        >> get_stock_fundamental(\"20210104\", \"20210108\", \"005930\")\n                          BPS        PER       PBR   EPS       DIV   DPS\n            Date\n            2021-01-08  37528  28.046875  2.369141  3166  1.589844  1416\n            2021-01-07  37528  26.187500  2.210938  3166  1.709961  1416\n            2021-01-06  37528  25.953125  2.189453  3166  1.719727  1416\n            2021-01-05  37528  26.500000  2.240234  3166  1.690430  1416\n            2021-01-04  37528  26.218750  2.210938  3166  1.709961  1416\n"
+  },
+  {
+    "name": "get_stock_trading_volume",
+    "description": "Retrieves trading volume by investor type for a specific stock.\n\nArgs:\n    fromdate (str): Start date for retrieval (YYYYMMDD)\n    todate   (str): End date for retrieval (YYYYMMDD)\n    ticker   (str): Stock ticker symbol\n\nReturns:\n    DataFrame with columns:\n    - Volume (Sell/Buy/Net Buy)\n    - Trading Value (Sell/Buy/Net Buy)\n    Broken down by investor types (Financial Investment, Insurance, Trust, etc.)\n"
+  },
+  {
+    "name": "generate_area_chart",
+    "description": "Generate a area chart to show data trends under continuous independent variables and observe the overall data trend, such as, displacement = velocity (average or instantaneous) × time: s = v × t. If the x-axis is time (t) and the y-axis is velocity (v) at each moment, an area chart allows you to observe the trend of velocity over time and infer the distance traveled by the area's size."
+  },
+  {
+    "name": "generate_bar_chart",
+    "description": "Generate a horizontal bar chart to show data for numerical comparisons among different categories, such as, comparing categorical data and for horizontal comparisons."
+  },
+  {
+    "name": "generate_boxplot_chart",
+    "description": "Generate a boxplot chart to show data for statistical summaries among different categories, such as, comparing the distribution of data points across categories."
+  },
+  {
+    "name": "generate_column_chart",
+    "description": "Generate a column chart, which are best for comparing categorical data, such as, when values are close, column charts are preferable because our eyes are better at judging height than other visual elements like area or angles."
+  },
+  {
+    "name": "generate_district_map",
+    "description": "Generates regional distribution maps, which are usually used to show the administrative divisions and coverage of a dataset. It is not suitable for showing the distribution of specific locations, such as urban administrative divisions, GDP distribution maps of provinces and cities across the country, etc. This tool is limited to generating data maps within China."
+  },
+  {
+    "name": "generate_dual_axes_chart",
+    "description": "Generate a dual axes chart which is a combination chart that integrates two different chart types, typically combining a bar chart with a line chart to display both the trend and comparison of data, such as, the trend of sales and profit over time."
+  },
+  {
+    "name": "generate_fishbone_diagram",
+    "description": "Generate a fishbone diagram chart to uses a fish skeleton, like structure to display the causes or effects of a core problem, with the problem as the fish head and the causes/effects as the fish bones. It suits problems that can be split into multiple related factors."
+  },
+  {
+    "name": "generate_flow_diagram",
+    "description": "Generate a flow diagram chart to show the steps and decision points of a process or system, such as, scenarios requiring linear process presentation."
+  },
+  {
+    "name": "generate_funnel_chart",
+    "description": "Generate a funnel chart to visualize the progressive reduction of data as it passes through stages, such as, the conversion rates of users from visiting a website to completing a purchase."
+  },
+  {
+    "name": "generate_histogram_chart",
+    "description": "Generate a histogram chart to show the frequency of data points within a certain range. It can observe data distribution, such as, normal and skewed distributions, and identify data concentration areas and extreme points."
+  },
+  {
+    "name": "generate_line_chart",
+    "description": "Generate a line chart to show trends over time, such as, the ratio of Apple computer sales to Apple's profits changed from 2000 to 2016."
+  },
+  {
+    "name": "generate_liquid_chart",
+    "description": "Generate a liquid chart to visualize a single value as a percentage, such as, the current occupancy rate of a reservoir or the completion percentage of a project."
+  },
+  {
+    "name": "generate_mind_map",
+    "description": "Generate a mind map chart to organizes and presents information in a hierarchical structure with branches radiating from a central topic, such as, a diagram showing the relationship between a main topic and its subtopics."
+  },
+  {
+    "name": "generate_network_graph",
+    "description": "Generate a network graph chart to show relationships (edges) between entities (nodes), such as, relationships between people in social networks."
+  },
+  {
+    "name": "generate_organization_chart",
+    "description": "Generate an organization chart to visualize the hierarchical structure of an organization, such as, a diagram showing the relationship between a CEO and their direct reports."
+  },
+  {
+    "name": "generate_path_map",
+    "description": "Generate a route map to display the user's planned route, such as travel guide routes."
+  },
+  {
+    "name": "generate_pie_chart",
+    "description": "Generate a pie chart to show the proportion of parts, such as, market share and budget allocation."
+  },
+  {
+    "name": "generate_pin_map",
+    "description": "Generate a point map to display the location and distribution of point data on the map, such as the location distribution of attractions, hospitals, supermarkets, etc."
+  },
+  {
+    "name": "generate_radar_chart",
+    "description": "Generate a radar chart to display multidimensional data (four dimensions or more), such as, evaluate Huawei and Apple phones in terms of five dimensions: ease of use, functionality, camera, benchmark scores, and battery life."
+  },
+  {
+    "name": "generate_sankey_chart",
+    "description": "Generate a sankey chart to visualize the flow of data between different stages or categories, such as, the user journey from landing on a page to completing a purchase."
+  },
+  {
+    "name": "generate_scatter_chart",
+    "description": "Generate a scatter chart to show the relationship between two variables, helps discover their relationship or trends, such as, the strength of correlation, data distribution patterns."
+  },
+  {
+    "name": "generate_treemap_chart",
+    "description": "Generate a treemap chart to display hierarchical data and can intuitively show comparisons between items at the same level, such as, show disk space usage with treemap."
+  },
+  {
+    "name": "generate_venn_chart",
+    "description": "Generate a Venn diagram to visualize the relationships between different sets, showing how they intersect and overlap, such as the commonalities and differences between various groups."
+  },
+  {
+    "name": "generate_violin_chart",
+    "description": "Generate a violin chart to show data for statistical summaries among different categories, such as, comparing the distribution of data points across categories."
+  },
+  {
+    "name": "generate_word_cloud_chart",
+    "description": "Generate a word cloud chart to show word frequency or weight through text size variation, such as, analyzing common words in social media, reviews, or feedback."
+  },
+  {
+    "name": "sequentialthinking",
+    "description": "A detailed tool for dynamic and reflective problem-solving through thoughts.\nThis tool helps analyze problems through a flexible thinking process that can adapt and evolve.\nEach thought can build on, question, or revise previous insights as understanding deepens.\n\nWhen to use this tool:\n- Breaking down complex problems into steps\n- Planning and design with room for revision\n- Analysis that might need course correction\n- Problems where the full scope might not be clear initially\n- Problems that require a multi-step solution\n- Tasks that need to maintain context over multiple steps\n- Situations where irrelevant information needs to be filtered out\n\nKey features:\n- You can adjust total_thoughts up or down as you progress\n- You can question or revise previous thoughts\n- You can add more thoughts even after reaching what seemed like the end\n- You can express uncertainty and explore alternative approaches\n- Not every thought needs to build linearly - you can branch or backtrack\n- Generates a solution hypothesis\n- Verifies the hypothesis based on the Chain of Thought steps\n- Repeats the process until satisfied\n- Provides a correct answer\n\nParameters explained:\n- thought: Your current thinking step, which can include:\n* Regular analytical steps\n* Revisions of previous thoughts\n* Questions about previous decisions\n* Realizations about needing more analysis\n* Changes in approach\n* Hypothesis generation\n* Hypothesis verification\n- next_thought_needed: True if you need more thinking, even if at what seemed like the end\n- thought_number: Current number in sequence (can go beyond initial total if needed)\n- total_thoughts: Current estimate of thoughts needed (can be adjusted up/down)\n- is_revision: A boolean indicating if this thought revises previous thinking\n- revises_thought: If is_revision is true, which thought number is being reconsidered\n- branch_from_thought: If branching, which thought number is the branching point\n- branch_id: Identifier for the current branch (if any)\n- needs_more_thoughts: If reaching end but realizing more thoughts needed\n\nYou should:\n1. Start with an initial estimate of needed thoughts, but be ready to adjust\n2. Feel free to question or revise previous thoughts\n3. Don't hesitate to add more thoughts if needed, even at the \"end\"\n4. Express uncertainty when present\n5. Mark thoughts that revise previous thinking or branch into new paths\n6. Ignore information that is irrelevant to the current step\n7. Generate a solution hypothesis when appropriate\n8. Verify the hypothesis based on the Chain of Thought steps\n9. Repeat the process until satisfied with the solution\n10. Provide a single, ideally correct answer as the final output\n11. Only set next_thought_needed to false when truly done and a satisfactory answer is reached"
+  },
+  {
+    "name": "get_github_trending_repositories",
+    "description": "Get trending repositories on github"
+  },
+  {
+    "name": "get_github_trending_developers",
+    "description": "Get trending developers on github"
+  },
+  {
+    "name": "get_artifact_info",
+    "description": "获取库街区上的声骸详细信息并以 Markdown 格式返回。\n\nArgs:\n    artifact_name: 要查询的声骸套装的中文名称。\n\nReturns:\n    包含声骸信息的 Markdown 字符串，\n    或者在找不到声骸或获取数据失败时返回错误消息。\n"
+  },
+  {
+    "name": "get_character_info",
+    "description": "获取库街区上的角色详细信息包括角色技能，养成攻略等，并以 Markdown 格式返回。\n\nArgs:\n    character_name: 要查询的角色的中文名称。\n\nReturns:\n    包含角色信息的 Markdown 字符串，\n    或者在找不到角色或获取数据失败时返回错误消息。\n"
+  },
+  {
+    "name": "get_character_profile",
+    "description": "获取库街区上的角色档案信息并以 Markdown 格式返回。\n\nArgs:\n    character_name: 要查询的角色的中文名称。\n\nReturns:\n    包含角色档案信息的 Markdown 字符串，\n    或者在找不到角色或获取数据失败时返回错误消息。\n"
+  },
+  {
+    "name": "search_wikipedia",
+    "description": "Search Wikipedia for articles matching a query."
+  },
+  {
+    "name": "get_article",
+    "description": "Get the full content of a Wikipedia article."
+  },
+  {
+    "name": "get_summary",
+    "description": "Get a summary of a Wikipedia article."
+  },
+  {
+    "name": "summarize_article_for_query",
+    "description": "Get a summary of a Wikipedia article tailored to a specific query."
+  },
+  {
+    "name": "summarize_article_section",
+    "description": "Get a summary of a specific section of a Wikipedia article."
+  },
+  {
+    "name": "extract_key_facts",
+    "description": "Extract key facts from a Wikipedia article, optionally focused on a topic."
+  },
+  {
+    "name": "get_related_topics",
+    "description": "Get topics related to a Wikipedia article based on links and categories."
+  },
+  {
+    "name": "get_sections",
+    "description": "Get the sections of a Wikipedia article."
+  },
+  {
+    "name": "get_links",
+    "description": "Get the links contained within a Wikipedia article."
+  },
+  {
+    "name": "get_coordinates",
+    "description": "Get the coordinates of a Wikipedia article."
+  },
+  {
+    "name": "search_papers",
+    "description": "Search for papers on arXiv by title and abstract content.\n            \nYou can use advanced search syntax:\n- Search in title: ti:\"search terms\"\n- Search in abstract: abs:\"search terms\"\n- Search by author: au:\"author name\"\n- Combine terms with: AND, OR, ANDNOT\n- Filter by category: cat:cs.AI (use list_categories tool to see available categories)\n\nExamples:\n- \"machine learning\"  (searches all fields)\n- ti:\"neural networks\" AND cat:cs.AI  (title with category)\n- au:bengio AND ti:\"deep learning\"  (author and title)"
+  },
+  {
+    "name": "get_paper_data",
+    "description": "Get detailed information about a specific paper including abstract and available formats"
+  },
+  {
+    "name": "list_categories",
+    "description": "List all available arXiv categories and how to use them in search"
+  },
+  {
+    "name": "update_categories",
+    "description": "Update the stored category taxonomy by fetching the latest version from arxiv.org"
+  },
+  {
+    "name": "get_ticker_info",
+    "description": "Retrieve stock data including company info, financials, trading metrics and governance data."
+  },
+  {
+    "name": "get_ticker_news",
+    "description": "Fetches recent news articles related to a specific stock symbol with title, content, and source details."
+  },
+  {
+    "name": "search",
+    "description": "Fetches and organizes search results from Yahoo Finance, including stock quotes and news articles."
+  },
+  {
+    "name": "get_top",
+    "description": "Get top entities (ETFs, mutual funds, companies, growth companies, or performing companies) in a sector."
+  },
+  {
+    "name": "get_price_history",
+    "description": "Fetch historical price data for a given stock symbol over a specified period and interval."
+  },
+  {
+    "name": "insert_svg",
+    "description": "\n将SVG图像插入到PPTX文件的指定位置。(如果需要替换已有的幻灯片，请组合使用`delete_slide`和`insert_blank_slide`功能)\n如果未提供PPTX路径，将自动创建一个临时文件，位于服务器同级目录的tmp目录。\n如果未提供输出路径，将使用标准输出目录，位于服务器同级目录的output目录。\n如果未提供坐标，默认对齐幻灯片左上角。\n如果未提供宽度和高度，默认覆盖整个幻灯片（16:9）。\n\n支持批量处理：\n- 如果svg_path是单个字符串数组，则将SVG添加到slide_number指定的页面\n- 如果svg_path是列表，则从slide_number开始顺序添加每个SVG，即第一个SVG添加到\n  slide_number页，第二个添加到slide_number+1页，依此类推\n\nArgs:\n    pptx_path: PPTX文件路径，如果未提供则自动创建一个临时文件，最好使用英文路径\n    svg_path: SVG文件路径或SVG文件路径列表，最好使用英文路径\n    slide_number: 起始幻灯片编号（从1开始）\n    x_inches: X坐标（英寸），如果未指定则默认为0\n    y_inches: Y坐标（英寸），如果未指定则默认为0\n    width_inches: 宽度（英寸），如果未指定则使用幻灯片宽度\n    height_inches: 高度（英寸），如果未指定则根据宽度计算或使用幻灯片高度\n    output_path: 输出文件路径，如果未指定则使用标准输出目录\n    create_if_not_exists: 如果为True且PPTX文件不存在，将自动创建一个新文件\n    \nReturns:\n    操作结果消息，包含详细的错误信息（如果有）\n"
+  },
+  {
+    "name": "list_files",
+    "description": "\n列出目录中的文件，可选按文件类型过滤。\n如需查看svg文件是否正确保存，请输入svg文件的保存路径。\nArgs:\n    directory: 要列出文件的目录路径\n    file_type: 文件类型过滤，可以是 \"svg\" 或 \"pptx\"\n    \nReturns:\n    文件列表（每行一个文件）\n"
+  },
+  {
+    "name": "get_file_info",
+    "description": "\n获取文件信息，如存在状态、大小等。\n\nArgs:\n    file_path: 要查询的文件路径\n    \nReturns:\n    文件信息\n"
+  },
+  {
+    "name": "convert_svg_to_png",
+    "description": "\n将SVG文件转换为PNG图像。\n\nArgs:\n    svg_path: SVG文件路径\n    output_path: 输出PNG文件路径，如果未指定则使用相同文件名但扩展名为.png\n    \nReturns:\n    操作结果消息\n"
+  },
+  {
+    "name": "get_pptx_info",
+    "description": "\n获取PPTX文件的基本信息，包括幻灯片数量。\n\nArgs:\n    pptx_path: PPTX文件路径\n    \nReturns:\n    包含文件信息和幻灯片数量的字符串\n"
+  },
+  {
+    "name": "save_svg_code",
+    "description": "\n将SVG代码保存为SVG文件并返回保存的绝对路径。\n!!!注意：特殊字符如\"&\"需要转义为\"&amp;\"\nArgs:\n    svg_code: SVG代码内容\n    \nReturns:\n    操作结果消息，包含保存的文件路径或错误信息\n"
+  },
+  {
+    "name": "delete_slide",
+    "description": "\n从PPTX文件中删除指定编号的幻灯片。\n\n!!!注意：\n\n在使用SVG替换PPT幻灯片内容时，我们发现了一些关键点，以下是正确替换PPT内容的方法总结：\n\n### 正确替换PPT内容的方法\n\n1. **完全替换法**（最可靠）：\n- 删除需要替换的幻灯片（使用`delete_slide`功能）\n- 在同一位置插入空白幻灯片（使用`insert_blank_slide`功能）\n- 将新的SVG内容插入到空白幻灯片（使用`insert_svg`功能）\n\n2. **新文件法**（适合多页修改）：\n- 创建全新的PPT文件\n- 将所有需要的SVG（包括已修改的）按顺序插入到新文件中\n- 这样可以避免在旧文件上操作导致的混淆和叠加问题\n\n3. **注意事项**：\n- 直接对现有幻灯片插入SVG会导致新内容叠加在原内容上，而非替换\n- 文件名可能会随着多次操作变得过长，影响可读性\n- 批量插入SVG时，`svg_path`参数必须是数组形式，即使只有一个文件\n- 操作后应检查输出文件以确认修改是否成功\n\n### 推荐工作流\n\n1. 先保存修改后的SVG内容到文件\n2. 创建一个全新的PPT文件\n3. 按顺序一次性插入所有SVG（包括已修改和未修改的）\n4. 使用简洁直观的文件名\n\n这种方法避免了多步骤操作导致的文件混乱，也能确保每张幻灯片都是干净的、不包含叠加内容的。\n\nArgs:\n    pptx_path: PPTX文件路径\n    slide_number: 要删除的幻灯片编号（从1开始）\n    output_path: 输出文件路径，如果未指定则使用标准输出目录\n    \nReturns:\n    操作结果消息\n"
+  },
+  {
+    "name": "insert_blank_slide",
+    "description": "\n在PPTX文件的指定位置插入一个空白幻灯片。\n\n!!!注意：\n\n在使用SVG替换PPT幻灯片内容时，我们发现了一些关键点，以下是正确替换PPT内容的方法总结：\n\n### 正确替换PPT内容的方法\n\n1. **完全替换法**（最可靠）：\n- 删除需要替换的幻灯片（使用`delete_slide`功能）\n- 在同一位置插入空白幻灯片（使用`insert_blank_slide`功能）\n- 将新的SVG内容插入到空白幻灯片（使用`insert_svg`功能）\n\n2. **新文件法**（适合多页修改）：\n- 创建全新的PPT文件\n- 将所有需要的SVG（包括已修改的）按顺序插入到新文件中\n- 这样可以避免在旧文件上操作导致的混淆和叠加问题\n\n3. **注意事项**：\n- 直接对现有幻灯片插入SVG会导致新内容叠加在原内容上，而非替换\n- 文件名可能会随着多次操作变得过长，影响可读性\n- 批量插入SVG时，`svg_path`参数必须是数组形式，即使只有一个文件\n- 操作后应检查输出文件以确认修改是否成功\n\n### 推荐工作流\n\n1. 先保存修改后的SVG内容到文件\n2. 创建一个全新的PPT文件\n3. 按顺序一次性插入所有SVG（包括已修改和未修改的）\n4. 使用简洁直观的文件名\n\n这种方法避免了多步骤操作导致的文件混乱，也能确保每张幻灯片都是干净的、不包含叠加内容的。\n\nArgs:\n    pptx_path: PPTX文件路径\n    slide_number: 要插入幻灯片的位置编号（从1开始）\n    layout_index: 幻灯片布局索引，默认为6（空白布局）\n    output_path: 输出文件路径，如果未指定则使用标准输出目录\n    create_if_not_exists: 如果为True且PPTX文件不存在，将自动创建一个新文件\n    \nReturns:\n    操作结果消息\n"
+  },
+  {
+    "name": "copy_svg_slide",
+    "description": "\n专门用于复制包含SVG图像的幻灯片，确保SVG和相关引用都被正确复制。\n\n此函数使用直接操作PPTX内部XML文件的方式，确保SVG图像及其引用在复制过程中完全保留。\n与普通的copy_slide函数相比，此函数特别关注SVG图像的复制，保证SVG的矢量属性在复制后依然可用。\n\nArgs:\n    source_pptx_path: 源PPTX文件路径\n    target_pptx_path: 目标PPTX文件路径，如果为空则创建新文件\n    source_slide_number: 要复制的源幻灯片页码（从1开始）\n    target_slide_number: 要插入到目标文件的位置（从1开始），如果为None则添加到末尾\n    output_path: 输出文件路径，如果未指定则使用标准输出目录\n    create_if_not_exists: 如果为True且目标PPTX文件不存在，将自动创建一个新文件\n    \nReturns:\n    操作结果消息\n"
+  },
+  {
+    "name": "svg_prompt",
+    "description": "使用SVG设计宗师角色提示，当用户希望大模型生成或优化ppt时，使用此prompt对用户需求进行细化"
+  },
+  {
+    "name": "analyze_presentation_layouts",
+    "description": "Analyzes the layout details of a PowerPoint presentation and returns a JSON string of the analysis."
+  },
+  {
+    "name": "add_slide_with_layout",
+    "description": "Inserts a new slide with a specified layout into a presentation and returns a JSON string of the result."
+  },
+  {
+    "name": "clear_placeholders_from_slides",
+    "description": "Clears content from placeholders in specified slides of a presentation and returns a JSON string of the result."
+  },
+  {
+    "name": "set_placeholder_value",
+    "description": "Assigns content to a specific placeholder on a specific slide and returns a JSON string of the result."
+  },
+  {
+    "name": "get_current_time",
+    "description": "Get current time in a specific timezones"
+  },
+  {
+    "name": "convert_time",
+    "description": "Convert time between timezones"
+  },
+  {
+    "name": "create_presentation",
+    "description": "Create a new PowerPoint presentation."
+  },
+  {
+    "name": "create_presentation_from_template",
+    "description": "Create a new PowerPoint presentation from a template file."
+  },
+  {
+    "name": "open_presentation",
+    "description": "Open an existing PowerPoint presentation from a file."
+  },
+  {
+    "name": "save_presentation",
+    "description": "Save a presentation to a file."
+  },
+  {
+    "name": "get_presentation_info",
+    "description": "Get information about a presentation."
+  },
+  {
+    "name": "get_template_file_info",
+    "description": "Get information about a template file including layouts and properties."
+  },
+  {
+    "name": "set_core_properties",
+    "description": "Set core document properties."
+  },
+  {
+    "name": "add_slide",
+    "description": "Add a new slide to the presentation with optional background styling."
+  },
+  {
+    "name": "get_slide_info",
+    "description": "Get information about a specific slide."
+  },
+  {
+    "name": "extract_slide_text",
+    "description": "Extract all text content from a specific slide."
+  },
+  {
+    "name": "extract_presentation_text",
+    "description": "Extract all text content from all slides in the presentation."
+  },
+  {
+    "name": "populate_placeholder",
+    "description": "Populate a placeholder with text."
+  },
+  {
+    "name": "add_bullet_points",
+    "description": "Add bullet points to a placeholder."
+  },
+  {
+    "name": "manage_text",
+    "description": "Unified text management tool for adding, formatting, validating text, and formatting multiple text runs."
+  },
+  {
+    "name": "manage_image",
+    "description": "Unified image management tool for adding and enhancing images."
+  },
+  {
+    "name": "add_table",
+    "description": "Add a table to a slide with enhanced formatting options."
+  },
+  {
+    "name": "format_table_cell",
+    "description": "Format a specific table cell."
+  },
+  {
+    "name": "add_shape",
+    "description": "Add an auto shape to a slide with enhanced options."
+  },
+  {
+    "name": "add_chart",
+    "description": "Add a chart to a slide with comprehensive formatting options."
+  },
+  {
+    "name": "apply_professional_design",
+    "description": "Unified professional design tool for themes, slides, and visual enhancements.\nThis applies professional styling and themes rather than structural layout changes."
+  },
+  {
+    "name": "apply_picture_effects",
+    "description": "Apply multiple picture effects in combination."
+  },
+  {
+    "name": "manage_fonts",
+    "description": "Unified font management tool for analysis, optimization, and recommendations."
+  },
+  {
+    "name": "list_slide_templates",
+    "description": "List all available slide layout templates."
+  },
+  {
+    "name": "apply_slide_template",
+    "description": "\nApply a structured layout template to an existing slide.\nThis modifies slide layout and content structure using predefined templates.\n\nArgs:\n    slide_index: Index of the slide to apply template to\n    template_id: ID of the template to apply (e.g., 'title_slide', 'text_with_image')\n    color_scheme: Color scheme to use ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')\n    content_mapping: Dictionary mapping element roles to custom content\n    image_paths: Dictionary mapping image element roles to file paths\n    presentation_id: Presentation ID (uses current if None)\n"
+  },
+  {
+    "name": "create_slide_from_template",
+    "description": "\nCreate a new slide using a layout template.\n\nArgs:\n    template_id: ID of the template to use (e.g., 'title_slide', 'text_with_image')\n    color_scheme: Color scheme to use ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')\n    content_mapping: Dictionary mapping element roles to custom content\n    image_paths: Dictionary mapping image element roles to file paths\n    layout_index: PowerPoint layout index to use as base (default: 1)\n    presentation_id: Presentation ID (uses current if None)\n"
+  },
+  {
+    "name": "create_presentation_from_templates",
+    "description": "\nCreate a complete presentation from a sequence of templates.\n\nArgs:\n    template_sequence: List of template configurations, each containing:\n        - template_id: Template to use\n        - content: Content mapping for the template\n        - images: Image path mapping for the template\n    color_scheme: Color scheme to apply to all slides\n    presentation_title: Optional title for the presentation\n    presentation_id: Presentation ID (uses current if None)\n\nExample template_sequence:\n[\n    {\n        \"template_id\": \"title_slide\",\n        \"content\": {\n            \"title\": \"My Presentation\",\n            \"subtitle\": \"Annual Report 2024\",\n            \"author\": \"John Doe\"\n        }\n    },\n    {\n        \"template_id\": \"text_with_image\",\n        \"content\": {\n            \"title\": \"Key Results\",\n            \"content\": \"• Achievement 1\\n• Achievement 2\"\n        },\n        \"images\": {\n            \"supporting\": \"/path/to/image.jpg\"\n        }\n    }\n]\n"
+  },
+  {
+    "name": "get_template_info",
+    "description": "\nGet detailed information about a specific template.\n\nArgs:\n    template_id: ID of the template to get information about\n"
+  },
+  {
+    "name": "auto_generate_presentation",
+    "description": "\nAutomatically generate a presentation based on topic and preferences.\n\nArgs:\n    topic: Main topic/theme for the presentation\n    slide_count: Number of slides to generate (3-20)\n    presentation_type: Type of presentation ('business', 'academic', 'creative')\n    color_scheme: Color scheme to use\n    include_charts: Whether to include chart slides\n    include_images: Whether to include image placeholders\n    presentation_id: Presentation ID (uses current if None)\n"
+  },
+  {
+    "name": "optimize_slide_text",
+    "description": "\nOptimize text elements on a slide for better readability and fit.\n\nArgs:\n    slide_index: Index of the slide to optimize\n    auto_resize: Whether to automatically resize fonts to fit containers\n    auto_wrap: Whether to apply intelligent text wrapping\n    optimize_spacing: Whether to optimize line spacing\n    min_font_size: Minimum allowed font size\n    max_font_size: Maximum allowed font size\n    presentation_id: Presentation ID (uses current if None)\n"
+  },
+  {
+    "name": "manage_hyperlinks",
+    "description": "\nManage hyperlinks in text shapes and runs.\n\nArgs:\n    operation: Operation type (\"add\", \"remove\", \"list\", \"update\")\n    slide_index: Index of the slide (0-based)\n    shape_index: Index of the shape on the slide (0-based)\n    text: Text to make into hyperlink (for \"add\" operation)\n    url: URL for the hyperlink\n    run_index: Index of text run within the shape (0-based)\n    presentation_id: Optional presentation ID (uses current if not provided)\n    \nReturns:\n    Dictionary with operation results\n"
+  },
+  {
+    "name": "update_chart_data",
+    "description": "\nReplace existing chart data with new categories and series.\n\nArgs:\n    slide_index: Index of the slide (0-based)\n    shape_index: Index of the chart shape (0-based)\n    categories: List of category names\n    series_data: List of dictionaries with 'name' and 'values' keys\n    presentation_id: Optional presentation ID (uses current if not provided)\n    \nReturns:\n    Dictionary with operation results\n"
+  },
+  {
+    "name": "add_connector",
+    "description": "\nAdd connector lines/arrows between points on a slide.\n\nArgs:\n    slide_index: Index of the slide (0-based)\n    connector_type: Type of connector (\"straight\", \"elbow\", \"curved\")\n    start_x: Starting X coordinate in inches\n    start_y: Starting Y coordinate in inches\n    end_x: Ending X coordinate in inches  \n    end_y: Ending Y coordinate in inches\n    line_width: Width of the connector line in points\n    color: RGB color as [r, g, b] list\n    presentation_id: Optional presentation ID (uses current if not provided)\n    \nReturns:\n    Dictionary with operation results\n"
+  },
+  {
+    "name": "manage_slide_masters",
+    "description": "\nAccess and manage slide master properties and layouts.\n\nArgs:\n    operation: Operation type (\"list\", \"get_layouts\", \"get_info\")\n    master_index: Index of the slide master (0-based)\n    layout_index: Index of specific layout within master (0-based)\n    presentation_id: Optional presentation ID (uses current if not provided)\n    \nReturns:\n    Dictionary with slide master information\n"
+  },
+  {
+    "name": "manage_slide_transitions",
+    "description": "\nManage slide transitions and timing.\n\nArgs:\n    slide_index: Index of the slide (0-based)\n    operation: Operation type (\"set\", \"remove\", \"get\")\n    transition_type: Type of transition (basic support)\n    duration: Duration of transition in seconds\n    presentation_id: Optional presentation ID (uses current if not provided)\n    \nReturns:\n    Dictionary with transition information\n"
+  },
+  {
+    "name": "list_presentations",
+    "description": "List all loaded presentations."
+  },
+  {
+    "name": "switch_presentation",
+    "description": "Switch to a different loaded presentation."
+  },
+  {
+    "name": "get_server_info",
+    "description": "Get information about the MCP server."
+  },
+  {
+    "name": "get_asset_price",
+    "description": "Retrieves current pricing information for various assets including precious metals and cryptocurrencies"
+  },
+  {
+    "name": "document_reader",
+    "description": "Read content from non-image document-files at specified paths, supporting various file formats: .pdf, .docx, .txt, .html, .csv"
+  },
+  {
+    "name": "pdf_merger",
+    "description": "Merge multiple PDF files into one"
+  },
+  {
+    "name": "pdf_splitter",
+    "description": "Split a PDF file into multiple files"
+  },
+  {
+    "name": "docx_to_pdf",
+    "description": "Convert DOCX files to PDF format"
+  },
+  {
+    "name": "docx_to_html",
+    "description": "Convert DOCX to HTML while preserving formatting"
+  },
+  {
+    "name": "html_cleaner",
+    "description": "Clean HTML by removing unnecessary tags and attributes"
+  },
+  {
+    "name": "html_to_text",
+    "description": "Convert HTML to plain text while preserving structure"
+  },
+  {
+    "name": "html_to_markdown",
+    "description": "Convert HTML to Markdown format"
+  },
+  {
+    "name": "html_extract_resources",
+    "description": "Extract all resources (images, videos, links) from HTML"
+  },
+  {
+    "name": "html_formatter",
+    "description": "Format and beautify HTML code"
+  },
+  {
+    "name": "text_diff",
+    "description": "Compare two text files and show differences"
+  },
+  {
+    "name": "text_splitter",
+    "description": "Split text file by specified delimiter or line count"
+  },
+  {
+    "name": "text_formatter",
+    "description": "Format text with proper indentation and line spacing"
+  },
+  {
+    "name": "text_encoding_converter",
+    "description": "Convert text between different encodings"
+  },
+  {
+    "name": "excel_read",
+    "description": "Read Excel file and convert to JSON format while preserving structure"
+  },
+  {
+    "name": "format_convert",
+    "description": "Convert between different document formats (Markdown, HTML, XML, JSON)"
+  },
+  {
+    "name": "get-daily-challenge",
+    "description": null
+  },
+  {
+    "name": "get-problem",
+    "description": null
+  },
+  {
+    "name": "search-problems",
+    "description": null
+  },
+  {
+    "name": "get-user-profile",
+    "description": null
+  },
+  {
+    "name": "get-user-submissions",
+    "description": null
+  },
+  {
+    "name": "get-contest-details",
+    "description": null
+  },
+  {
+    "name": "get-user-contest-ranking",
+    "description": null
+  },
+  {
+    "name": "get_transcript",
+    "description": "Extract transcript from a YouTube video URL or ID"
+  },
+  {
+    "name": "get_cnn_fear_greed_index",
+    "description": "Max 30 days of historical data."
+  },
+  {
+    "name": "get_crypto_fear_greed_index",
+    "description": "Get historical Crypto Fear & Greed Index data."
+  },
+  {
+    "name": "get_google_trends",
+    "description": "Get Google Trends relative search interest for specified keywords."
+  },
+  {
+    "name": "get_ticker_data",
+    "description": "\nReturns:\n- info: Core financial metrics (P/E ratios, margins, growth rates, debt ratios, market cap, EPS, etc.)\n- calendar: Upcoming earnings dates and dividend dates\n- news: Recent news articles (headlines, dates, sources)\n- recommendations: Latest analyst recommendations (buy/sell/hold ratings)\n- upgrades_downgrades: Recent analyst rating changes\n"
+  },
+  {
+    "name": "get_options",
+    "description": "Get options data. Dates: YYYY-MM-DD. Type: C=calls, P=puts."
+  },
+  {
+    "name": "get_price_history",
+    "description": "Get historical OHLCV data: daily intervals for ≤1y periods, monthly intervals for ≥2y periods."
+  },
+  {
+    "name": "get_financial_statements",
+    "description": ""
+  },
+  {
+    "name": "get_institutional_holders",
+    "description": "Get major institutional and mutual fund holders."
+  },
+  {
+    "name": "get_earnings_history",
+    "description": ""
+  },
+  {
+    "name": "get_insider_trades",
+    "description": ""
+  },
+  {
+    "name": "start_codegen_session",
+    "description": "Start a new code generation session to record Playwright actions"
+  },
+  {
+    "name": "end_codegen_session",
+    "description": "End a code generation session and generate the test file"
+  },
+  {
+    "name": "get_codegen_session",
+    "description": "Get information about a code generation session"
+  },
+  {
+    "name": "clear_codegen_session",
+    "description": "Clear a code generation session without generating a test"
+  },
+  {
+    "name": "playwright_navigate",
+    "description": "Navigate to a URL"
+  },
+  {
+    "name": "playwright_screenshot",
+    "description": "Take a screenshot of the current page or a specific element"
+  },
+  {
+    "name": "playwright_click",
+    "description": "Click an element on the page"
+  },
+  {
+    "name": "playwright_iframe_click",
+    "description": "Click an element in an iframe on the page"
+  },
+  {
+    "name": "playwright_iframe_fill",
+    "description": "Fill an element in an iframe on the page"
+  },
+  {
+    "name": "playwright_fill",
+    "description": "fill out an input field"
+  },
+  {
+    "name": "playwright_select",
+    "description": "Select an element on the page with Select tag"
+  },
+  {
+    "name": "playwright_hover",
+    "description": "Hover an element on the page"
+  },
+  {
+    "name": "playwright_upload_file",
+    "description": "Upload a file to an input[type='file'] element on the page"
+  },
+  {
+    "name": "playwright_evaluate",
+    "description": "Execute JavaScript in the browser console"
+  },
+  {
+    "name": "playwright_console_logs",
+    "description": "Retrieve console logs from the browser with filtering options"
+  },
+  {
+    "name": "playwright_close",
+    "description": "Close the browser and release all resources"
+  },
+  {
+    "name": "playwright_get",
+    "description": "Perform an HTTP GET request"
+  },
+  {
+    "name": "playwright_post",
+    "description": "Perform an HTTP POST request"
+  },
+  {
+    "name": "playwright_put",
+    "description": "Perform an HTTP PUT request"
+  },
+  {
+    "name": "playwright_patch",
+    "description": "Perform an HTTP PATCH request"
+  },
+  {
+    "name": "playwright_delete",
+    "description": "Perform an HTTP DELETE request"
+  },
+  {
+    "name": "playwright_expect_response",
+    "description": "Ask Playwright to start waiting for a HTTP response. This tool initiates the wait operation but does not wait for its completion."
+  },
+  {
+    "name": "playwright_assert_response",
+    "description": "Wait for and validate a previously initiated HTTP response wait operation."
+  },
+  {
+    "name": "playwright_custom_user_agent",
+    "description": "Set a custom User Agent for the browser"
+  },
+  {
+    "name": "playwright_get_visible_text",
+    "description": "Get the visible text content of the current page"
+  },
+  {
+    "name": "playwright_get_visible_html",
+    "description": "Get the HTML content of the current page. By default, all <script> tags are removed from the output unless removeScripts is explicitly set to false."
+  },
+  {
+    "name": "playwright_go_back",
+    "description": "Navigate back in browser history"
+  },
+  {
+    "name": "playwright_go_forward",
+    "description": "Navigate forward in browser history"
+  },
+  {
+    "name": "playwright_drag",
+    "description": "Drag an element to a target location"
+  },
+  {
+    "name": "playwright_press_key",
+    "description": "Press a keyboard key"
+  },
+  {
+    "name": "playwright_save_as_pdf",
+    "description": "Save the current page as a PDF file"
+  },
+  {
+    "name": "playwright_click_and_switch_tab",
+    "description": "Click a link and switch to the newly opened tab"
+  },
+  {
+    "name": "package_search",
+    "description": "Search for packages (datasets) on Data.gov"
+  },
+  {
+    "name": "package_show",
+    "description": "Get details for a specific package (dataset)"
+  },
+  {
+    "name": "group_list",
+    "description": "List groups on Data.gov"
+  },
+  {
+    "name": "tag_list",
+    "description": "List tags on Data.gov"
+  },
+  {
+    "name": "duckduckgo_web_search",
+    "description": "Performs a web search using the DuckDuckGo, ideal for general queries, news, articles, and online content. Use this for broad information gathering, recent events, or when you need diverse web sources. Supports content filtering and region-specific searches. Maximum 20 results per request."
+  },
+  {
+    "name": "create_entities",
+    "description": "Create multiple new entities in the knowledge graph"
+  },
+  {
+    "name": "create_relations",
+    "description": "Create multiple new relations between entities in the knowledge graph. Relations should be in active voice"
+  },
+  {
+    "name": "add_observations",
+    "description": "Add new observations to existing entities in the knowledge graph"
+  },
+  {
+    "name": "delete_entities",
+    "description": "Delete multiple entities and their associated relations from the knowledge graph"
+  },
+  {
+    "name": "delete_observations",
+    "description": "Delete specific observations from entities in the knowledge graph"
+  },
+  {
+    "name": "delete_relations",
+    "description": "Delete multiple relations from the knowledge graph"
+  },
+  {
+    "name": "read_graph",
+    "description": "Read the entire knowledge graph"
+  },
+  {
+    "name": "search_nodes",
+    "description": "Search for nodes in the knowledge graph based on a query"
+  },
+  {
+    "name": "open_nodes",
+    "description": "Open specific nodes in the knowledge graph by their names"
+  },
+  {
+    "name": "airbnb_search",
+    "description": "Search for Airbnb listings with various filters and pagination. Provide direct links to the user"
+  },
+  {
+    "name": "airbnb_listing_details",
+    "description": "Get detailed information about a specific Airbnb listing. Provide direct links to the user"
+  },
+  {
+    "name": "search",
+    "description": "Search for stories and comments on Hacker News"
+  },
+  {
+    "name": "getStory",
+    "description": "Get a single story by ID"
+  },
+  {
+    "name": "getStoryWithComments",
+    "description": "Get a story with its comments"
+  },
+  {
+    "name": "getStories",
+    "description": "Get multiple stories by type (top, new, best, ask, show, job)"
+  },
+  {
+    "name": "getComment",
+    "description": "Get a single comment by ID"
+  },
+  {
+    "name": "getComments",
+    "description": "Get comments for a story"
+  },
+  {
+    "name": "getCommentTree",
+    "description": "Get a comment tree for a story"
+  },
+  {
+    "name": "getUser",
+    "description": "Get a user profile by ID"
+  },
+  {
+    "name": "getUserSubmissions",
+    "description": "Get a user's submissions"
+  },
+  {
+    "name": "calculate",
+    "description": "Calculates/evaluates the given expression."
+  },
+  {
+    "name": "resolve-library-id",
+    "description": "Resolves a package/product name to a Context7-compatible library ID and returns a list of matching libraries.\n\nYou MUST call this function before 'get-library-docs' to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.\n\nSelection Process:\n1. Analyze the query to understand what library/package the user is looking for\n2. Return the most relevant match based on:\n- Name similarity to the query (exact matches prioritized)\n- Description relevance to the query's intent\n- Documentation coverage (prioritize libraries with higher Code Snippet counts)\n- Trust score (consider libraries with scores of 7-10 more authoritative)\n\nResponse Format:\n- Return the selected library ID in a clearly marked section\n- Provide a brief explanation for why this library was chosen\n- If multiple good matches exist, acknowledge this but proceed with the most relevant one\n- If no good matches exist, clearly state this and suggest query refinements\n\nFor ambiguous queries, request clarification before proceeding with a best-guess match."
+  },
+  {
+    "name": "get-library-docs",
+    "description": "Fetches up-to-date documentation for a library. You must call 'resolve-library-id' first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query."
+  },
+  {
+    "name": "get_text_file_contents",
+    "description": "Read text file contents from multiple files and line ranges. Returns file contents with hashes for concurrency control and line numbers for reference. The hashes are used to detect conflicts when editing the files. File paths must be absolute."
+  },
+  {
+    "name": "edit_text_file_contents",
+    "description": "A line editor that supports editing text file contents by specifying line ranges and content. It handles multiple patches in a single operation with hash-based conflict detection. File paths must be absolute. IMPORTANT: (1) Before using this tool, you must first get the file's current hash and range hashes and line numbers using get_text_file_contents. (2) To avoid line number shifts affecting your patches, use get_text_file_contents to read the SAME ranges you plan to edit before making changes. different line numbers have different rangehashes.(3) Patches must be specified from bottom to top to handle line number shifts correctly, as edits to lower lines don't affect the line numbers of higher lines. (4) To append content to a file, first get the total number of lines with get_text_file_contents, then specify a patch with line_start = total_lines + 1 and line_end = total_lines. This indicates an append operation and range_hash is not required. Similarly, range_hash is not required for new file creation."
+  },
+  {
+    "name": "get-component-docs",
+    "description": "获取 Ant Design 特定组件的详细文档\n适用场景：\n1. 用户询问如何使用特定组件\n2. 用户需要查看该组件的 api 属性"
+  },
+  {
+    "name": "list-component-examples",
+    "description": "获取 Ant Design 特定组件的代码示例\n适用场景：\n1. 用户询问特定组件的示例时\n2. 用户想要实现某个功能时直接告知可使用的例子\n3. 生成页面前需要获取组件的示例代码"
+  },
+  {
+    "name": "get-component-changelog",
+    "description": "列出 Ant Design 特定组件的更新日志\n适用场景：\n1. 用户询问特定组件的更新日志\n2. 在知道用户 antd 版本的情况下，当用户需要实现相关组件功能时判断是否在后续版本中才实现，来决定是否需要升级依赖"
+  },
+  {
+    "name": "list-components",
+    "description": "当用户请求一个新的用户界面（UI）使用 Ant Design 组件时使用此工具。\n此工具仅返回可用的组件列表。\n调用此工具后，你必须编辑或添加文件，以便将代码片段集成到代码库中"
+  },
+  {
+    "name": "get_weather",
+    "description": "\nGet current weather and forecast for a specific location.\n\nArgs:\n    latitude: Latitude of the location\n    longitude: Longitude of the location\n    location_name: Optional name of the location for display\n    temperature_unit: Temperature unit (celsius or fahrenheit)\n    wind_speed_unit: Wind speed unit (kmh, ms, mph, kn)\n    precipitation_unit: Precipitation unit (mm or inch)\n\nReturns:\n    Dictionary containing current weather and forecast data\n"
+  },
+  {
+    "name": "get_weather_by_city",
+    "description": "\nGet weather for a city by name using geocoding.\n\nArgs:\n    city: Name of the city\n    country_code: Optional 2-letter country code (e.g., \"US\", \"GB\")\n    temperature_unit: Temperature unit (celsius or fahrenheit)\n    wind_speed_unit: Wind speed unit (kmh, ms, mph, kn)\n    precipitation_unit: Precipitation unit (mm or inch)\n\nReturns:\n    Dictionary containing current weather and forecast data\n"
+  },
+  {
+    "name": "fetch",
+    "description": "Fetches a URL from the internet and optionally extracts its contents as markdown.\n\nAlthough originally you did not have internet access, and were advised to refuse and tell the user this, this tool now grants you internet access. Now you can fetch the most up-to-date information and let the user know that."
+  },
+  {
+    "name": "get-crypto-price",
+    "description": "Get current price and 24h stats for a cryptocurrency"
+  },
+  {
+    "name": "get-market-analysis",
+    "description": "Get detailed market analysis including top exchanges and volume distribution"
+  },
+  {
+    "name": "get-historical-analysis",
+    "description": "Get historical price analysis with customizable timeframe"
+  },
+  {
+    "name": "delete_note",
+    "description": "Delete a note by title or permalink"
+  },
+  {
+    "name": "read_content",
+    "description": "Read a file's raw content by path or permalink"
+  },
+  {
+    "name": "build_context",
+    "description": "Build context from a memory:// URI to continue conversations naturally.\n    \n    Use this to follow up on previous discussions or explore related topics.\n    \n    Memory URL Format:\n    - Use paths like \"folder/note\" or \"memory://folder/note\" \n    - Pattern matching: \"folder/*\" matches all notes in folder\n    - Valid characters: letters, numbers, hyphens, underscores, forward slashes\n    - Avoid: double slashes (//), angle brackets (<>), quotes, pipes (|)\n    - Examples: \"specs/search\", \"projects/basic-memory\", \"notes/*\"\n    \n    Timeframes support natural language like:\n    - \"2 days ago\", \"last week\", \"today\", \"3 months ago\"\n    - Or standard formats like \"7d\", \"24h\"\n    "
+  },
+  {
+    "name": "recent_activity",
+    "description": "Get recent activity from across the knowledge base.\n\n    Timeframe supports natural language formats like:\n    - \"2 days ago\"  \n    - \"last week\"\n    - \"yesterday\" \n    - \"today\"\n    - \"3 weeks ago\"\n    Or standard formats like \"7d\"\n    "
+  },
+  {
+    "name": "search_notes",
+    "description": "Search across all content in the knowledge base with advanced syntax support."
+  },
+  {
+    "name": "read_note",
+    "description": "Read a markdown note by title or permalink."
+  },
+  {
+    "name": "view_note",
+    "description": "View a note as a formatted artifact for better readability."
+  },
+  {
+    "name": "write_note",
+    "description": "Create or update a markdown note. Returns a markdown formatted summary of the semantic content."
+  },
+  {
+    "name": "canvas",
+    "description": "Create an Obsidian canvas file to visualize concepts and connections."
+  },
+  {
+    "name": "list_directory",
+    "description": "List directory contents with filtering and depth control."
+  },
+  {
+    "name": "edit_note",
+    "description": "Edit an existing markdown note using various operations like append, prepend, find_replace, or replace_section."
+  },
+  {
+    "name": "move_note",
+    "description": "Move a note to a new location, updating database and maintaining links."
+  },
+  {
+    "name": "sync_status",
+    "description": "Check the status of file synchronization and background operations.\n    \n    Use this tool to:\n    - Check if file sync is in progress or completed\n    - Get detailed sync progress information  \n    - Understand if your files are fully indexed\n    - Get specific error details if sync operations failed\n    - Monitor initial project setup and legacy migration\n    \n    This covers all sync operations including:\n    - Initial project setup and file indexing\n    - Legacy project migration to unified database\n    - Ongoing file monitoring and updates\n    - Background processing of knowledge graphs\n    "
+  },
+  {
+    "name": "list_memory_projects",
+    "description": "List all available projects with their status.\n\nShows all Basic Memory projects that are available, indicating which one\nis currently active and which is the default.\n\nReturns:\n    Formatted list of projects with status indicators\n\nExample:\n    list_memory_projects()"
+  },
+  {
+    "name": "switch_project",
+    "description": "Switch to a different project context.\n\nChanges the active project context for all subsequent tool calls.\nShows a project summary after switching successfully.\n\nArgs:\n    project_name: Name of the project to switch to\n\nReturns:\n    Confirmation message with project summary\n\nExample:\n    switch_project(\"work-notes\")\n    switch_project(\"personal-journal\")"
+  },
+  {
+    "name": "get_current_project",
+    "description": "Show the currently active project and basic stats.\n\nDisplays which project is currently active and provides basic information\nabout it.\n\nReturns:\n    Current project name and basic statistics\n\nExample:\n    get_current_project()"
+  },
+  {
+    "name": "set_default_project",
+    "description": "Set default project in config. Requires restart to take effect.\n\nUpdates the configuration to use a different default project. This change\nonly takes effect after restarting the Basic Memory server.\n\nArgs:\n    project_name: Name of the project to set as default\n\nReturns:\n    Confirmation message about config update\n\nExample:\n    set_default_project(\"work-notes\")"
+  },
+  {
+    "name": "create_memory_project",
+    "description": "Create a new Basic Memory project.\n\nCreates a new project with the specified name and path. The project directory\nwill be created if it doesn't exist. Optionally sets the new project as default.\n\nArgs:\n    project_name: Name for the new project (must be unique)\n    project_path: File system path where the project will be stored\n    set_default: Whether to set this project as the default (optional, defaults to False)\n\nReturns:\n    Confirmation message with project details\n\nExample:\n    create_memory_project(\"my-research\", \"~/Documents/research\")\n    create_memory_project(\"work-notes\", \"/home/user/work\", set_default=True)"
+  },
+  {
+    "name": "delete_project",
+    "description": "Delete a Basic Memory project.\n\nRemoves a project from the configuration and database. This does NOT delete\nthe actual files on disk - only removes the project from Basic Memory's\nconfiguration and database records.\n\nArgs:\n    project_name: Name of the project to delete\n\nReturns:\n    Confirmation message about project deletion\n\nExample:\n    delete_project(\"old-project\")\n\nWarning:\n    This action cannot be undone. The project will need to be re-added\n    to access its content through Basic Memory again."
+  },
+  {
+    "name": "validateMermaid",
+    "description": "Validates a Mermaid diagram and returns the rendered SVG if valid"
+  },
+  {
+    "name": "get_sitemap_tree",
+    "description": "Fetch and parse the sitemap tree from a website URL"
+  },
+  {
+    "name": "get_sitemap_pages",
+    "description": "Get all pages from a website's sitemap with optional limits and filtering options. Supports cursor-based pagination."
+  },
+  {
+    "name": "get_sitemap_stats",
+    "description": "Get comprehensive statistics about a website's sitemap structure"
+  },
+  {
+    "name": "parse_sitemap_content",
+    "description": "Parse a sitemap directly from its XML or text content"
+  },
+  {
+    "name": "git_status",
+    "description": "Shows the working tree status"
+  },
+  {
+    "name": "git_diff_unstaged",
+    "description": "Shows changes in the working directory that are not yet staged"
+  },
+  {
+    "name": "git_diff_staged",
+    "description": "Shows changes that are staged for commit"
+  },
+  {
+    "name": "git_diff",
+    "description": "Shows differences between branches or commits"
+  },
+  {
+    "name": "git_commit",
+    "description": "Records changes to the repository"
+  },
+  {
+    "name": "git_add",
+    "description": "Adds file contents to the staging area"
+  },
+  {
+    "name": "git_reset",
+    "description": "Unstages all staged changes"
+  },
+  {
+    "name": "git_log",
+    "description": "Shows the commit logs"
+  },
+  {
+    "name": "git_create_branch",
+    "description": "Creates a new branch from an optional base branch"
+  },
+  {
+    "name": "git_checkout",
+    "description": "Switches branches"
+  },
+  {
+    "name": "git_show",
+    "description": "Shows the contents of a commit"
+  },
+  {
+    "name": "git_init",
+    "description": "Initialize a new Git repository"
+  },
+  {
+    "name": "git_branch",
+    "description": "List Git branches"
+  },
+  {
+    "name": "extract_image_from_file",
+    "description": "Extract and analyze images from local file paths. Supports visual content understanding, OCR text extraction, and object recognition for screenshots, photos, diagrams, and documents."
+  },
+  {
+    "name": "extract_image_from_url",
+    "description": "Extract and analyze images from web URLs. Perfect for analyzing web screenshots, online photos, diagrams, or any image accessible via HTTP/HTTPS for visual content analysis and text extraction."
+  },
+  {
+    "name": "extract_image_from_base64",
+    "description": "Extract and analyze images from base64-encoded data. Ideal for processing screenshots from clipboard, dynamically generated images, or images embedded in applications without requiring file system access."
+  },
+  {
+    "name": "getUIComponents",
+    "description": "Provides a comprehensive list of all Magic UI components."
+  },
+  {
+    "name": "getComponents",
+    "description": "Provides implementation details for marquee, terminal, hero-video-dialog, bento-grid, animated-list, dock, globe, tweet-card, client-tweet-card, orbiting-circles, avatar-circles, icon-cloud, animated-circular-progress-bar, file-tree, code-comparison, script-copy-btn, scroll-progress, lens, pointer components."
+  },
+  {
+    "name": "getDeviceMocks",
+    "description": "Provides implementation details for safari, iphone-15-pro, android components."
+  },
+  {
+    "name": "getSpecialEffects",
+    "description": "Provides implementation details for animated-beam, border-beam, shine-border, magic-card, meteors, neon-gradient-card, confetti, particles, cool-mode, scratch-to-reveal components."
+  },
+  {
+    "name": "getAnimations",
+    "description": "Provides implementation details for blur-fade components."
+  },
+  {
+    "name": "getTextAnimations",
+    "description": "Provides implementation details for text-animate, line-shadow-text, aurora-text, number-ticker, animated-shiny-text, animated-gradient-text, text-reveal, hyper-text, word-rotate, typing-animation, scroll-based-velocity, flip-text, box-reveal, sparkles-text, morphing-text, spinning-text components."
+  },
+  {
+    "name": "getButtons",
+    "description": "Provides implementation details for rainbow-button, shimmer-button, shiny-button, interactive-hover-button, animated-subscribe-button, pulsating-button, ripple-button components."
+  },
+  {
+    "name": "getBackgrounds",
+    "description": "Provides implementation details for warp-background, flickering-grid, animated-grid-pattern, retro-grid, ripple, dot-pattern, grid-pattern, interactive-grid-pattern components."
+  },
+  {
+    "name": "request_planning",
+    "description": "Register a new user request and plan its associated tasks. You must provide 'originalRequest' and 'tasks', and optionally 'splitDetails'.\n\nThis tool initiates a new workflow for handling a user's request. The workflow is as follows:\n1. Use 'request_planning' to register a request and its tasks.\n2. After adding tasks, you MUST use 'get_next_task' to retrieve the first task. A progress table will be displayed.\n3. Use 'get_next_task' to retrieve the next uncompleted task.\n4. **IMPORTANT:** After marking a task as done, the assistant MUST NOT proceed to another task without the user's approval. The user must explicitly approve the completed task using 'approve_task_completion'. A progress table will be displayed before each approval request.\n5. Once a task is approved, you can proceed to 'get_next_task' again to fetch the next pending task.\n6. Repeat this cycle until all tasks are done.\n7. After all tasks are completed (and approved), 'get_next_task' will indicate that all tasks are done and that the request awaits approval for full completion.\n8. The user must then approve the entire request's completion using 'approve_request_completion'. If the user does not approve and wants more tasks, you can again use 'request_planning' to add new tasks and continue the cycle.\n\nThe critical point is to always wait for user approval after completing each task and after all tasks are done, wait for request completion approval. Do not proceed automatically."
+  },
+  {
+    "name": "get_next_task",
+    "description": "Given a 'requestId', return the next pending task (not done yet). If all tasks are completed, it will indicate that no more tasks are left and that you must wait for the request completion approval.\n\nA progress table showing the current status of all tasks will be displayed with each response.\n\nIf the same task is returned again or if no new task is provided after a task was marked as done but not yet approved, you MUST NOT proceed. In such a scenario, you must prompt the user for approval via 'approve_task_completion' before calling 'get_next_task' again. Do not skip the user's approval step.\nIn other words:\n- After calling 'mark_task_done', do not call 'get_next_task' again until 'approve_task_completion' is called by the user.\n- If 'get_next_task' returns 'all_tasks_done', it means all tasks have been completed. At this point, you must not start a new request or do anything else until the user decides to 'approve_request_completion' or possibly add more tasks via 'request_planning'."
+  },
+  {
+    "name": "mark_task_done",
+    "description": "Mark a given task as done after you've completed it. Provide 'requestId' and 'taskId', and optionally 'completedDetails'.\n\nAfter marking a task as done, a progress table will be displayed showing the updated status of all tasks.\n\nAfter this, DO NOT proceed to 'get_next_task' again until the user has explicitly approved this completed task using 'approve_task_completion'."
+  },
+  {
+    "name": "approve_task_completion",
+    "description": "Once the assistant has marked a task as done using 'mark_task_done', the user must call this tool to approve that the task is genuinely completed. Only after this approval can you proceed to 'get_next_task' to move on.\n\nA progress table will be displayed before requesting approval, showing the current status of all tasks.\n\nIf the user does not approve, do not call 'get_next_task'. Instead, the user may request changes, or even re-plan tasks by using 'request_planning' again."
+  },
+  {
+    "name": "approve_request_completion",
+    "description": "After all tasks are done and approved, this tool finalizes the entire request. The user must call this to confirm that the request is fully completed.\n\nA progress table showing the final status of all tasks will be displayed before requesting final approval.\n\nIf not approved, the user can add new tasks using 'request_planning' and continue the process."
+  },
+  {
+    "name": "open_task_details",
+    "description": "Get details of a specific task by 'taskId'. This is for inspecting task information at any point."
+  },
+  {
+    "name": "list_requests",
+    "description": "List all requests with their basic information and summary of tasks. This provides a quick overview of all requests in the system."
+  },
+  {
+    "name": "add_tasks_to_request",
+    "description": "Add new tasks to an existing request. This allows extending a request with additional tasks.\n\nA progress table will be displayed showing all tasks including the newly added ones."
+  },
+  {
+    "name": "update_task",
+    "description": "Update an existing task's title and/or description. Only uncompleted tasks can be updated.\n\nA progress table will be displayed showing the updated task information."
+  },
+  {
+    "name": "delete_task",
+    "description": "Delete a specific task from a request. Only uncompleted tasks can be deleted.\n\nA progress table will be displayed showing the remaining tasks after deletion."
+  },
+  {
+    "name": "create_document",
+    "description": "Create a new Word document with optional metadata."
+  },
+  {
+    "name": "copy_document",
+    "description": "Create a copy of a Word document."
+  },
+  {
+    "name": "get_document_info",
+    "description": "Get information about a Word document."
+  },
+  {
+    "name": "get_document_text",
+    "description": "Extract all text from a Word document."
+  },
+  {
+    "name": "get_document_outline",
+    "description": "Get the structure of a Word document."
+  },
+  {
+    "name": "list_available_documents",
+    "description": "List all .docx files in the specified directory."
+  },
+  {
+    "name": "get_document_xml",
+    "description": "Get the raw XML structure of a Word document."
+  },
+  {
+    "name": "insert_header_near_text",
+    "description": "Insert a header (with specified style) before or after the target paragraph. Specify by text or paragraph index. Args: filename (str), target_text (str, optional), header_title (str), position ('before' or 'after'), header_style (str, default 'Heading 1'), target_paragraph_index (int, optional)."
+  },
+  {
+    "name": "insert_line_or_paragraph_near_text",
+    "description": "Insert a new line or paragraph (with specified or matched style) before or after the target paragraph. Specify by text or paragraph index. Args: filename (str), target_text (str, optional), line_text (str), position ('before' or 'after'), line_style (str, optional), target_paragraph_index (int, optional)."
+  },
+  {
+    "name": "insert_numbered_list_near_text",
+    "description": "Insert a numbered list before or after the target paragraph. Specify by text or paragraph index. Args: filename (str), target_text (str, optional), list_items (list of str), position ('before' or 'after'), target_paragraph_index (int, optional)."
+  },
+  {
+    "name": "add_paragraph",
+    "description": "Add a paragraph to a Word document."
+  },
+  {
+    "name": "add_heading",
+    "description": "Add a heading to a Word document."
+  },
+  {
+    "name": "add_picture",
+    "description": "Add an image to a Word document."
+  },
+  {
+    "name": "add_table",
+    "description": "Add a table to a Word document."
+  },
+  {
+    "name": "add_page_break",
+    "description": "Add a page break to the document."
+  },
+  {
+    "name": "delete_paragraph",
+    "description": "Delete a paragraph from a document."
+  },
+  {
+    "name": "search_and_replace",
+    "description": "Search for text and replace all occurrences."
+  },
+  {
+    "name": "create_custom_style",
+    "description": "Create a custom style in the document."
+  },
+  {
+    "name": "format_text",
+    "description": "Format a specific range of text within a paragraph."
+  },
+  {
+    "name": "format_table",
+    "description": "Format a table with borders, shading, and structure."
+  },
+  {
+    "name": "set_table_cell_shading",
+    "description": "Apply shading/filling to a specific table cell."
+  },
+  {
+    "name": "apply_table_alternating_rows",
+    "description": "Apply alternating row colors to a table for better readability."
+  },
+  {
+    "name": "highlight_table_header",
+    "description": "Apply special highlighting to table header row."
+  },
+  {
+    "name": "merge_table_cells",
+    "description": "Merge cells in a rectangular area of a table."
+  },
+  {
+    "name": "merge_table_cells_horizontal",
+    "description": "Merge cells horizontally in a single row."
+  },
+  {
+    "name": "merge_table_cells_vertical",
+    "description": "Merge cells vertically in a single column."
+  },
+  {
+    "name": "set_table_cell_alignment",
+    "description": "Set text alignment for a specific table cell."
+  },
+  {
+    "name": "set_table_alignment_all",
+    "description": "Set text alignment for all cells in a table."
+  },
+  {
+    "name": "protect_document",
+    "description": "Add password protection to a Word document."
+  },
+  {
+    "name": "unprotect_document",
+    "description": "Remove password protection from a Word document."
+  },
+  {
+    "name": "add_footnote_to_document",
+    "description": "Add a footnote to a specific paragraph in a Word document."
+  },
+  {
+    "name": "add_footnote_after_text",
+    "description": "Add a footnote after specific text with proper superscript formatting.\nThis enhanced function ensures footnotes display correctly as superscript."
+  },
+  {
+    "name": "add_footnote_before_text",
+    "description": "Add a footnote before specific text with proper superscript formatting.\nThis enhanced function ensures footnotes display correctly as superscript."
+  },
+  {
+    "name": "add_footnote_enhanced",
+    "description": "Enhanced footnote addition with guaranteed superscript formatting.\nAdds footnote at the end of a specific paragraph with proper style handling."
+  },
+  {
+    "name": "add_endnote_to_document",
+    "description": "Add an endnote to a specific paragraph in a Word document."
+  },
+  {
+    "name": "customize_footnote_style",
+    "description": "Customize footnote numbering and formatting in a Word document."
+  },
+  {
+    "name": "delete_footnote_from_document",
+    "description": "Delete a footnote from a Word document.\nIdentify the footnote either by ID (1, 2, 3, etc.) or by searching for text near it."
+  },
+  {
+    "name": "add_footnote_robust",
+    "description": "Add footnote with robust validation and Word compliance.\nThis is the production-ready version with comprehensive error handling."
+  },
+  {
+    "name": "validate_document_footnotes",
+    "description": "Validate all footnotes in document for coherence and compliance.\nReturns detailed report on ID conflicts, orphaned content, missing styles, etc."
+  },
+  {
+    "name": "delete_footnote_robust",
+    "description": "Delete footnote with comprehensive cleanup and orphan removal.\nEnsures complete removal from document.xml, footnotes.xml, and relationships."
+  },
+  {
+    "name": "get_paragraph_text_from_document",
+    "description": "Get text from a specific paragraph in a Word document."
+  },
+  {
+    "name": "find_text_in_document",
+    "description": "Find occurrences of specific text in a Word document."
+  },
+  {
+    "name": "convert_to_pdf",
+    "description": "Convert a Word document to PDF format."
+  },
+  {
+    "name": "replace_paragraph_block_below_header",
+    "description": "Reemplaza el bloque de párrafos debajo de un encabezado, evitando modificar TOC."
+  },
+  {
+    "name": "replace_block_between_manual_anchors",
+    "description": "Replace all content between start_anchor_text and end_anchor_text (or next logical header if not provided)."
+  },
+  {
+    "name": "get_all_comments",
+    "description": "Extract all comments from a Word document."
+  },
+  {
+    "name": "get_comments_by_author",
+    "description": "Extract comments from a specific author in a Word document."
+  },
+  {
+    "name": "get_comments_for_paragraph",
+    "description": "Extract comments for a specific paragraph in a Word document."
+  },
+  {
+    "name": "set_table_column_width",
+    "description": "Set the width of a specific table column."
+  },
+  {
+    "name": "set_table_column_widths",
+    "description": "Set the widths of multiple table columns."
+  },
+  {
+    "name": "set_table_width",
+    "description": "Set the overall width of a table."
+  },
+  {
+    "name": "auto_fit_table_columns",
+    "description": "Set table columns to auto-fit based on content."
+  },
+  {
+    "name": "format_table_cell_text",
+    "description": "Format text within a specific table cell."
+  },
+  {
+    "name": "set_table_cell_padding",
+    "description": "Set padding/margins for a specific table cell."
+  },
+  {
+    "name": "random_int",
+    "description": "Generate a random integer between low and high (inclusive).\n\nArgs:\n    low: Lower bound (inclusive)\n    high: Upper bound (inclusive)\n\nReturns:\n    Random integer between low and high"
+  },
+  {
+    "name": "random_float",
+    "description": "Generate a random float between low and high.\n\nArgs:\n    low: Lower bound (default 0.0)\n    high: Upper bound (default 1.0)\n\nReturns:\n    Random float between low and high"
+  },
+  {
+    "name": "random_choices",
+    "description": "Choose k items from population with replacement, optionally weighted.\n\nArgs:\n    population: List of items to choose from\n    k: Number of items to choose (default 1)\n    weights: Optional weights for each item (default None for equal weights)\n\nReturns:\n    List of k chosen items"
+  },
+  {
+    "name": "random_shuffle",
+    "description": "Return a new list with items in random order.\n\nArgs:\n    items: List of items to shuffle\n\nReturns:\n    New list with items in random order"
+  },
+  {
+    "name": "random_sample",
+    "description": "Choose k unique items from population without replacement.\n\nArgs:\n    population: List of items to choose from\n    k: Number of items to choose\n\nReturns:\n    List of k unique chosen items"
+  },
+  {
+    "name": "secure_token_hex",
+    "description": "Generate a secure random hex token.\n\nArgs:\n    nbytes: Number of random bytes to generate (default 32)\n\nReturns:\n    Hex string containing 2*nbytes characters"
+  },
+  {
+    "name": "secure_random_int",
+    "description": "Generate a secure random integer below upper_bound.\n\nArgs:\n    upper_bound: Upper bound (exclusive)\n\nReturns:\n    Random integer in range [0, upper_bound)"
+  },
+  {
+    "name": "convert_markdown_to_mindmap",
+    "description": "Convert Markdown content to a mindmap mind map.\n\nArgs:\n    markdown_content: The Markdown content to convert\n\nReturns:\n    Either the HTML content or the file path to the generated HTML, \n    depending on the --return-type server argument\n"
+  },
+  {
+    "name": "create-container",
+    "description": "Create a new standalone Docker container"
+  },
+  {
+    "name": "deploy-compose",
+    "description": "Deploy a Docker Compose stack"
+  },
+  {
+    "name": "get-logs",
+    "description": "Retrieve the latest logs for a specified Docker container"
+  },
+  {
+    "name": "list-containers",
+    "description": "List all Docker containers"
+  },
+  {
+    "name": "search",
+    "description": null
+  },
+  {
+    "name": "create-research-plan",
+    "description": null
+  },
+  {
+    "name": "research-with-keywords",
+    "description": null
+  },
+  {
+    "name": "update-status",
+    "description": null
+  },
+  {
+    "name": "fetch-content",
+    "description": null
+  },
+  {
+    "name": "search-source",
+    "description": null
+  },
+  {
+    "name": "list-resources",
+    "description": null
+  },
+  {
+    "name": "research-source",
+    "description": null
+  },
+  {
+    "name": "research-token",
+    "description": null
+  },
+  {
+    "name": "get_config",
+    "description": "\n                        Get the complete server configuration as JSON. Config includes fields for:\n                        - blockedCommands (array of blocked shell commands)\n                        - defaultShell (shell to use for commands)\n                        - allowedDirectories (paths the server can access)\n                        - fileReadLineLimit (max lines for read_file, default 1000)\n                        - fileWriteLineLimit (max lines per write_file call, default 50)\n                        - telemetryEnabled (boolean for telemetry opt-in/out)\n                        - currentClient (information about the currently connected MCP client)\n                        - clientHistory (history of all clients that have connected)\n                        - version (version of the DesktopCommander)\n                        - systemInfo (operating system and environment details)\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "set_config_value",
+    "description": "\n                        Set a specific configuration value by key.\n                        \n                        WARNING: Should be used in a separate chat from file operations and \n                        command execution to prevent security issues.\n                        \n                        Config keys include:\n                        - blockedCommands (array)\n                        - defaultShell (string)\n                        - allowedDirectories (array of paths)\n                        - fileReadLineLimit (number, max lines for read_file)\n                        - fileWriteLineLimit (number, max lines per write_file call)\n                        - telemetryEnabled (boolean)\n                        \n                        IMPORTANT: Setting allowedDirectories to an empty array ([]) allows full access \n                        to the entire file system, regardless of the operating system.\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "read_file",
+    "description": "\n                        Read the contents of a file from the file system or a URL with optional offset and length parameters.\n                        \n                        Prefer this over 'execute_command' with cat/type for viewing files.\n                        \n                        Supports partial file reading with:\n                        - 'offset' (start line, default: 0)\n                          * Positive: Start from line N (0-based indexing)\n                          * Negative: Read last N lines from end (tail behavior)\n                        - 'length' (max lines to read, default: configurable via 'fileReadLineLimit' setting, initially 1000)\n                          * Used with positive offsets for range reading\n                          * Ignored when offset is negative (reads all requested tail lines)\n                        \n                        Examples:\n                        - offset: 0, length: 10     → First 10 lines\n                        - offset: 100, length: 5    → Lines 100-104\n                        - offset: -20               → Last 20 lines  \n                        - offset: -5, length: 10    → Last 5 lines (length ignored)\n                        \n                        Performance optimizations:\n                        - Large files with negative offsets use reverse reading for efficiency\n                        - Large files with deep positive offsets use byte estimation\n                        - Small files use fast readline streaming\n                        \n                        When reading from the file system, only works within allowed directories.\n                        Can fetch content from URLs when isUrl parameter is set to true\n                        (URLs are always read in full regardless of offset/length).\n                        \n                        Handles text files normally and image files are returned as viewable images.\n                        Recognized image types: PNG, JPEG, GIF, WebP.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "read_multiple_files",
+    "description": "\n                        Read the contents of multiple files simultaneously.\n                        \n                        Each file's content is returned with its path as a reference.\n                        Handles text files normally and renders images as viewable content.\n                        Recognized image types: PNG, JPEG, GIF, WebP.\n                        \n                        Failed reads for individual files won't stop the entire operation.\n                        Only works within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "write_file",
+    "description": "\n                        Write or append to file contents. \n\n                        CHUNKING IS STANDARD PRACTICE: Always write files in chunks of 25-30 lines maximum.\n                        This is the normal, recommended way to write files - not an emergency measure.\n\n                        STANDARD PROCESS FOR ANY FILE:\n                        1. FIRST → write_file(filePath, firstChunk, {mode: 'rewrite'})  [≤30 lines]\n                        2. THEN → write_file(filePath, secondChunk, {mode: 'append'})   [≤30 lines]\n                        3. CONTINUE → write_file(filePath, nextChunk, {mode: 'append'}) [≤30 lines]\n\n                        ALWAYS CHUNK PROACTIVELY - don't wait for performance warnings!\n\n                        WHEN TO CHUNK (always be proactive):\n                        1. Any file expected to be longer than 25-30 lines\n                        2. When writing multiple files in sequence\n                        3. When creating documentation, code files, or configuration files\n                        \n                        HANDLING CONTINUATION (\"Continue\" prompts):\n                        If user asks to \"Continue\" after an incomplete operation:\n                        1. Read the file to see what was successfully written\n                        2. Continue writing ONLY the remaining content using {mode: 'append'}\n                        3. Keep chunks to 25-30 lines each\n                        \n                        Files over 50 lines will generate performance notes but are still written successfully.\n                        Only works within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "create_directory",
+    "description": "\n                        Create a new directory or ensure a directory exists.\n                        \n                        Can create multiple nested directories in one operation.\n                        Only works within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "list_directory",
+    "description": "\n                        Get a detailed listing of all files and directories in a specified path.\n                        \n                        Use this instead of 'execute_command' with ls/dir commands.\n                        Results distinguish between files and directories with [FILE] and [DIR] prefixes.\n                        Only works within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "move_file",
+    "description": "\n                        Move or rename files and directories.\n                        \n                        Can move files between directories and rename them in a single operation.\n                        Both source and destination must be within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "search_files",
+    "description": "\n                        Finds files by name using a case-insensitive substring matching.\n                        \n                        Use this instead of 'execute_command' with find/dir/ls for locating files.\n                        Searches through all subdirectories from the starting path.\n                        \n                        Has a default timeout of 30 seconds which can be customized using the timeoutMs parameter.\n                        Only searches within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "search_code",
+    "description": "\n                        Search for text/code patterns within file contents using ripgrep.\n                        \n                        Use this instead of 'execute_command' with grep/find for searching code content.\n                        Fast and powerful search similar to VS Code search functionality.\n                        \n                        Supports regular expressions, file pattern filtering, and context lines.\n                        Has a default timeout of 30 seconds which can be customized.\n                        Only searches within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "get_file_info",
+    "description": "\n                        Retrieve detailed metadata about a file or directory including:\n                        - size\n                        - creation time\n                        - last modified time \n                        - permissions\n                        - type\n                        - lineCount (for text files)\n                        - lastLine (zero-indexed number of last line, for text files)\n                        - appendPosition (line number for appending, for text files)\n                        \n                        Only works within allowed directories.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "edit_block",
+    "description": "\n                        Apply surgical text replacements to files.\n                        \n                        BEST PRACTICE: Make multiple small, focused edits rather than one large edit.\n                        Each edit_block call should change only what needs to be changed - include just enough \n                        context to uniquely identify the text being modified.\n                        \n                        Takes:\n                        - file_path: Path to the file to edit\n                        - old_string: Text to replace\n                        - new_string: Replacement text\n                        - expected_replacements: Optional parameter for number of replacements\n                        \n                        By default, replaces only ONE occurrence of the search text.\n                        To replace multiple occurrences, provide the expected_replacements parameter with\n                        the exact number of matches expected.\n                        \n                        UNIQUENESS REQUIREMENT: When expected_replacements=1 (default), include the minimal\n                        amount of context necessary (typically 1-3 lines) before and after the change point,\n                        with exact whitespace and indentation.\n                        \n                        When editing multiple sections, make separate edit_block calls for each distinct change\n                        rather than one large replacement.\n                        \n                        When a close but non-exact match is found, a character-level diff is shown in the format:\n                        common_prefix{-removed-}{+added+}common_suffix to help you identify what's different.\n                        \n                        Similar to write_file, there is a configurable line limit (fileWriteLineLimit) that warns\n                        if the edited file exceeds this limit. If this happens, consider breaking your edits into\n                        smaller, more focused changes.\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "start_process",
+    "description": "\n                        Start a new terminal process with intelligent state detection.\n                        \n                        PRIMARY TOOL FOR FILE ANALYSIS AND DATA PROCESSING\n                        This is the ONLY correct tool for analyzing local files (CSV, JSON, logs, etc.).\n                        The analysis tool CANNOT access local files and WILL FAIL - always use processes for file-based work.\n                        \n                        CRITICAL RULE: For ANY local file work, ALWAYS use this tool + interact_with_process, NEVER use analysis/REPL tool.\n                        \n                        Running on macOS. Default shell: zsh.\n        \nMACOS-SPECIFIC NOTES:\n- Package manager: brew (Homebrew) is commonly used\n- Python 3 might be 'python3' command, not 'python'\n- Some GNU tools have different names (e.g., gsed instead of sed)\n- System Integrity Protection (SIP) may block certain operations\n- Use 'open' command to open files/applications from terminal\n                        \n                        REQUIRED WORKFLOW FOR LOCAL FILES:\n                        1. start_process(\"python3 -i\") - Start Python REPL for data analysis\n                        2. interact_with_process(pid, \"import pandas as pd, numpy as np\")\n                        3. interact_with_process(pid, \"df = pd.read_csv('/absolute/path/file.csv')\")\n                        4. interact_with_process(pid, \"print(df.describe())\")\n                        5. Continue analysis with pandas, matplotlib, seaborn, etc.\n                        \n                        COMMON FILE ANALYSIS PATTERNS:\n                        • start_process(\"python3 -i\") → Python REPL for data analysis (RECOMMENDED)\n                        • start_process(\"node -i\") → Node.js for JSON processing  \n                        • start_process(\"cut -d',' -f1 file.csv | sort | uniq -c\") → Quick CSV analysis\n                        • start_process(\"wc -l /path/file.csv\") → Line counting\n                        • start_process(\"head -10 /path/file.csv\") → File preview\n                        \n                        BINARY FILE SUPPORT:\n                        For PDF, Excel, Word, archives, databases, and other binary formats, use process tools with appropriate libraries or command-line utilities.\n                        \n                        INTERACTIVE PROCESSES FOR DATA ANALYSIS:\n                        1. start_process(\"python3 -i\") - Start Python REPL for data work\n                        2. start_process(\"node -i\") - Start Node.js REPL for JSON/JS\n                        3. start_process(\"bash\") - Start interactive bash shell\n                        4. Use interact_with_process() to send commands\n                        5. Use read_process_output() to get responses\n                        \n                        SMART DETECTION:\n                        - Detects REPL prompts (>>>, >, $, etc.)\n                        - Identifies when process is waiting for input\n                        - Recognizes process completion vs timeout\n                        - Early exit prevents unnecessary waiting\n                        \n                        STATES DETECTED:\n                        Process waiting for input (shows prompt)\n                        Process finished execution  \n                        Process running (use read_process_output)\n                        \n                        ALWAYS USE FOR: Local file analysis, CSV processing, data exploration, system commands\n                        NEVER USE ANALYSIS TOOL FOR: Local file access (analysis tool is browser-only and WILL FAIL)\n                        \n                        IMPORTANT: Always use absolute paths for reliability. Paths are automatically normalized regardless of slash direction. Relative paths may fail as they depend on the current working directory. Tilde paths (~/...) might not work in all contexts. Unless the user explicitly asks for relative paths, use absolute paths.\n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "read_process_output",
+    "description": "\n                        Read output from a running process with intelligent completion detection.\n                        \n                        Automatically detects when process is ready for more input instead of timing out.\n                        \n                        SMART FEATURES:\n                        - Early exit when REPL shows prompt (>>>, >, etc.)\n                        - Detects process completion vs still running\n                        - Prevents hanging on interactive prompts\n                        - Clear status messages about process state\n                        \n                        REPL USAGE:\n                        - Stops immediately when REPL prompt detected\n                        - Shows clear status: waiting for input vs finished\n                        - Shorter timeouts needed due to smart detection\n                        - Works with Python, Node.js, R, Julia, etc.\n                        \n                        DETECTION STATES:\n                        Process waiting for input (ready for interact_with_process)\n                        Process finished execution\n                        Timeout reached (may still be running)\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "interact_with_process",
+    "description": "\n                        Send input to a running process and automatically receive the response.\n                        \n                        CRITICAL: THIS IS THE PRIMARY TOOL FOR ALL LOCAL FILE ANALYSIS\n                        For ANY local file analysis (CSV, JSON, data processing), ALWAYS use this instead of the analysis tool.\n                        The analysis tool CANNOT access local files and WILL FAIL - use processes for ALL file-based work.\n                        \n                        FILE ANALYSIS PRIORITY ORDER (MANDATORY):\n                        1. ALWAYS FIRST: Use this tool (start_process + interact_with_process) for local data analysis\n                        2. ALTERNATIVE: Use command-line tools (cut, awk, grep) for quick processing  \n                        3. NEVER EVER: Use analysis tool for local file access (IT WILL FAIL)\n                        \n                        REQUIRED INTERACTIVE WORKFLOW FOR FILE ANALYSIS:\n                        1. Start REPL: start_process(\"python3 -i\")\n                        2. Load libraries: interact_with_process(pid, \"import pandas as pd, numpy as np\")\n                        3. Read file: interact_with_process(pid, \"df = pd.read_csv('/absolute/path/file.csv')\")\n                        4. Analyze: interact_with_process(pid, \"print(df.describe())\")\n                        5. Continue: interact_with_process(pid, \"df.groupby('column').size()\")\n                        \n                        BINARY FILE PROCESSING WORKFLOWS:\n                        Use appropriate Python libraries (PyPDF2, pandas, docx2txt, etc.) or command-line tools for binary file analysis.\n                        \n                        SMART DETECTION:\n                        - Automatically waits for REPL prompt (>>>, >, etc.)\n                        - Detects errors and completion states\n                        - Early exit prevents timeout delays\n                        - Clean output formatting (removes prompts)\n                        \n                        SUPPORTED REPLs:\n                        - Python: python3 -i (RECOMMENDED for data analysis)\n                        - Node.js: node -i  \n                        - R: R\n                        - Julia: julia\n                        - Shell: bash, zsh\n                        - Database: mysql, postgres\n                        \n                        PARAMETERS:\n                        - pid: Process ID from start_process\n                        - input: Code/command to execute\n                        - timeout_ms: Max wait (default: 8000ms)\n                        - wait_for_prompt: Auto-wait for response (default: true)\n                        \n                        Returns execution result with status indicators.\n                        \n                        ALWAYS USE FOR: CSV analysis, JSON processing, file statistics, data visualization prep, ANY local file work\n                        NEVER USE ANALYSIS TOOL FOR: Local file access (it cannot read files from disk and WILL FAIL)\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "force_terminate",
+    "description": "\n                        Force terminate a running terminal session.\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "list_sessions",
+    "description": "\n                        List all active terminal sessions.\n                        \n                        Shows session status including:\n                        - PID: Process identifier  \n                        - Blocked: Whether session is waiting for input\n                        - Runtime: How long the session has been running\n                        \n                        DEBUGGING REPLs:\n                        - \"Blocked: true\" often means REPL is waiting for input\n                        - Use this to verify sessions are running before sending input\n                        - Long runtime with blocked status may indicate stuck process\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "list_processes",
+    "description": "\n                        List all running processes.\n                        \n                        Returns process information including PID, command name, CPU usage, and memory usage.\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "kill_process",
+    "description": "\n                        Terminate a running process by PID.\n                        \n                        Use with caution as this will forcefully terminate the specified process.\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "get_usage_stats",
+    "description": "\n                        Get usage statistics for debugging and analysis.\n                        \n                        Returns summary of tool usage, success/failure rates, and performance metrics.\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "give_feedback_to_desktop_commander",
+    "description": "\n                        Open feedback form in browser to provide feedback about Desktop Commander.\n                        \n                        IMPORTANT: This tool simply opens the feedback form - no pre-filling available.\n                        The user will fill out the form manually in their browser.\n                        \n                        WORKFLOW:\n                        1. When user agrees to give feedback, just call this tool immediately\n                        2. No need to ask questions or collect information\n                        3. Tool opens form with only usage statistics pre-filled automatically:\n                           - tool_call_count: Number of commands they've made\n                           - days_using: How many days they've used Desktop Commander\n                           - platform: Their operating system (Mac/Windows/Linux)\n                           - client_id: Analytics identifier\n                        \n                        All survey questions will be answered directly in the form:\n                        - Job title and technical comfort level\n                        - Company URL for industry context\n                        - Other AI tools they use\n                        - Desktop Commander's biggest advantage\n                        - How they typically use it\n                        - Recommendation likelihood (0-10)\n                        - User study participation interest\n                        - Email and any additional feedback\n                        \n                        EXAMPLE INTERACTION:\n                        User: \"sure, I'll give feedback\"\n                        Claude: \"Perfect! Let me open the feedback form for you.\"\n                        [calls tool immediately]\n                        \n                        No parameters are needed - just call the tool to open the form.\n                        \n                        This command can be referenced as \"DC: ...\" or \"use Desktop Commander to ...\" in your instructions."
+  },
+  {
+    "name": "list_shadcn_components",
+    "description": "Get a list of all available shadcn/ui components"
+  },
+  {
+    "name": "get_component_details",
+    "description": "Get detailed information about a specific shadcn/ui component"
+  },
+  {
+    "name": "get_component_examples",
+    "description": "Get usage examples for a specific shadcn/ui component"
+  },
+  {
+    "name": "search_components",
+    "description": "Search for shadcn/ui components by keyword"
+  },
+  {
+    "name": "list-departments",
+    "description": "List all departments in the Metropolitan Museum of Art (Met Museum)"
+  },
+  {
+    "name": "search-museum-objects",
+    "description": "Search for objects in the Metropolitan Museum of Art (Met Museum). Will return Total objects found, followed by a list of Object Ids.The parameter title should be set to true if you want to search for objects by title.The parameter hasImages is false by default, but can be set to true to return objects without images.If the parameter hasImages is true, the parameter title should be false."
+  },
+  {
+    "name": "get-museum-object",
+    "description": "Get a museum object by its ID, from the Metropolitan Museum of Art Collection"
+  },
+  {
+    "name": "read_file",
+    "description": "Read the complete contents of a file as text. DEPRECATED: Use read_text_file instead."
+  },
+  {
+    "name": "read_text_file",
+    "description": "Read the complete contents of a file from the file system as text. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Use the 'head' parameter to read only the first N lines of a file, or the 'tail' parameter to read only the last N lines of a file. Operates on the file as text regardless of extension. Only works within allowed directories."
+  },
+  {
+    "name": "read_media_file",
+    "description": "Read an image or audio file. Returns the base64 encoded data and MIME type. Only works within allowed directories."
+  },
+  {
+    "name": "read_multiple_files",
+    "description": "Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need to analyze or compare multiple files. Each file's content is returned with its path as a reference. Failed reads for individual files won't stop the entire operation. Only works within allowed directories."
+  },
+  {
+    "name": "write_file",
+    "description": "Create a new file or completely overwrite an existing file with new content. Use with caution as it will overwrite existing files without warning. Handles text content with proper encoding. Only works within allowed directories."
+  },
+  {
+    "name": "edit_file",
+    "description": "Make line-based edits to a text file. Each edit replaces exact line sequences with new content. Returns a git-style diff showing the changes made. Only works within allowed directories."
+  },
+  {
+    "name": "create_directory",
+    "description": "Create a new directory or ensure a directory exists. Can create multiple nested directories in one operation. If the directory already exists, this operation will succeed silently. Perfect for setting up directory structures for projects or ensuring required paths exist. Only works within allowed directories."
+  },
+  {
+    "name": "list_directory",
+    "description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is essential for understanding directory structure and finding specific files within a directory. Only works within allowed directories."
+  },
+  {
+    "name": "list_directory_with_sizes",
+    "description": "Get a detailed listing of all files and directories in a specified path, including sizes. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is useful for understanding directory structure and finding specific files within a directory. Only works within allowed directories."
+  },
+  {
+    "name": "directory_tree",
+    "description": "Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directory), and 'children' for directories. Files have no children array, while directories always have a children array (which may be empty). The output is formatted with 2-space indentation for readability. Only works within allowed directories."
+  },
+  {
+    "name": "move_file",
+    "description": "Move or rename files and directories. Can move files between directories and rename them in a single operation. If the destination exists, the operation will fail. Works across different directories and can be used for simple renaming within the same directory. Both source and destination must be within allowed directories."
+  },
+  {
+    "name": "search_files",
+    "description": "Recursively search for files and directories matching a pattern. Searches through all subdirectories from the starting path. The search is case-insensitive and matches partial names. Returns full paths to all matching items. Great for finding files when you don't know their exact location. Only searches within allowed directories."
+  },
+  {
+    "name": "get_file_info",
+    "description": "Retrieve detailed metadata about a file or directory. Returns comprehensive information including size, creation time, last modified time, permissions, and type. This tool is perfect for understanding file characteristics without reading the actual content. Only works within allowed directories."
+  },
+  {
+    "name": "list_allowed_directories",
+    "description": "Returns the list of root directories that this server is allowed to access. Use this to understand which directories are available before trying to access files. "
+  },
+  {
+    "name": "drawing_generateCanvas",
+    "description": "Generate a new drawing canvas with specified width and height."
+  },
+  {
+    "name": "drawing_fillRectangle",
+    "description": "Fill a rectangle on the drawing canvas with a specified color and coordinates."
+  },
+  {
+    "name": "drawing_getCanvasPng",
+    "description": "Get the current drawing canvas as a PNG image (base64 encoded)."
+  },
+  {
+    "name": "drawing_getCanvasData",
+    "description": "Get the current pixel data of the drawing canvas as JSON."
+  },
+  {
+    "name": "get-current-date",
+    "description": "获取当前日期，以上海时区（Asia/Shanghai, UTC+8）为准，返回格式为 \"yyyy-MM-dd\"。主要用于解析用户提到的相对日期（如“明天”、“下周三”），为其他需要日期的接口提供准确的日期输入。"
+  },
+  {
+    "name": "get-stations-code-in-city",
+    "description": "通过中文城市名查询该城市 **所有** 火车站的名称及其对应的 `station_code`，结果是一个包含多个车站信息的列表。"
+  },
+  {
+    "name": "get-station-code-of-citys",
+    "description": "通过中文城市名查询代表该城市的 `station_code`。此接口主要用于在用户提供**城市名**作为出发地或到达地时，为接口准备 `station_code` 参数。"
+  },
+  {
+    "name": "get-station-code-by-names",
+    "description": "通过具体的中文车站名查询其 `station_code` 和车站名。此接口主要用于在用户提供**具体车站名**作为出发地或到达地时，为接口准备 `station_code` 参数。"
+  },
+  {
+    "name": "get-station-by-telecode",
+    "description": "通过车站的 `station_telecode` 查询车站的详细信息，包括名称、拼音、所属城市等。此接口主要用于在已知 `telecode` 的情况下获取更完整的车站数据，或用于特殊查询及调试目的。一般用户对话流程中较少直接触发。"
+  },
+  {
+    "name": "get-tickets",
+    "description": "查询12306余票信息。"
+  },
+  {
+    "name": "get-interline-tickets",
+    "description": "查询12306中转余票信息。尚且只支持查询前十条。"
+  },
+  {
+    "name": "get-train-route-stations",
+    "description": "查询特定列车车次在指定区间内的途径车站、到站时间、出发时间及停留时间等详细经停信息。当用户询问某趟具体列车的经停站时使用此接口。"
+  },
+  {
+    "name": "fetch_html",
+    "description": "Fetch a website and return the content as HTML"
+  },
+  {
+    "name": "fetch_markdown",
+    "description": "Fetch a website and return the content as Markdown"
+  },
+  {
+    "name": "fetch_txt",
+    "description": "Fetch a website, return the content as plain text (no HTML)"
+  },
+  {
+    "name": "fetch_json",
+    "description": "Fetch a JSON file from a URL"
+  },
+  {
+    "name": "writeImageMetadata",
+    "description": "Writes metadata (tags, description, people, location) to an image file."
+  },
+  {
+    "name": "exchange_rate",
+    "description": "Retrieves exchange rates using Norges Bank's API. Returns rate information including the base currency, target currency, date, and conversion rate."
+  },
+  {
+    "name": "puppeteer_navigate",
+    "description": "Navigate to a URL"
+  },
+  {
+    "name": "puppeteer_screenshot",
+    "description": "Take a screenshot of the current page or a specific element"
+  },
+  {
+    "name": "puppeteer_click",
+    "description": "Click an element on the page"
+  },
+  {
+    "name": "puppeteer_fill",
+    "description": "Fill out an input field"
+  },
+  {
+    "name": "puppeteer_select",
+    "description": "Select an element on the page with Select tag"
+  },
+  {
+    "name": "puppeteer_hover",
+    "description": "Hover an element on the page"
+  },
+  {
+    "name": "puppeteer_evaluate",
+    "description": "Execute JavaScript in the browser console"
+  },
+  {
+    "name": "search",
+    "description": "Search biomedical literature, clinical trials, genetic variants, genes, drugs, and diseases.\n\n    ⚠️ IMPORTANT: Have you used the 'think' tool first? If not, STOP and use it NOW!\n    The 'think' tool is REQUIRED for proper research planning and should be your FIRST step.\n\n    This tool provides access to biomedical data from PubMed/PubTator3, ClinicalTrials.gov,\n    MyVariant.info, and the BioThings suite (MyGene.info, MyChem.info, MyDisease.info).\n    It supports two search modes:\n\n    ## 1. UNIFIED QUERY LANGUAGE\n    Use the 'query' parameter with field-based syntax for precise cross-domain searches.\n\n    Syntax:\n    - Basic: \"gene:BRAF\"\n    - AND logic: \"gene:BRAF AND disease:melanoma\"\n    - OR logic: \"gene:PTEN AND (R173 OR Arg173 OR 'position 173')\"\n    - Domain-specific: \"trials.condition:melanoma AND trials.phase:3\"\n\n    Common fields:\n    - Cross-domain: gene, disease, variant, chemical/drug\n    - Articles: pmid, title, abstract, journal, author\n    - Trials: trials.condition, trials.intervention, trials.phase, trials.status\n    - Variants: variants.hgvs, variants.rsid, variants.significance\n\n    Example:\n    ```\n    await search(\n        query=\"gene:BRAF AND disease:melanoma AND trials.phase:3\",\n        max_results_per_domain=20\n    )\n    ```\n\n    ## 2. DOMAIN-SPECIFIC SEARCH\n    Use the 'domain' parameter with specific filters for targeted searches.\n\n    Domains:\n    - \"article\": Search PubMed/PubTator3 for research articles and preprints ABOUT genes, variants, diseases, or chemicals\n    - \"trial\": Search ClinicalTrials.gov for clinical studies\n    - \"variant\": Search MyVariant.info for genetic variant DATABASE RECORDS (population frequency, clinical significance, etc.) - NOT for articles about variants!\n    - \"gene\": Search MyGene.info for gene information (symbol, name, function, aliases)\n    - \"drug\": Search MyChem.info for drug/chemical information (names, formulas, indications)\n    - \"disease\": Search MyDisease.info for disease information (names, definitions, synonyms)\n    - \"nci_organization\": Search NCI database for cancer centers, hospitals, and research sponsors (requires API key)\n    - \"nci_intervention\": Search NCI database for drugs, devices, procedures used in cancer trials (requires API key)\n    - \"nci_biomarker\": Search NCI database for biomarkers used in trial eligibility criteria (requires API key)\n    - \"nci_disease\": Search NCI controlled vocabulary for cancer conditions and terms (requires API key)\n\n    Example:\n    ```\n    await search(\n        domain=\"article\",\n        genes=[\"BRAF\", \"NRAS\"],\n        diseases=[\"melanoma\"],\n        page_size=50\n    )\n    ```\n\n    ## DOMAIN SELECTION EXAMPLES:\n    - To find ARTICLES about BRAF V600E mutation: domain=\"article\", genes=[\"BRAF\"], variants=[\"V600E\"]\n    - To find VARIANT DATA for BRAF mutations: domain=\"variant\", gene=\"BRAF\"\n    - To find articles about ERBB2 p.D277Y: domain=\"article\", genes=[\"ERBB2\"], variants=[\"p.D277Y\"]\n    - Common mistake: Using domain=\"variant\" when you want articles about a variant\n\n    ## IMPORTANT NOTES:\n    - For complex research questions, use the separate 'think' tool for systematic analysis\n    - The tool returns results in OpenAI MCP format: {\"results\": [{\"id\", \"title\", \"text\", \"url\"}, ...]}\n    - Search results do NOT include metadata (per OpenAI MCP specification)\n    - Use the fetch tool to get detailed metadata for specific records\n    - Use get_schema=True to explore available search fields\n    - Use explain_query=True to understand query parsing (unified mode)\n    - Domain-specific searches use AND logic for multiple values\n    - For OR logic, use the unified query language\n    - NEW: Article search keywords support OR with pipe separator: \"R173|Arg173|p.R173\"\n    - Remember: domain=\"article\" finds LITERATURE, domain=\"variant\" finds DATABASE RECORDS\n\n    ## RETURN FORMAT:\n    All search modes return results in this format:\n    ```json\n    {\n        \"results\": [\n            {\n                \"id\": \"unique_identifier\",\n                \"title\": \"Human-readable title\",\n                \"text\": \"Summary or snippet of content\",\n                \"url\": \"Link to full resource\"\n            }\n        ]\n    }\n    ```\n    "
+  },
+  {
+    "name": "fetch",
+    "description": "Fetch comprehensive details for a specific biomedical record.\n\n    This tool retrieves full information for articles, clinical trials, genetic variants,\n    genes, drugs, or diseases using their unique identifiers. It returns data in a\n    standardized format suitable for detailed analysis and research.\n\n    ## IDENTIFIER FORMATS:\n    - Articles: PMID (PubMed ID) - e.g., \"35271234\" OR DOI - e.g., \"10.1101/2024.01.20.23288905\"\n    - Trials: NCT ID (ClinicalTrials.gov ID) - e.g., \"NCT04280705\"\n    - Variants: HGVS notation or dbSNP ID - e.g., \"chr7:g.140453136A>T\" or \"rs121913254\"\n    - Genes: Gene symbol or Entrez ID - e.g., \"BRAF\" or \"673\"\n    - Drugs: Drug name or ID - e.g., \"imatinib\" or \"DB00619\"\n    - Diseases: Disease name or ID - e.g., \"melanoma\" or \"MONDO:0005105\"\n    - NCI Organizations: NCI organization ID - e.g., \"NCI-2011-03337\"\n    - NCI Interventions: NCI intervention ID - e.g., \"INT123456\"\n    - NCI Diseases: NCI disease ID - e.g., \"C4872\"\n\n    The domain is automatically detected from the ID format if not provided:\n    - NCT* → trial\n    - Contains \"/\" with numeric prefix (DOI) → article\n    - Pure numeric → article (PMID)\n    - rs* or contains ':' or 'g.' → variant\n    - For genes, drugs, diseases: manual specification recommended\n\n    ## DOMAIN-SPECIFIC OPTIONS:\n\n    ### Articles (domain=\"article\"):\n    - Returns full article metadata, abstract, and full text when available\n    - Supports both PubMed articles (via PMID) and Europe PMC preprints (via DOI)\n    - Includes annotations for genes, diseases, chemicals, and variants (PubMed only)\n    - detail=\"full\" attempts to retrieve full text content (PubMed only)\n\n    ### Clinical Trials (domain=\"trial\"):\n    - detail=None or \"protocol\": Core study information\n    - detail=\"locations\": Study sites and contact information\n    - detail=\"outcomes\": Primary/secondary outcomes and results\n    - detail=\"references\": Related publications and citations\n    - detail=\"all\": Complete trial record with all sections\n\n    ### Variants (domain=\"variant\"):\n    - Returns comprehensive variant information including:\n      - Clinical significance and interpretations\n      - Population frequencies\n      - Gene/protein effects\n      - External database links\n    - detail parameter is ignored (always returns full data)\n\n    ### Genes (domain=\"gene\"):\n    - Returns gene information from MyGene.info including:\n      - Gene symbol, name, and type\n      - Entrez ID and Ensembl IDs\n      - Gene summary and aliases\n      - RefSeq information\n    - detail parameter is ignored (always returns full data)\n\n    ### Drugs (domain=\"drug\"):\n    - Returns drug/chemical information from MyChem.info including:\n      - Drug name and trade names\n      - Chemical formula and structure IDs\n      - Clinical indications\n      - Mechanism of action\n      - External database links (DrugBank, PubChem, ChEMBL)\n    - detail parameter is ignored (always returns full data)\n\n    ### Diseases (domain=\"disease\"):\n    - Returns disease information from MyDisease.info including:\n      - Disease name and definition\n      - MONDO ontology ID\n      - Disease synonyms\n      - Cross-references to other databases\n      - Associated phenotypes\n    - detail parameter is ignored (always returns full data)\n\n    ### NCI Organizations (domain=\"nci_organization\"):\n    - Returns organization information from NCI database including:\n      - Organization name and type\n      - Full address and contact information\n      - Research focus areas\n      - Associated clinical trials\n    - Requires NCI API key\n    - detail parameter is ignored (always returns full data)\n\n    ### NCI Interventions (domain=\"nci_intervention\"):\n    - Returns intervention information from NCI database including:\n      - Intervention name and type\n      - Synonyms and alternative names\n      - Mechanism of action (for drugs)\n      - FDA approval status\n      - Associated clinical trials\n    - Requires NCI API key\n    - detail parameter is ignored (always returns full data)\n\n    ### NCI Diseases (domain=\"nci_disease\"):\n    - Returns disease information from NCI controlled vocabulary including:\n      - Preferred disease name\n      - Disease category and classification\n      - All known synonyms\n      - Cross-reference codes (ICD, SNOMED)\n    - Requires NCI API key\n    - detail parameter is ignored (always returns full data)\n\n    ## RETURN FORMAT:\n    All fetch operations return a standardized format:\n    ```json\n    {\n        \"id\": \"unique_identifier\",\n        \"title\": \"Record title or name\",\n        \"text\": \"Full content or comprehensive description\",\n        \"url\": \"Link to original source\",\n        \"metadata\": {\n            // Domain-specific additional fields\n        }\n    }\n    ```\n\n    ## EXAMPLES:\n\n    Fetch article by PMID (domain auto-detected):\n    ```\n    await fetch(id=\"35271234\")\n    ```\n\n    Fetch article by DOI (domain auto-detected):\n    ```\n    await fetch(id=\"10.1101/2024.01.20.23288905\")\n    ```\n\n    Fetch complete trial information (domain auto-detected):\n    ```\n    await fetch(\n        id=\"NCT04280705\",\n        detail=\"all\"\n    )\n    ```\n\n    Fetch variant with clinical interpretations:\n    ```\n    await fetch(id=\"rs121913254\")\n    ```\n\n    Explicitly specify domain (optional):\n    ```\n    await fetch(\n        domain=\"variant\",\n        id=\"chr7:g.140453136A>T\"\n    )\n    ```\n    "
+  },
+  {
+    "name": "think",
+    "description": "REQUIRED FIRST STEP: Perform structured sequential thinking for ANY biomedical research task.\n\n    🚨 IMPORTANT: You MUST use this tool BEFORE any search or fetch operations when:\n    - Researching ANY biomedical topic (genes, diseases, variants, trials)\n    - Planning to use multiple BioMCP tools\n    - Answering questions that require analysis or synthesis\n    - Comparing information from different sources\n    - Making recommendations or drawing conclusions\n\n    ⚠️ FAILURE TO USE THIS TOOL FIRST will result in:\n    - Incomplete or poorly structured analysis\n    - Missing important connections between data\n    - Suboptimal search strategies\n    - Overlooked critical information\n\n    Sequential thinking ensures you:\n    1. Fully understand the research question\n    2. Plan an optimal search strategy\n    3. Identify all relevant data sources\n    4. Structure your analysis properly\n    5. Deliver comprehensive, well-reasoned results\n\n    ## Usage Pattern:\n    1. Start with thoughtNumber=1 to initiate analysis\n    2. Progress through numbered thoughts sequentially\n    3. Adjust totalThoughts estimate as understanding develops\n    4. Set nextThoughtNeeded=False only when analysis is complete\n\n    ## Example:\n    ```python\n    # Initial analysis\n    await think(\n        thought=\"Breaking down the relationship between BRAF mutations and melanoma treatment resistance...\",\n        thoughtNumber=1,\n        totalThoughts=5,\n        nextThoughtNeeded=True\n    )\n\n    # Continue analysis\n    await think(\n        thought=\"Examining specific BRAF V600E mutation mechanisms...\",\n        thoughtNumber=2,\n        totalThoughts=5,\n        nextThoughtNeeded=True\n    )\n\n    # Final thought\n    await think(\n        thought=\"Synthesizing findings and proposing research directions...\",\n        thoughtNumber=5,\n        totalThoughts=5,\n        nextThoughtNeeded=False\n    )\n    ```\n\n    ## Important Notes:\n    - Each thought builds on previous ones within a session\n    - State is maintained throughout the MCP session\n    - Use thoughtful, detailed analysis in each step\n    - Revisions and branching are supported through the underlying implementation\n    "
+  },
+  {
+    "name": "article_searcher",
+    "description": "Search PubMed/PubTator3 for research articles and preprints.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Use this tool to find scientific literature ABOUT genes, variants, diseases, or chemicals.\n    Results include articles from PubMed and optionally preprints from bioRxiv/medRxiv.\n\n    Important: This searches for ARTICLES ABOUT these topics, not database records.\n    For genetic variant database records, use variant_searcher instead.\n\n    Example usage:\n    - Find articles about BRAF mutations in melanoma\n    - Search for papers on a specific drug's effects\n    - Locate research on gene-disease associations\n    "
+  },
+  {
+    "name": "article_getter",
+    "description": "Fetch detailed information for a specific article.\n\n    Retrieves the full abstract and available text for an article by its identifier.\n    Supports:\n    - PubMed IDs (PMID) for published articles\n    - PMC IDs for articles in PubMed Central\n    - DOIs for preprints from Europe PMC\n\n    Returns formatted text including:\n    - Title\n    - Abstract\n    - Full text (when available from PMC for published articles)\n    - Source information (PubMed or Europe PMC)\n    "
+  },
+  {
+    "name": "trial_searcher",
+    "description": "Search ClinicalTrials.gov for clinical studies.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Comprehensive search tool for finding clinical trials based on multiple criteria.\n    Supports filtering by conditions, interventions, location, phase, and eligibility.\n\n    Location search notes:\n    - Use either location term OR lat/long coordinates, not both\n    - For city-based searches, AI agents should geocode to lat/long first\n    - Distance parameter only works with lat/long coordinates\n\n    Returns a formatted list of matching trials with key details.\n    "
+  },
+  {
+    "name": "trial_getter",
+    "description": "Fetch comprehensive details for a specific clinical trial.\n\n    Retrieves all available information for a clinical trial by its NCT ID.\n    This includes protocol details, locations, outcomes, and references.\n\n    For specific sections only, use the specialized getter tools:\n    - trial_protocol_getter: Core protocol information\n    - trial_locations_getter: Site locations and contacts\n    - trial_outcomes_getter: Primary/secondary outcomes and results\n    - trial_references_getter: Publications and references\n    "
+  },
+  {
+    "name": "trial_protocol_getter",
+    "description": "Fetch core protocol information for a clinical trial.\n\n    Retrieves essential protocol details including:\n    - Official title and brief summary\n    - Study status and sponsor information\n    - Study design (type, phase, allocation, masking)\n    - Eligibility criteria\n    - Primary completion date\n    "
+  },
+  {
+    "name": "trial_references_getter",
+    "description": "Fetch publications and references for a clinical trial.\n\n    Retrieves all linked publications including:\n    - Published results papers\n    - Background literature\n    - Protocol publications\n    - Related analyses\n\n    Includes PubMed IDs when available for easy cross-referencing.\n    "
+  },
+  {
+    "name": "trial_outcomes_getter",
+    "description": "Fetch outcome measures and results for a clinical trial.\n\n    Retrieves detailed outcome information including:\n    - Primary outcome measures\n    - Secondary outcome measures\n    - Results data (if available)\n    - Adverse events (if reported)\n\n    Note: Results are only available for completed trials that have posted data.\n    "
+  },
+  {
+    "name": "trial_locations_getter",
+    "description": "Fetch contact and location details for a clinical trial.\n\n    Retrieves all study locations including:\n    - Facility names and addresses\n    - Principal investigator information\n    - Contact details (when recruiting)\n    - Recruitment status by site\n\n    Useful for finding trials near specific locations or contacting study teams.\n    "
+  },
+  {
+    "name": "variant_searcher",
+    "description": "Search MyVariant.info for genetic variant DATABASE RECORDS.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Important: This searches for variant DATABASE RECORDS (frequency, significance, etc.),\n    NOT articles about variants. For articles about variants, use article_searcher.\n\n    Searches the comprehensive variant database including:\n    - Population frequencies (gnomAD, 1000 Genomes, etc.)\n    - Clinical significance (ClinVar)\n    - Functional predictions (SIFT, PolyPhen, CADD)\n    - Gene and protein consequences\n\n    Search by various identifiers or filter by clinical/functional criteria.\n    "
+  },
+  {
+    "name": "variant_getter",
+    "description": "Fetch comprehensive details for a specific genetic variant.\n\n    Retrieves all available information for a variant including:\n    - Gene location and consequences\n    - Population frequencies across databases\n    - Clinical significance from ClinVar\n    - Functional predictions\n    - External annotations (TCGA cancer data, conservation scores)\n\n    Accepts various ID formats:\n    - HGVS: NM_004333.4:c.1799T>A\n    - rsID: rs113488022\n    - MyVariant ID: chr7:g.140753336A>T\n    "
+  },
+  {
+    "name": "alphagenome_predictor",
+    "description": "Predict variant effects on gene regulation using Google DeepMind's AlphaGenome.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your analysis strategy!\n\n    AlphaGenome provides state-of-the-art predictions for how genetic variants\n    affect gene regulation, including:\n    - Gene expression changes (RNA-seq)\n    - Chromatin accessibility impacts (ATAC-seq, DNase-seq)\n    - Splicing alterations\n    - Promoter activity changes (CAGE)\n\n    This tool requires:\n    1. AlphaGenome to be installed (see error message for instructions)\n    2. An API key from https://deepmind.google.com/science/alphagenome\n\n    API Key Options:\n    - Provide directly via the api_key parameter\n    - Or set ALPHAGENOME_API_KEY environment variable\n\n    Example usage:\n    - Predict regulatory effects of BRAF V600E mutation: chr7:140753336 A>T\n    - Assess non-coding variant impact on gene expression\n    - Evaluate promoter variants in specific tissues\n\n    Note: This is an optional tool that enhances variant interpretation\n    with AI predictions. Standard annotations remain available via variant_getter.\n    "
+  },
+  {
+    "name": "gene_getter",
+    "description": "Get detailed gene information from MyGene.info.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to understand your research goal!\n\n    Provides real-time gene annotations including:\n    - Official gene name and symbol\n    - Gene summary/description\n    - Aliases and alternative names\n    - Gene type (protein-coding, etc.)\n    - Links to external databases\n\n    This tool fetches CURRENT gene information from MyGene.info, ensuring\n    you always have the latest annotations and nomenclature.\n\n    Example usage:\n    - Get information about TP53 tumor suppressor\n    - Look up BRAF kinase gene details\n    - Find the official name for a gene by its alias\n\n    Note: For genetic variants, use variant_searcher. For articles about genes, use article_searcher.\n    "
+  },
+  {
+    "name": "disease_getter",
+    "description": "Get detailed disease information from MyDisease.info.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to understand your research goal!\n\n    Provides real-time disease annotations including:\n    - Official disease name and definition\n    - Disease synonyms and alternative names\n    - Ontology mappings (MONDO, DOID, OMIM, etc.)\n    - Associated phenotypes\n    - Links to disease databases\n\n    This tool fetches CURRENT disease information from MyDisease.info, ensuring\n    you always have the latest ontology mappings and definitions.\n\n    Example usage:\n    - Get the definition of GIST (Gastrointestinal Stromal Tumor)\n    - Look up synonyms for melanoma\n    - Find the MONDO ID for a disease by name\n\n    Note: For clinical trials about diseases, use trial_searcher. For articles about diseases, use article_searcher.\n    "
+  },
+  {
+    "name": "drug_getter",
+    "description": "Get detailed drug/chemical information from MyChem.info.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to understand your research goal!\n\n    This tool provides comprehensive drug information including:\n    - Chemical properties (formula, InChIKey)\n    - Drug identifiers (DrugBank, ChEMBL, PubChem)\n    - Trade names and brand names\n    - Clinical indications\n    - Mechanism of action\n    - Pharmacology details\n    - Links to drug databases\n\n    This tool fetches CURRENT drug information from MyChem.info, part of the\n    BioThings suite, ensuring you always have the latest drug data.\n\n    Example usage:\n    - Get information about imatinib (Gleevec)\n    - Look up details for DrugBank ID DB00619\n    - Find the mechanism of action for pembrolizumab\n\n    Note: For clinical trials about drugs, use trial_searcher. For articles about drugs, use article_searcher.\n    "
+  },
+  {
+    "name": "nci_organization_searcher",
+    "description": "Search for organizations in the NCI Clinical Trials database.\n\n    Searches the National Cancer Institute's curated database of organizations\n    involved in cancer clinical trials. This includes:\n    - Academic medical centers\n    - Community hospitals\n    - Industry sponsors\n    - Government facilities\n    - Research networks\n\n    Requires NCI API key from: https://clinicaltrialsapi.cancer.gov/\n\n    IMPORTANT: To avoid API errors, always use city AND state together when searching by location.\n    The NCI API has limitations on broad searches.\n\n    Example usage:\n    - Find cancer centers in Boston, MA (city AND state)\n    - Search for \"MD Anderson\" in Houston, TX\n    - List academic organizations in Cleveland, OH\n    - Search by organization name alone (without location)\n    "
+  },
+  {
+    "name": "nci_organization_getter",
+    "description": "Get detailed information about a specific organization from NCI.\n\n    Retrieves comprehensive details about an organization including:\n    - Full name and aliases\n    - Address and contact information\n    - Organization type and role\n    - Associated clinical trials\n    - Research focus areas\n\n    Requires NCI API key from: https://clinicaltrialsapi.cancer.gov/\n\n    Example usage:\n    - Get details about a specific cancer center\n    - Find contact information for trial sponsors\n    - View organization's trial portfolio\n    "
+  },
+  {
+    "name": "nci_intervention_searcher",
+    "description": "Search for interventions in the NCI Clinical Trials database.\n\n    Searches the National Cancer Institute's curated database of interventions\n    used in cancer clinical trials. This includes:\n    - FDA-approved drugs\n    - Investigational agents\n    - Medical devices\n    - Surgical procedures\n    - Radiation therapies\n    - Behavioral interventions\n\n    Requires NCI API key from: https://clinicaltrialsapi.cancer.gov/\n\n    Example usage:\n    - Find all trials using pembrolizumab\n    - Search for CAR-T cell therapies\n    - List radiation therapy protocols\n    - Find dietary interventions\n    "
+  },
+  {
+    "name": "nci_intervention_getter",
+    "description": "Get detailed information about a specific intervention from NCI.\n\n    Retrieves comprehensive details about an intervention including:\n    - Full name and synonyms\n    - Intervention type and category\n    - Mechanism of action (for drugs)\n    - FDA approval status\n    - Associated clinical trials\n    - Combination therapies\n\n    Requires NCI API key from: https://clinicaltrialsapi.cancer.gov/\n\n    Example usage:\n    - Get details about a specific drug\n    - Find all trials using a device\n    - View combination therapy protocols\n    "
+  },
+  {
+    "name": "nci_biomarker_searcher",
+    "description": "Search for biomarkers in the NCI Clinical Trials database.\n\n    Searches for biomarkers used in clinical trial eligibility criteria.\n    This is essential for precision medicine trials that select patients\n    based on specific biomarker characteristics.\n\n    Biomarker examples:\n    - Gene mutations (e.g., BRAF V600E, EGFR T790M)\n    - Protein expression (e.g., PD-L1 ≥ 50%, HER2 positive)\n    - Gene fusions (e.g., ALK fusion, ROS1 fusion)\n    - Other molecular markers (e.g., MSI-H, TMB-high)\n\n    Requires NCI API key from: https://clinicaltrialsapi.cancer.gov/\n\n    Note: Biomarker data availability may be limited in CTRP.\n    Results focus on biomarkers used in trial eligibility criteria.\n\n    Example usage:\n    - Search for PD-L1 expression biomarkers\n    - Find trials requiring EGFR mutations\n    - Look up biomarkers tested by NGS\n    - Search for HER2 expression markers\n    "
+  },
+  {
+    "name": "nci_disease_searcher",
+    "description": "Search NCI's controlled vocabulary of cancer conditions.\n\n    Searches the National Cancer Institute's curated database of cancer\n    conditions and diseases used in clinical trials. This is different from\n    the general disease_getter tool which uses MyDisease.info.\n\n    NCI's disease vocabulary provides:\n    - Official cancer terminology used in trials\n    - Disease synonyms and alternative names\n    - Hierarchical disease classifications\n    - Standardized disease codes for trial matching\n\n    Requires NCI API key from: https://clinicaltrialsapi.cancer.gov/\n\n    Example usage:\n    - Search for specific cancer types (e.g., \"melanoma\")\n    - Find all lung cancer subtypes\n    - Look up official names for disease synonyms\n    - Get standardized disease terms for trial searches\n\n    Note: This is specifically for NCI's cancer disease vocabulary.\n    For general disease information, use the disease_getter tool.\n    "
+  },
+  {
+    "name": "openfda_adverse_searcher",
+    "description": "Search FDA adverse event reports (FAERS) for drug safety information.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Searches FDA's Adverse Event Reporting System for:\n    - Drug side effects and adverse reactions\n    - Serious event reports (death, hospitalization, disability)\n    - Safety signal patterns across patient populations\n\n    Note: These reports do not establish causation - they are voluntary reports\n    that may contain incomplete or unverified information.\n    "
+  },
+  {
+    "name": "openfda_adverse_getter",
+    "description": "Get detailed information for a specific FDA adverse event report.\n\n    Retrieves complete details including:\n    - Patient demographics and medical history\n    - All drugs involved and dosages\n    - Complete list of adverse reactions\n    - Event narrative and outcomes\n    - Reporter information\n    "
+  },
+  {
+    "name": "openfda_label_searcher",
+    "description": "Search FDA drug product labels (SPL) for prescribing information.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Searches official FDA drug labels for:\n    - Approved indications and usage\n    - Dosage and administration guidelines\n    - Contraindications and warnings\n    - Drug interactions and adverse reactions\n    - Special population considerations\n\n    Label sections include: indications, dosage, contraindications, warnings,\n    adverse, interactions, pregnancy, pediatric, geriatric, overdose\n    "
+  },
+  {
+    "name": "openfda_label_getter",
+    "description": "Get complete FDA drug label information by set ID.\n\n    Retrieves the full prescribing information including:\n    - Complete indications and usage text\n    - Detailed dosing instructions\n    - All warnings and precautions\n    - Clinical pharmacology and studies\n    - Manufacturing and storage information\n\n    Specify sections to retrieve specific parts, or leave empty for default key sections.\n    "
+  },
+  {
+    "name": "openfda_device_searcher",
+    "description": "Search FDA device adverse event reports (MAUDE) for medical device issues.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Searches FDA's device adverse event database for:\n    - Device malfunctions and failures\n    - Patient injuries related to devices\n    - Genomic test and diagnostic device issues\n\n    By default, filters to genomic/diagnostic devices relevant to precision medicine.\n    Set genomics_only=False to search all medical devices.\n    "
+  },
+  {
+    "name": "openfda_device_getter",
+    "description": "Get detailed information for a specific FDA device event report.\n\n    Retrieves complete device event details including:\n    - Device identification and specifications\n    - Complete event narrative\n    - Patient outcomes and impacts\n    - Manufacturer analysis and actions\n    - Remedial actions taken\n    "
+  },
+  {
+    "name": "openfda_approval_searcher",
+    "description": "Search FDA drug approval records from Drugs@FDA database.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Returns information about:\n    - Application numbers and sponsors\n    - Brand and generic names\n    - Product formulations and strengths\n    - Marketing status and approval dates\n    - Submission history\n\n    Useful for verifying if a drug is FDA-approved and when.\n    "
+  },
+  {
+    "name": "openfda_approval_getter",
+    "description": "Get detailed FDA drug approval information for a specific application.\n\n    Returns comprehensive approval details including:\n    - Full product list with dosage forms and strengths\n    - Complete submission history\n    - Marketing status timeline\n    - Therapeutic equivalence codes\n    - Pharmacologic class information\n    "
+  },
+  {
+    "name": "openfda_recall_searcher",
+    "description": "Search FDA drug recall records from the Enforcement database.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Returns recall information including:\n    - Classification (Class I, II, or III)\n    - Recall reason and description\n    - Product identification\n    - Distribution information\n    - Recalling firm details\n    - Current status\n\n    Class I = most serious (death/serious harm)\n    Class II = moderate (temporary/reversible harm)\n    Class III = least serious (unlikely to cause harm)\n    "
+  },
+  {
+    "name": "openfda_recall_getter",
+    "description": "Get detailed FDA drug recall information for a specific recall.\n\n    Returns complete recall details including:\n    - Full product description and code information\n    - Complete reason for recall\n    - Distribution pattern and locations\n    - Quantity of product recalled\n    - Firm information and actions taken\n    - Timeline of recall events\n    "
+  },
+  {
+    "name": "openfda_shortage_searcher",
+    "description": "Search FDA drug shortage records.\n\n    ⚠️ PREREQUISITE: Use the 'think' tool FIRST to plan your research strategy!\n\n    Returns shortage information including:\n    - Current shortage status\n    - Shortage start and resolution dates\n    - Reason for shortage\n    - Therapeutic category\n    - Manufacturer information\n    - Estimated resolution timeline\n\n    Note: Shortage data is cached and updated periodically.\n    Check FDA.gov for most current information.\n    "
+  },
+  {
+    "name": "openfda_shortage_getter",
+    "description": "Get detailed FDA drug shortage information for a specific drug.\n\n    Returns comprehensive shortage details including:\n    - Complete timeline of shortage\n    - Detailed reason for shortage\n    - All affected manufacturers\n    - Alternative products if available\n    - Resolution status and estimates\n    - Additional notes and recommendations\n\n    Data is updated periodically from FDA shortage database.\n    "
+  },
+  {
+    "name": "list_icons",
+    "description": "Get a list of all available Hugeicons icons"
+  },
+  {
+    "name": "search_icons",
+    "description": "Search for icons by name or tags. Use commas to search for multiple icons (e.g. 'home, notification, settings')"
+  },
+  {
+    "name": "get_platform_usage",
+    "description": "Get platform-specific usage instructions for Hugeicons"
+  },
+  {
+    "name": "whois_domain",
+    "description": "Looksup whois information about the domain"
+  },
+  {
+    "name": "whois_tld",
+    "description": "Looksup whois information about the Top Level Domain (TLD)"
+  },
+  {
+    "name": "whois_ip",
+    "description": "Looksup whois information about the IP"
+  },
+  {
+    "name": "whois_as",
+    "description": "Looksup whois information about the Autonomous System Number (ASN)"
+  },
+  {
+    "name": "excel_copy_sheet",
+    "description": "Copy existing sheet to a new sheet"
+  },
+  {
+    "name": "excel_create_table",
+    "description": "Create a table in the Excel sheet"
+  },
+  {
+    "name": "excel_describe_sheets",
+    "description": "List all sheet information of specified Excel file"
+  },
+  {
+    "name": "excel_format_range",
+    "description": "Format cells in the Excel sheet with style information"
+  },
+  {
+    "name": "excel_read_sheet",
+    "description": "Read values from Excel sheet with pagination."
+  },
+  {
+    "name": "excel_write_to_sheet",
+    "description": "Write values to the Excel sheet"
+  },
+  {
+    "name": "load",
+    "description": "\nLoads an audio file and returns the path to the audio time series\nOffset and duration are optional, in seconds.\nBe careful, you will never know the name of the song.\n"
+  },
+  {
+    "name": "get_duration",
+    "description": "\nReturns the total duration (in seconds) of the given audio time series.\n"
+  },
+  {
+    "name": "tempo",
+    "description": "\nEstimates the tempo (in BPM) of the given audio time series using librosa.\nOffset and duration are optional, in seconds.\n"
+  },
+  {
+    "name": "chroma_cqt",
+    "description": "\nComputes the chroma CQT of the given audio time series using librosa.\nThe chroma CQT is a representation of the audio signal in terms of its\nchromatic content, which is useful for music analysis.\nThe chroma CQT is computed using the following parameters:\n- path_audio_time_series_y: The path to the audio time series (CSV file).\n    It's sometimes better to take harmonics only\n- hop_length: The number of samples between frames.\n- fmin: The minimum frequency of the chroma feature.\n- n_chroma: The number of chroma bins (default is 12).\n- n_octaves: The number of octaves to include in the chroma feature.\nThe chroma CQT is saved to a CSV file with the following columns:\n- note: The note name (C, C#, D, etc.).\n- time: The time position of the note in seconds.\n- amplitude: The amplitude of the note at that time.\nThe path to the CSV file is returned.\n"
+  },
+  {
+    "name": "mfcc",
+    "description": "\nComputes the MFCC of the given audio time series using librosa.\nThe MFCC is a representation of the audio signal in terms of its\nspectral content, which is useful for music analysis.\nThe MFCC is computed using the following parameters:\n- path_audio_time_series_y: The path to the audio time series (CSV file).\n    It's sometimes better to take harmonics only\n"
+  },
+  {
+    "name": "beat_track",
+    "description": "\nComputes the beat track of the given audio time series using librosa.\nThe beat track is a representation of the audio signal in terms of its\nrhythmic content, which is useful for music analysis.\nThe beat track is computed using the following parameters:\n- hop_length: The number of samples between frames.\n- start_bpm: The initial estimate of the tempo (in BPM).\n- tightness: The tightness of the beat tracking (default is 100).\n- units: The units of the beat track (default is \"frames\"). It can be frames, samples, time.\n"
+  },
+  {
+    "name": "download_from_url",
+    "description": "\nDownloads a file from a given URL and returns the path to the downloaded file.\nBe careful, you will never know the name of the song.\n"
+  },
+  {
+    "name": "download_from_youtube",
+    "description": "\nDownloads a file from a given youtube URL and returns the path to the downloaded file.\nBe careful, you will never know the name of the song.\n"
+  },
+  {
+    "name": "npmVersions",
+    "description": "Get all available versions of an NPM package"
+  },
+  {
+    "name": "npmLatest",
+    "description": "Get the latest version and changelog of an NPM package"
+  },
+  {
+    "name": "npmDeps",
+    "description": "Analyze dependencies and devDependencies of an NPM package"
+  },
+  {
+    "name": "npmTypes",
+    "description": "Check TypeScript types availability and version for a package"
+  },
+  {
+    "name": "npmSize",
+    "description": "Get package size information including dependencies and bundle size"
+  },
+  {
+    "name": "npmVulnerabilities",
+    "description": "Check for known vulnerabilities in packages"
+  },
+  {
+    "name": "npmTrends",
+    "description": "Get download trends and popularity metrics for packages"
+  },
+  {
+    "name": "npmCompare",
+    "description": "Compare multiple NPM packages based on various metrics"
+  },
+  {
+    "name": "npmMaintainers",
+    "description": "Get maintainers information for NPM packages"
+  },
+  {
+    "name": "npmScore",
+    "description": "Get consolidated package score based on quality, maintenance, and popularity metrics"
+  },
+  {
+    "name": "npmPackageReadme",
+    "description": "Get the README content for NPM packages"
+  },
+  {
+    "name": "npmSearch",
+    "description": "Search for NPM packages with optional limit"
+  },
+  {
+    "name": "npmLicenseCompatibility",
+    "description": "Check license compatibility between multiple packages"
+  },
+  {
+    "name": "npmRepoStats",
+    "description": "Get repository statistics for NPM packages"
+  },
+  {
+    "name": "npmDeprecated",
+    "description": "Check if packages are deprecated"
+  },
+  {
+    "name": "npmChangelogAnalysis",
+    "description": "Analyze changelog and release history of packages"
+  },
+  {
+    "name": "npmAlternatives",
+    "description": "Find alternative packages with similar functionality"
+  },
+  {
+    "name": "npmQuality",
+    "description": "Analyze package quality metrics"
+  },
+  {
+    "name": "npmMaintenance",
+    "description": "Analyze package maintenance metrics"
+  },
+  {
+    "name": "deepwiki_fetch",
+    "description": "Fetch a deepwiki.com repo and return Markdown"
+  },
+  {
+    "name": "search_papers",
+    "description": "Search for papers on arXiv with advanced filtering and query optimization.\n\nQUERY CONSTRUCTION GUIDELINES:\n- Use QUOTED PHRASES for exact matches: \"multi-agent systems\", \"neural networks\", \"machine learning\"\n- Combine related concepts with OR: \"AI agents\" OR \"software agents\" OR \"intelligent agents\"  \n- Use field-specific searches for precision:\n  - ti:\"exact title phrase\" - search in titles only\n  - au:\"author name\" - search by author\n  - abs:\"keyword\" - search in abstracts only\n- Use ANDNOT to exclude unwanted results: \"machine learning\" ANDNOT \"survey\"\n- For best results, use 2-4 core concepts rather than long keyword lists\n\nADVANCED SEARCH PATTERNS:\n- Field + phrase: ti:\"transformer architecture\" for papers with exact title phrase\n- Multiple fields: au:\"Smith\" AND ti:\"quantum\" for author Smith's quantum papers  \n- Exclusions: \"deep learning\" ANDNOT (\"survey\" OR \"review\") to exclude survey papers\n- Broad + narrow: \"artificial intelligence\" AND (robotics OR \"computer vision\")\n\nCATEGORY FILTERING (highly recommended for relevance):\n- cs.AI: Artificial Intelligence\n- cs.MA: Multi-Agent Systems  \n- cs.LG: Machine Learning\n- cs.CL: Computation and Language (NLP)\n- cs.CV: Computer Vision\n- cs.RO: Robotics\n- cs.HC: Human-Computer Interaction\n- cs.CR: Cryptography and Security\n- cs.DB: Databases\n\nEXAMPLES OF EFFECTIVE QUERIES:\n- ti:\"reinforcement learning\" with categories: [\"cs.LG\", \"cs.AI\"] - for RL papers by title\n- au:\"Hinton\" AND \"deep learning\" with categories: [\"cs.LG\"] - for Hinton's deep learning work\n- \"multi-agent\" ANDNOT \"survey\" with categories: [\"cs.MA\"] - exclude survey papers\n- abs:\"transformer\" AND ti:\"attention\" with categories: [\"cs.CL\"] - attention papers with transformer abstracts\n\nDATE FILTERING: Use YYYY-MM-DD format for historical research:\n- date_to: \"2015-12-31\" - for foundational/classic work (pre-2016)\n- date_from: \"2020-01-01\" - for recent developments (post-2020)\n- Both together for specific time periods\n\nRESULT QUALITY: Results sorted by RELEVANCE (most relevant papers first), not just newest papers.\nThis ensures you get the most pertinent results regardless of publication date.\n\nTIPS FOR FOUNDATIONAL RESEARCH:\n- Use date_to: \"2010-12-31\" to find classic papers on BDI, SOAR, ACT-R\n- Combine with field searches: ti:\"BDI\" AND abs:\"belief desire intention\"  \n- Try author searches: au:\"Rao\" AND \"BDI\" for Anand Rao's foundational BDI work"
+  },
+  {
+    "name": "download_paper",
+    "description": "Download a paper and create a resource for it"
+  },
+  {
+    "name": "list_papers",
+    "description": "List all existing papers available as resources"
+  },
+  {
+    "name": "read_paper",
+    "description": "Read the full content of a stored paper in markdown format"
+  },
+  {
+    "name": "bing_search",
+    "description": "使用必应搜索指定的关键词，并返回搜索结果列表，包括标题、链接、摘要和ID"
+  },
+  {
+    "name": "fetch_webpage",
+    "description": "根据提供的ID获取对应网页的内容"
+  },
+  {
+    "name": "lol-champion-leader-board",
+    "description": "Retrieves the leaderboard of master players who play a specific champion well. You can also look up the high ranked players, like the high winrate 5 players in #1-#30, to retrieve their champion performance or recent match history to teach how to play the champions."
+  },
+  {
+    "name": "lol-champion-analysis",
+    "description": "Retrieves very detailed information about a specific champion, such as win rate, pick rate, recommended builds, recommended skill order, recommended items, etc. If a user mentions a specific champion, you *must* always call this function, review the data, and then respond. If the user asks some tips during playing game, you should also occasionally call this function to advice how to play the game well. If the users asks like 'what items should I buy?', 'which skill should I level up?', also you need to call this function to see the high winrate champions. (Counter Picks ban/pick data is available in the `weakCounters` field). You must assume the position user want to know."
+  },
+  {
+    "name": "lol-champion-meta-data",
+    "description": "Retrieves meta data for a specific champion, including statistics and performance metrics."
+  },
+  {
+    "name": "lol-champion-metadata-resources",
+    "description": "Retrieves metadata for all League of Legends champions with localized names and keys in CSV format. Returns champion_id, key, and name for all champions in the specified language."
+  },
+  {
+    "name": "lol-champion-skin-sale",
+    "description": "Retrieves information about champion skins that are currently on sale."
+  },
+  {
+    "name": "lol-summoner-search",
+    "description": "Retrieves information about a specific summoner, such as their rank, win rate, and recent match history. If a user mentions a specific summoner or wants to know about themselves, you *must* always call this function. If you can't find the summoner, ask to the user which region do they play."
+  },
+  {
+    "name": "lol-champion-positions-data",
+    "description": "Retrieves the analytics of champions by each positions. You can also look up the winrate, banrate, plays, wins, kills, kda and etc. `tier_data` is champion tier which tells which champion is powerful (OP) or not, for example `tier 1` champion is easy to play and powerful champion. (You can recommend this champion to the user if they want recommandation)"
+  },
+  {
+    "name": "lol-summoner-game-history",
+    "description": "Retrieves the recent match history of a specific summoner. If a user mentions a specific summoner, wants to know about their recent matches, wants to know how to improve or wants to get an advice, you *must* always call this function."
+  },
+  {
+    "name": "lol-summoner-renewal",
+    "description": "Renew the summoner's data of OP.GG through RiotAPI. When you retrieve summoner data, you *must* always call this function first, and then call the next functions."
+  },
+  {
+    "name": "lol-brawl-champion-tier-rank",
+    "description": "Retrieves champion tier ranking list in brawl mode."
+  },
+  {
+    "name": "esports-lol-schedules",
+    "description": "Get upcoming LoL match schedules."
+  },
+  {
+    "name": "esports-lol-team-standings",
+    "description": "Get team standings for a LoL league."
+  },
+  {
+    "name": "tft-meta-trend-deck-list",
+    "description": "TFT deck list tool for retrieving current meta decks."
+  },
+  {
+    "name": "tft-meta-item-combinations",
+    "description": "TFT tool for retrieving information about item combinations and recipes."
+  },
+  {
+    "name": "tft-champion-item-build",
+    "description": "TFT tool for retrieving champion item build information."
+  },
+  {
+    "name": "tft-recommend-champion-for-item",
+    "description": "TFT tool for retrieving champion recommendations for a specific item."
+  },
+  {
+    "name": "tft-play-style-comment",
+    "description": "This tool provides comments on the playstyle of TFT champions."
+  },
+  {
+    "name": "tft-augments-metadata-resources",
+    "description": "Retrieves metadata for all Teamfight Tactics augments with localized names and descriptions in CSV format. Returns apiName, desc, name, tier, and imageUrl for all augments in the specified language."
+  },
+  {
+    "name": "valorant-meta-maps",
+    "description": "Valorant map meta data"
+  },
+  {
+    "name": "valorant-meta-characters",
+    "description": "Valorant character meta data"
+  },
+  {
+    "name": "valorant-leaderboard",
+    "description": "Fetch Valorant leaderboard by region"
+  },
+  {
+    "name": "valorant-agents-composition-with-map",
+    "description": "Retrieve agent composition data for a Valorant map."
+  },
+  {
+    "name": "valorant-characters-statistics",
+    "description": "Retrieve character statistics data for Valorant, optionally filtered by map."
+  },
+  {
+    "name": "valorant-player-match-history",
+    "description": "Retrieve match history for a Valorant player using their game name and tag line."
+  },
+  {
+    "name": "mcp_howtocook_getAllRecipes",
+    "description": "获取所有菜谱"
+  },
+  {
+    "name": "mcp_howtocook_getRecipesByCategory",
+    "description": "根据分类查询菜谱，可选分类有: 水产, 早餐, 调料, 甜品, 饮品, 荤菜, 半成品加工, 汤, 主食, 素菜"
+  },
+  {
+    "name": "mcp_howtocook_recommendMeals",
+    "description": "根据用户的忌口、过敏原、人数智能推荐菜谱，创建一周的膳食计划以及大致的购物清单"
+  },
+  {
+    "name": "mcp_howtocook_whatToEat",
+    "description": "不知道吃什么？根据人数直接推荐适合的菜品组合"
+  },
+  {
+    "name": "mcp_howtocook_getRecipeById",
+    "description": "根据菜谱名称或ID查询指定菜谱的完整详情，包括食材、步骤等"
+  },
+  {
+    "name": "search_cards",
+    "description": "通过关键字搜索游戏王卡牌，可以搜索卡牌名称、效果文本等。"
+  },
+  {
+    "name": "get_card_by_id",
+    "description": "通过卡牌ID获取单张游戏王卡牌的详细信息"
+  },
+  {
+    "name": "get_card_image",
+    "description": "通过卡牌ID获取游戏王卡牌的图片"
+  },
+  {
+    "name": "get_current_stock_price",
+    "description": "Get the current stock price based on stock symbol."
+  },
+  {
+    "name": "get_stock_price_by_date",
+    "description": "Get the stock price for a given stock symbol on a specific date."
+  },
+  {
+    "name": "get_stock_price_date_range",
+    "description": "Get the stock prices for a given date range for a given stock symbol."
+  },
+  {
+    "name": "get_historical_stock_prices",
+    "description": "Get historical stock prices for a given stock symbol."
+  },
+  {
+    "name": "get_dividends",
+    "description": "Get dividends for a given stock symbol."
+  },
+  {
+    "name": "get_income_statement",
+    "description": "Get income statement for a given stock symbol."
+  },
+  {
+    "name": "get_cashflow",
+    "description": "Get cashflow for a given stock symbol."
+  },
+  {
+    "name": "get_earning_dates",
+    "description": "Get earning dates."
+  },
+  {
+    "name": "get_news",
+    "description": "Get news for a given stock symbol."
+  },
+  {
+    "name": "get_recommendations",
+    "description": "Get analyst recommendations for a given symbol."
+  },
+  {
+    "name": "get-36kr-trending",
+    "description": "获取 36 氪热榜，提供创业、商业、科技领域的热门资讯，包含投融资动态、新兴产业分析和商业模式创新信息"
+  },
+  {
+    "name": "get-9to5mac-news",
+    "description": "获取 9to5Mac 苹果相关新闻，包含苹果产品发布、iOS 更新、Mac 硬件、应用推荐及苹果公司动态的英文资讯"
+  },
+  {
+    "name": "get-bbc-news",
+    "description": "获取 BBC 新闻，提供全球新闻、英国新闻、商业、政治、健康、教育、科技、娱乐等资讯"
+  },
+  {
+    "name": "get-bilibili-rank",
+    "description": "获取哔哩哔哩视频排行榜，包含全站、动画、音乐、游戏等多个分区的热门视频，反映当下年轻人的内容消费趋势"
+  },
+  {
+    "name": "get-douban-rank",
+    "description": "获取豆瓣实时热门榜单，提供当前热门的图书、电影、电视剧、综艺等作品信息，包含评分和热度数据"
+  },
+  {
+    "name": "get-douyin-trending",
+    "description": "获取抖音热搜榜单，展示当下最热门的社会话题、娱乐事件、网络热点和流行趋势"
+  },
+  {
+    "name": "get-gcores-new",
+    "description": "获取机核网游戏相关资讯，包含电子游戏评测、玩家文化、游戏开发和游戏周边产品的深度内容"
+  },
+  {
+    "name": "get-ifanr-news",
+    "description": "获取爱范儿科技快讯，包含最新的科技产品、数码设备、互联网动态等前沿科技资讯"
+  },
+  {
+    "name": "get-infoq-news",
+    "description": "获取 InfoQ 技术资讯，包含软件开发、架构设计、云计算、AI等企业级技术内容和前沿开发者动态"
+  },
+  {
+    "name": "get-juejin-article-rank",
+    "description": "获取掘金文章榜，包含前端开发、后端技术、人工智能、移动开发及技术架构等领域的高质量中文技术文章和教程"
+  },
+  {
+    "name": "get-netease-news-trending",
+    "description": "获取网易新闻热点榜，包含时政要闻、社会事件、财经资讯、科技动态及娱乐体育的全方位中文新闻资讯"
+  },
+  {
+    "name": "get-nytimes-news",
+    "description": "获取纽约时报新闻，包含国际政治、经济金融、社会文化、科学技术及艺术评论的高质量英文或中文国际新闻资讯"
+  },
+  {
+    "name": "get-smzdm-rank",
+    "description": "获取什么值得买热门，包含商品推荐、优惠信息、购物攻略、产品评测及消费经验分享的实用中文消费类资讯"
+  },
+  {
+    "name": "get-sspai-rank",
+    "description": "获取少数派热榜，包含数码产品评测、软件应用推荐、生活方式指南及效率工作技巧的优质中文科技生活类内容"
+  },
+  {
+    "name": "get-tencent-news-trending",
+    "description": "获取腾讯新闻热点榜，包含国内外时事、社会热点、财经资讯、娱乐动态及体育赛事的综合性中文新闻资讯"
+  },
+  {
+    "name": "get-thepaper-trending",
+    "description": "获取澎湃新闻热榜，包含时政要闻、财经动态、社会事件、文化教育及深度报道的高质量中文新闻资讯"
+  },
+  {
+    "name": "get-theverge-news",
+    "description": "获取 The Verge 新闻，包含科技创新、数码产品评测、互联网趋势及科技公司动态的英文科技资讯"
+  },
+  {
+    "name": "get-toutiao-trending",
+    "description": "获取今日头条热榜，包含时政要闻、社会事件、国际新闻、科技发展及娱乐八卦等多领域的热门中文资讯"
+  },
+  {
+    "name": "get-weibo-trending",
+    "description": "获取微博热搜榜，包含时事热点、社会现象、娱乐新闻、明星动态及网络热议话题的实时热门中文资讯"
+  },
+  {
+    "name": "get-weread-rank",
+    "description": "获取微信读书排行榜，包含热门小说、畅销书籍、新书推荐及各类文学作品的阅读数据和排名信息"
+  },
+  {
+    "name": "get-zhihu-trending",
+    "description": "获取知乎热榜，包含时事热点、社会话题、科技动态、娱乐八卦等多领域的热门问答和讨论的中文资讯"
+  },
+  {
+    "name": "read_pdf",
+    "description": "Reads content/metadata from one or more PDFs (local/URL). Each source can specify pages to extract."
+  },
+  {
+    "name": "get_board_visualization",
+    "description": "Provides the current state of the chessboard as an image."
+  },
+  {
+    "name": "get_turn",
+    "description": "Indicates whose turn it is ('white' or 'black')."
+  },
+  {
+    "name": "get_valid_moves",
+    "description": "Lists all legal moves for the current player in UCI notation."
+  },
+  {
+    "name": "make_move",
+    "description": "\nMakes a move on the board using standard algebraic notation (SAN).\nArgs:\n    move_san: The player's move in algebraic notation (e.g., 'e4', 'Nf3', 'Bxe5').\nReturns:\n    A dictionary containing the move in SAN format, the move in UCI format, the new board FEN,\n    whether the game is over, and the result if applicable.\n"
+  },
+  {
+    "name": "new_game",
+    "description": "\nStarts a new game, resetting the board to the initial position.\n\nArgs:\n    user_plays_white: Whether the user will play as white. Defaults to True.\n\nReturns:\n    A confirmation message indicating the game has started and the user's color.\n"
+  },
+  {
+    "name": "find_position_in_pgn",
+    "description": "\nFinds the first board position in a PGN string that matches a given condition\n(e.g., 'bishop on a3') and returns an image of that board.\n\nArgs:\n    pgn_string: The PGN string of the game.\n    condition: A string describing the condition, format: \"piece_type on square_name\"\n               (e.g., \"bishop on a3\", \"knight on f6\", \"king on g1\").\n\nReturns:\n    An Image dictionary containing the PNG data of the board state if found,\n    or a string with an error message.\n"
+  }
+]
