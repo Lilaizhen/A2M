@@ -54,7 +54,7 @@ def process_single_result_folder(folder_path: Path) -> List[Dict]:
                     mytool_calls = current_best.get("mytool_calls", 0)
 
                     # 只保存有工具调用的结果，且分数更高
-                    if mytool_calls > 0 and score > best_score:
+                    if  score > best_score:
                         best_tool = tool_data
                         best_score = score
             except Exception as e:
@@ -142,7 +142,7 @@ def main():
     parser.add_argument(
         "--min-score",
         type=float,
-        default=4,
+        default=0,
         help="只提取分数大于等于此值的工具 (默认: 4)"
     )
 

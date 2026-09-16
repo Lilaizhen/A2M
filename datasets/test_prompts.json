@@ -1,14 +1,14 @@
 [
   {
-    "task_id": "00e13e2e-07fa-4d0b-9863-e966190cffd6",
-    "Question": "find the painting \"Corridor in the Asylum\" and give me some background information,",
+    "task_id": "e9df60b1-37a6-4b10-aff0-d432fa79d400",
+    "Question": "Please help me find the latest articles about 'MCP' on arXiv. Identify the potentially most influential papers among them and analyze the current trends in this field.",
     "answers": "",
-    "category": "Leisure",
+    "category": "Lifestyle",
     "file_name": "",
     "Annotator Metadata": {
-      "Steps": "1. Realizes that \"Corridor in the Asylum\" is located in the Metropolitan Museum of Art Collection\n2. Search for objects in the Metropolitan Museum of Art\n3. Get the detailed information",
+      "Steps": "1. Search for papers on arXiv and find some may important papers\n2. Get abstract of  these papers and identify the potentially most influential paper\n3. Analyze the current trends in this field",
       "Number of steps": "3",
-      "Tools": "1. search-museum-objects\n2. get-museum-object",
+      "Tools": "1. search_papers\n2. get_paper_data",
       "Number of tools": "2"
     }
   }
