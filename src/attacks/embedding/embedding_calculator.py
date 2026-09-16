@@ -26,8 +26,10 @@ class EmbeddingCalculator:
             api_key: API密钥，如果不提供则从环境变量获取
             api_base: API基础URL
         """
-        self.api_key = api_key or os.getenv("EMBEDDING_API_KEY") or "sk-ulrlrftgwvyklbxqdvxgfkezoirtmiuegblozcsplognafaa"
-        self.api_base = api_base
+        self.api_key = api_key or os.getenv("EMBEDDING_API_KEY")
+        self.api_base = os.getenv("EMBEDDING_API_BASE", api_base)
+        if not self.api_key:
+            raise RuntimeError("EMBEDDING_API_KEY is not set in the environment.")
         self.model = "Qwen/Qwen3-Embedding-8B"
 
     def get_embeddings(self, texts: Union[str, List[str]]) -> Union[List[float], List[List[float]]]:
