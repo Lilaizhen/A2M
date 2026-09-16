@@ -8,8 +8,8 @@ from openai import OpenAI
 # 1. 初始化 OpenAI 兼容客户端
 # =========================
 client = OpenAI(
-    api_key="sk-fdc0384b099a9b059f062da271a7a4d3",
-    base_url="https://apis.iflow.cn/v1"
+    api_key=os.environ["OPENAI_API_KEY"],
+    base_url=os.getenv("OPENAI_API_BASE", "https://apis.iflow.cn/v1")
 )
 
 # =========================
